@@ -1,0 +1,124 @@
+/* ── Sidebar core variables ── */
+:root {
+    --sidebar-collapsed-bg: #f5f6f8;
+    --sidebar-expanded-bg: #ffffff;
+    --divider-color: #e6e6ea;
+    --bg-mint: rgba(124, 58, 237, 0.08);
+    --primary-mint: #7C3AED;
+    --text-dark: #1e1e2d;
+    --text-muted: #8c8c9a;
+}
+
+[data-theme="dark"] {
+    --sidebar-collapsed-bg: #0F172A;
+    --sidebar-expanded-bg: #0F172A;
+    --divider-color: rgba(255, 255, 255, 0.1);
+    --bg-mint: rgba(168, 85, 247, 0.15);
+    --primary-mint: #A78BFA;
+    --text-dark: #f8fafc;
+    --text-muted: #94a3b8;
+}
+
+/* ── Container ── */
+.sidebar-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 32px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: width, padding;
+    overflow: hidden;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    position: fixed;
+    z-index: 100;
+    left: 16px;
+    top: 16px;
+    border: 1px solid var(--divider-color);
+    background: var(--sidebar-expanded-bg);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-container.collapsed {
+    width: 72px;
+    padding: 24px 0;
+    border-radius: 20px;
+}
+
+.sidebar-container.expanded {
+    width: 264px;
+    padding: 24px 20px;
+    border-radius: 24px;
+}
+
+/* ── Scrollable top section ── */
+.sidebar-top {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.sidebar-top::-webkit-scrollbar { display: none; }
+
+/* ── Nav menu ── */
+.nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* ── Nav item ── */
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px;
+    border-radius: 24px;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-container.collapsed .nav-item {
+    justify-content: center;
+    padding: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    margin: 0 auto;
+}
+
+.nav-item:hover {
+    background: var(--bg-mint);
+    color: var(--primary-mint);
+    transform: translateY(-1px);
+}
+
+.nav-item.active {
+    background: var(--bg-mint);
+    color: var(--primary-mint);
+}
+
+.icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.nav-item:hover .icon-container {
+    transform: scale(1.05);
+}
+
+.nav-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

@@ -1,0 +1,243 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// Platform Model mapping configuration variables for survey provider APIs
+model Platform {
+  platform_id                Int            @id @default(autoincrement())
+  platform_name              String
+  platform_sign              String         @unique
+  platform_image             String?
+  platform_color             String?
+  platform_url               String?
+  platform_quota_url         String?
+  platform_click_url         String?
+  platform_level             Int            @default(5)
+  platform_currency          Int            @default(0)
+  params                     String?        // JSON credentials string [{key, name, value}]
+  project_params             String?        // JSON mapping string [{key, name, field, value}]
+  is_list                    Int            @default(0)
+  is_wall                    Int            @default(0)
+  is_persona                 Int            @default(0)
+  platform_persona_template  Int            @default(0)
+  platform_persona_backend   Int            @default(0)
+  is_quota                   Int            @default(0)
+  show_quota                 Int            @default(1)
+  show_click                 Int            @default(1)
+  show_complete              Int            @default(1)
+  show_loi                   Int            @default(1)
+  show_ir                    Int            @default(1)
+  show_no                    Int            @default(1)
+  is_disable                 Int            @default(0)
+  is_custom                  Int            @default(0)
+  is_accept_error            Int            @default(0)
+  is_hand                    Int            @default(0)
+  model_type                 Int            @default(0)
+  pay_type                   Int            @default(0)
+  sort                       Int            @default(0)
+  limit_endtime              Int            @default(0)
+  create_uid                 Int            @default(0)
+  update_uid                 Int            @default(0)
+  delete_uid                 Int            @default(0)
+  create_time                DateTime?
+  update_time                DateTime?
+  delete_time                DateTime?
+
+  // Relations
+  projects                   Project[]
+  auths                      PlatformAuth[]
+  rewards                    Reward[]
+
+  @@map("ya_platform")
+}
+
+/// PlatformAuth Model tracking authorization limits and commission rates per team
+model PlatformAuth {
+  platform_auth_id           Int            @id @default(autoincrement())
+  platform_id                Int
+  team_id                    Int
+  auth_rate                  Float          @default(0.00)
+
+  // Relations
+  platform                   Platform       @relation(fields: [platform_id], references: [platform_id], onDelete: Cascade)
+  team                       Team           @relation(fields: [team_id], references: [team_id], onDelete: Cascade)
+
+  @@index([platform_id])
+  @@index([team_id])
+  @@map("ya_platform_auth")
+}
+
+/// Currency Model for exchange rates
+model Currency {
+  currency_id                Int            @id @default(autoincrement())
+  currency_code              String         @unique
+  currency_name              String
+  currency_coins             Float          @default(100.00)
+
+  // Relations
+  projects                   Project[]
+
+  @@map("ya_currency")
+}
+
+/// Project Model representing individual surveys
+model Project {
+  project_id                 Int            @id @default(autoincrement())
+  project_pno                String         @unique
+  project_no                 String
+  project_sign               String?        @unique // MD5 hash of platform_id + project_no + project_code
+  platform_id                Int
+  project_name               String
+  project_code               String?
+  project_cpi                Float          @default(0.00)
+  project_currency           Int
+  project_quota              Int            @default(0)
+  project_complete           Int            @default(0)
+  project_loi                Int            @default(0)
+  project_ir                 Int            @default(0)
+  project_click              Int            @default(0)
+  project_persona_template   Int            @default(0)
+  project_persona_backend    Int            @default(0)
+  is_api                     Int            @default(0)
+  project_click_url          String?
+  project_content            String?
+  is_disable                 Int            @default(0)
+  is_recommend               Int            @default(0)
+  sort                       Int            @default(0)
+  create_time                DateTime?
+  update_time                DateTime?
+  delete_time                DateTime?
+
+  // Relations
+  platform                   Platform       @relation(fields: [platform_id], references: [platform_id], onDelete: Cascade)
+  currency                   Currency       @relation(fields: [project_currency], references: [currency_id])
+  flowings                   Flowing[]
+  rewards                    Reward[]
+
+  @@index([platform_id])
+  @@index([project_currency])
+  @@map("ya_project")
+}
+
+/// Flowing Model logging user sessions, IP headers, and answers
+model Flowing {
+  flowing_id                 Int            @id @default(autoincrement())
+  uuid                       String         @unique
+  member_id                  Int
+  project_id                 Int?
+  ip                         String?
+  ua                         String?
+  rs_content                 String?        // JSON questionnaire answers
+  country                    String?
+  create_time                DateTime?
+
+  // Relations
+  member                     Member         @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
+  project                    Project?       @relation(fields: [project_id], references: [project_id])
+
+  @@index([member_id])
+  @@index([project_id])
+  @@map("ya_flowing")
+}
+
+/// Reward Model acting as completion log for users and commission audits
+model Reward {
+  reward_id                  Int            @id @default(autoincrement())
+  txn_id                     String         @unique
+  member_id                  Int
+  team_id                    Int
+  platform_id                Int
+  project_pno                String?
+  project_no                 String?
+  project_name               String?
+  payout                     Float          @default(0.00)
+  team_payout                Float          @default(0.00)
+  member_payout              Float          @default(0.00)
+  usd_currency_coins         Float          @default(100.00)
+  uuid                       String
+  front_rs                   String?
+  backend_rs                 String?
+  address                    String?
+  ip                         String?
+  ua                         String?
+  reward_status              Int            @default(0) // 1=Success, 2=Disqualified, 3=Overquota, 4=Terminated
+  is_mark                    Int            @default(0) // Speeder check flag
+  create_uid                 Int            @default(0)
+  auth_time                  DateTime?
+  start_time                 DateTime?
+  create_time                DateTime?
+
+  // Relations
+  member                     Member         @relation(fields: [member_id], references: [member_id], onDelete: Cascade)
+  team                       Team           @relation(fields: [team_id], references: [team_id], onDelete: Cascade)
+  platform                   Platform       @relation(fields: [platform_id], references: [platform_id], onDelete: Cascade)
+  project                    Project?       @relation(fields: [project_pno], references: [project_pno])
+
+  @@index([member_id])
+  @@index([team_id])
+  @@index([platform_id])
+  @@index([project_pno])
+  @@map("ya_reward")
+}
+
+/// Team Model representing target publisher networks
+model Team {
+  team_id                    Int            @id @default(autoincrement())
+  team_name                  String
+  team_host                  String?
+  team_logo                  Int?
+  commission_ratio           Float          @default(0.00)
+  auth_num                   Int            @default(0)
+  is_disable                 Int            @default(0)
+
+  // Relations
+  members                    Member[]
+  auths                      PlatformAuth[]
+  rewards                    Reward[]
+
+  @@map("ya_team")
+}
+
+/// Member Model representing system users
+model Member {
+  member_id                  Int            @id @default(autoincrement())
+  nickname                   String
+  rate                       Float          @default(0.00) // Member commission deduction
+  team_id                    Int
+  avatar_id                  Int?
+  is_disable                 Int            @default(0)
+  password                   String?
+
+  // Relations
+  team                       Team           @relation(fields: [team_id], references: [team_id])
+  flowings                   Flowing[]
+  rewards                    Reward[]
+
+  @@index([team_id])
+  @@map("ya_member")
+}
+
+/// Export Model representing generated data export tasks (CSV/XLSX logs)
+model Export {
+  export_id    Int       @id @default(autoincrement())
+  type         Int       // 1 = Team Reward (Completions), 2 = Member, 3 = Platform/Project
+  file_name    String
+  file_path    String
+  file_size    String    @default("0 B")
+  times        Float     @default(0.00)
+  remark       String?
+  status       Int       @default(2) // 0=Failed, 1=Success, 2=Processing
+  param        String?   // JSON query parameters
+  create_uid   Int       @default(0)
+  create_name  String    @default("Admin")
+  create_time  DateTime? @default(now())
+  update_time  DateTime?
+  delete_time  DateTime?
+
+  @@map("ya_file_export")
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 48 48" fill="none">
+  <path d="M14 32C20 32 22 24 24 20C26 16 28 8 34 8C41 8 46 13 46 20C46 27 41 32 34 32C28 32 26 24 24 20C22 16 20 8 14 8C7 8 2 13 2 20C2 27 7 32 14 32Z" stroke="url(#gh)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+  <defs>
+    <linearGradient id="gh" x1="2" y1="8" x2="46" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2ce2a8" />
+      <stop offset="1" stop-color="#0eb17b" />
+    </linearGradient>
+  </defs>
+</svg>
