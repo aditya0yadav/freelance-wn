@@ -3,7 +3,7 @@
 ## 📋 Executive Summary
 The **SurveyStream Admin Portal** is a high-fidelity, client-side administration panel designed to manage survey platforms, projects, currency settings, and team access. It uses modern React patterns (hooks, contexts, dynamic rendering) to create a dashboard interface.
 
-The design is modeled after the premium, responsive **Realsays** management interface, incorporating:
+The design is modeled after the premium, responsive **Wanhong Survey** management interface, incorporating:
 *   Collapsible left navigation sidebar.
 *   Dual-theme state control (Light and Dark Mode).
 *   High-resolution browser zoom rendering.

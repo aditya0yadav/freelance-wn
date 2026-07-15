@@ -1,7 +1,0 @@
-ID,TXN ID,Nickname,Team Name,Platform Name,Project PNO,Payout ($),Team Payout ($),Member Payout ($),UUID,Status,Callback Time
-1,TXN10001,孙逊,Default Publisher Network,Gowebsurveys,Manual,2.50,2.25,250.00,flowing-1,Success,2026-07-12 11:29
-2,TXN10002,孙逊,Default Publisher Network,Gowebsurveys,Manual,3.00,2.70,300.00,flowing-2,Success,2026-07-12 11:29
-3,TXN10003,管理,Default Publisher Network,Gowebsurveys,Manual,3.00,2.70,300.00,flowing-3,Success,2026-07-12 11:29
-4,TXN10004,孙逊,Default Publisher Network,Gowebsurveys,Manual,1.00,0.90,100.00,flowing-4,Success,2026-07-12 11:29
-5,TXN10005,管理,Default Publisher Network,Gowebsurveys,Manual,0.80,0.72,80.00,flowing-5,Success,2026-07-12 11:29
-6,TXN10006,管理,Default Publisher Network,Gowebsurveys,Manual,2.50,2.25,250.00,flowing-6,Success,2026-07-12 11:29
