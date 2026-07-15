@@ -4,6 +4,7 @@ import './App.css';
 import { apiFetch } from './utils/api';
 import Toast from './components/Toast';
 import Topbar from './components/Topbar';
+import BottomNav from './components/BottomNav';
 import TickerBar from './components/TickerBar';
 import ModalSpecs from './components/ModalSpecs';
 import Footer from './components/Footer';
@@ -49,6 +50,13 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('rs_member') || 'null'); } catch { return null; }
   });
   const [darkMode, setDarkMode] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Data
   const [platforms, setPlatforms] = useState([]);
@@ -506,7 +514,7 @@ export default function App() {
         <Route
           path="/*"
           element={
-            <div className="app-layout">
+            <div className="app-layout" style={{ paddingBottom: isMobile ? '60px' : '0' }}>
               <Topbar
                 darkMode={darkMode}
                 setDarkMode={setDarkMode}
@@ -605,6 +613,18 @@ export default function App() {
               </div>
 
               <Footer />
+
+              {isMobile && (
+                <BottomNav
+                  loadStats={loadStats}
+                  loadLeaderboard={loadLeaderboard}
+                  setStatsTab={setStatsTab}
+                  setStatsPlatform={setStatsPlatform}
+                  setStatsStatus={setStatsStatus}
+                  setStatsNickname={setStatsNickname}
+                  setStatsPage={setStatsPage}
+                />
+              )}
             </div>
           }
         />

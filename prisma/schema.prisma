@@ -12,7 +12,7 @@ model Platform {
   platform_id                Int            @id @default(autoincrement())
   platform_name              String
   platform_sign              String         @unique
-  platform_image             String?
+  platform_image             String?        @db.LongText
   platform_color             String?
   platform_url               String?
   platform_quota_url         String?

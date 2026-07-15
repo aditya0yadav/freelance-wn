@@ -11,11 +11,11 @@ export default function Footer() {
         {/* Brand column */}
         <div className="footer-brand">
           <div className="footer-logo" onClick={() => navigate('/')} title="Go to home">
-            <img src="/images/logo.png" alt="XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD" className="footer-logo-img" />
-            <span className="footer-brand-name">XUZHOU WEIJINGJUYAN</span>
+            <img src="/images/logo.png" alt="Wanhong Survey" className="footer-logo-img" />
+            <span className="footer-brand-name">Wanhong Survey</span>
           </div>
           <p className="footer-tagline">
-            The professional survey &amp; offerwall management portal for <strong>XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD</strong>. Empowering market-research teams to track, optimise, and reward their performance — all in one place.
+            The professional survey &amp; offerwall management portal for <strong>Wanhong Survey</strong> by <strong>XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD</strong>. Empowering market-research teams to track, optimise, and reward their performance — all in one place.
           </p>
           <div className="footer-socials">
             <a className="footer-social-btn" href="mailto:support@surveyspecter.com" title="Email us" aria-label="Email">
@@ -66,7 +66,7 @@ export default function Footer() {
       </div>
 
       <div className="footer-bottom">
-        <span>© {year} XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD. All rights reserved.</span>
+        <span>© {year} Wanhong Survey by XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD. All rights reserved.</span>
         <div className="footer-bottom-links">
           <button onClick={() => navigate('/privacy')}>Privacy</button>
           <span className="footer-dot">·</span>

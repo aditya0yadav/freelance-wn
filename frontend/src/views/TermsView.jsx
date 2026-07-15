@@ -35,12 +35,12 @@ export default function TermsView() {
         <div className="legal-content">
           <section id="t1">
             <h2>1. Acceptance of Terms</h2>
-            <p>By accessing or using the XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD platform ("Service"), you agree to be bound by these Terms &amp; Conditions ("Terms"). If you do not agree, please discontinue use immediately. Your continued use after any modification constitutes acceptance of the updated Terms.</p>
+            <p>By accessing or using the Wanhong Survey by XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD platform ("Service"), you agree to be bound by these Terms &amp; Conditions ("Terms"). If you do not agree, please discontinue use immediately. Your continued use after any modification constitutes acceptance of the updated Terms.</p>
           </section>
 
           <section id="t2">
             <h2>2. Eligibility</h2>
-            <p>Access to XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD is granted exclusively to individuals who have been onboarded by an authorised team administrator. The platform is intended for professional market-research panellist teams and is not open to the general public. You must be at least 18 years old to participate.</p>
+            <p>Access to Wanhong Survey by XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD is granted exclusively to individuals who have been onboarded by an authorised team administrator. The platform is intended for professional market-research panellist teams and is not open to the general public. You must be at least 18 years old to participate.</p>
           </section>
 
           <section id="t3">
@@ -78,12 +78,12 @@ export default function TermsView() {
 
           <section id="t6">
             <h2>6. Intellectual Property</h2>
-            <p>All content, designs, logos, and software comprising the XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD platform are the exclusive property of XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD and its licensors. You may not reproduce, distribute, or create derivative works without express written permission.</p>
+            <p>All content, designs, logos, and software comprising the Wanhong Survey by XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD platform are the exclusive property of Wanhong Survey by XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD and its licensors. You may not reproduce, distribute, or create derivative works without express written permission.</p>
           </section>
 
           <section id="t7">
             <h2>7. Disclaimers &amp; Liability</h2>
-            <p>The Service is provided <strong>"as is"</strong> without warranties of any kind. XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD shall not be liable for:</p>
+            <p>The Service is provided <strong>"as is"</strong> without warranties of any kind. Wanhong Survey by XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD shall not be liable for:</p>
             <ul>
               <li>Loss of earnings arising from survey disqualifications or quota closures.</li>
               <li>Interruptions in service due to maintenance, network issues, or force majeure.</li>
@@ -94,12 +94,12 @@ export default function TermsView() {
 
           <section id="t8">
             <h2>8. Termination</h2>
-            <p>XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD reserves the right to suspend or permanently terminate any account that violates these Terms, at our sole discretion, with or without prior notice. Upon termination, accumulated coins may be forfeited if the termination is due to violation of these Terms.</p>
+            <p>Wanhong Survey by XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD reserves the right to suspend or permanently terminate any account that violates these Terms, at our sole discretion, with or without prior notice. Upon termination, accumulated coins may be forfeited if the termination is due to violation of these Terms.</p>
           </section>
 
           <section id="t9">
             <h2>9. Governing Law</h2>
-            <p>These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD is registered, without regard to its conflict-of-law provisions.</p>
+            <p>These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which Wanhong Survey by XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD is registered, without regard to its conflict-of-law provisions.</p>
           </section>
 
           <section id="t10">

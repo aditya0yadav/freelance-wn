@@ -429,8 +429,8 @@ export default function AdminLoginView({ onLoginSuccess }) {
               </svg>
             </div>
             <div>
-              <div className="login-brand-text">XUZHOU WEIJINGJUYAN</div>
-              <div className="login-brand-sub">Admin Portal</div>
+              <div className="login-brand-text">Wanhong Survey</div>
+              <div className="login-brand-sub" style={{ fontSize: '10px', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>by XUZHOU WEIJINGJUYAN</div>
             </div>
           </div>
 

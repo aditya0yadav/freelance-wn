@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Edit2, Trash2, Power, RefreshCcw, X, AlertCircle,
   BarChart3, Settings, Box, FolderKanban, Image, Search,
-  TrendingUp, CheckCircle2, XCircle, Clock, Eye, RotateCcw, ChevronDown, Download
+  TrendingUp, CheckCircle2, XCircle, Clock, Eye, RotateCcw, ChevronDown, Download, Upload, Link
 } from 'lucide-react';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
 
@@ -13,6 +13,7 @@ const EMPTY_FORM = {
   platform_url: '', platform_quota_url: '', platform_click_url: '',
   platform_level: 5, is_list: 0, is_wall: 0, is_quota: 0,
   model_type: 0, pay_type: 0, is_disable: 0, sort: 0,
+  app_id: '', app_key: '',
 };
 const Field = ({ label, children }) => (
   <div className="form-group" style={{ marginBottom: 0 }}>
@@ -35,6 +36,15 @@ function PlatformsTab({ token }) {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [imageMode, setImageMode] = useState('url'); // 'url' | 'upload'
+  const fileInputRef = useRef(null);
+
+  const handleImageFile = (file) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => setFormData(f => ({ ...f, platform_image: e.target.result }));
+    reader.readAsDataURL(file);
+  };
 
   const handleExport = async () => {
     try {
@@ -73,8 +83,16 @@ function PlatformsTab({ token }) {
     }
     setSaving(true);
     try {
+      const params = [];
+      if (formData.app_id) params.push({ key: 1, name: 'app_id', value: formData.app_id });
+      if (formData.app_key) params.push({ key: 2, name: 'app_key', value: formData.app_key });
+
+      const { app_id, app_key, ...rest } = formData;
       const endpoint = selectedPlatform ? '/edit' : '/add';
-      const body = selectedPlatform ? { ...formData, platform_id: selectedPlatform.platform_id } : formData;
+      const body = selectedPlatform 
+        ? { ...rest, params, platform_id: selectedPlatform.platform_id }
+        : { ...rest, params };
+
       const res = await adminFetch(endpoint, 'POST', body, token);
       if (res.code === 200) { setModalOpen(false); fetchPlatforms(page, search); }
       else setErrorMsg(res.msg || 'Save failed');
@@ -180,7 +198,30 @@ function PlatformsTab({ token }) {
                       <button className="btn btn-secondary" onClick={() => adminFetch('/pull', 'POST', { platform_id: p.platform_id }, token)} style={{ padding: '6px 10px', fontSize: 11 }} title="Pull surveys">
                         <RotateCcw size={13} />
                       </button>
-                      <button className="btn btn-secondary" onClick={() => { setSelectedPlatform(p); setFormData({ ...EMPTY_FORM, ...p }); setModalOpen(true); }} style={{ padding: '6px' }}><Edit2 size={14} /></button>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => {
+                          let app_id = '';
+                          let app_key = '';
+                          if (p.params) {
+                            try {
+                              const arr = typeof p.params === 'string' ? JSON.parse(p.params) : p.params;
+                              if (Array.isArray(arr)) {
+                                const idObj = arr.find(x => x.name === 'app_id');
+                                const keyObj = arr.find(x => x.name === 'app_key');
+                                if (idObj) app_id = idObj.value;
+                                if (keyObj) app_key = keyObj.value;
+                              }
+                            } catch (e) {}
+                          }
+                          setSelectedPlatform(p);
+                          setFormData({ ...EMPTY_FORM, ...p, app_id, app_key });
+                          setModalOpen(true);
+                        }}
+                        style={{ padding: '6px' }}
+                      >
+                        <Edit2 size={14} />
+                      </button>
                       <button className={`btn ${p.is_disable === 1 ? 'btn-primary' : 'btn-secondary'}`} onClick={() => handleToggle(p)} style={{ padding: '6px' }} title="Toggle"><Power size={14} /></button>
                       <button className="btn btn-danger" onClick={() => handleDelete(p)} style={{ padding: '6px' }}><Trash2 size={14} /></button>
                     </div>
@@ -211,17 +252,82 @@ function PlatformsTab({ token }) {
               <h3 style={{ fontWeight: 700, color: 'var(--text-color)' }}>{selectedPlatform ? 'Edit Platform' : 'Add New Platform'}</h3>
               <button type="button" onClick={() => setModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
             </div>
-            <div className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {errorMsg && <div style={{ background: 'var(--pm-danger-bg)', border: '1px solid rgba(239,68,68,.25)', borderRadius: 8, padding: '10px 14px', color: 'var(--chart-danger)', fontSize: 13, display: 'flex', gap: 8 }}><AlertCircle size={15} />{errorMsg}</div>}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <Field label="Platform Name *"><input className="form-input" value={formData.platform_name} onChange={e => setFormData(f => ({ ...f, platform_name: e.target.value }))} required /></Field>
                 <Field label="Sign (unique key) *"><input className="form-input" value={formData.platform_sign} onChange={e => setFormData(f => ({ ...f, platform_sign: e.target.value }))} required /></Field>
-                <Field label="Logo URL"><input className="form-input" value={formData.platform_image || ''} onChange={e => setFormData(f => ({ ...f, platform_image: e.target.value }))} placeholder="https://…" /></Field>
-                <Field label="Brand Color"><input type="color" className="form-input" value={formData.platform_color || '#7C3AED'} onChange={e => setFormData(f => ({ ...f, platform_color: e.target.value }))} style={{ height: 42, cursor: 'pointer' }} /></Field>
+                {/* Logo Picker */}
+                <div style={{ gridColumn: 'span 2' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <label className="form-label">Platform Logo</label>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button type="button" onClick={() => setImageMode('url')} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 9px', fontSize: 11, fontWeight: 600, borderRadius: 6, border: `1px solid ${imageMode === 'url' ? 'var(--primary-brand, #7C3AED)' : 'var(--divider-color, #e6e6ea)'}`, background: imageMode === 'url' ? 'rgba(124,58,237,0.08)' : 'transparent', color: imageMode === 'url' ? 'var(--primary-brand, #7C3AED)' : 'var(--text-muted, #8c8c9a)', cursor: 'pointer' }}>
+                          <Link size={10} /> URL
+                        </button>
+                        <button type="button" onClick={() => setImageMode('upload')} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 9px', fontSize: 11, fontWeight: 600, borderRadius: 6, border: `1px solid ${imageMode === 'upload' ? 'var(--primary-brand, #7C3AED)' : 'var(--divider-color, #e6e6ea)'}`, background: imageMode === 'upload' ? 'rgba(124,58,237,0.08)' : 'transparent', color: imageMode === 'upload' ? 'var(--primary-brand, #7C3AED)' : 'var(--text-muted, #8c8c9a)', cursor: 'pointer' }}>
+                          <Upload size={10} /> Upload
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {/* Preview thumbnail */}
+                      <div
+                        style={{ width: 44, height: 44, borderRadius: 10, border: '1px solid var(--divider-color, #e6e6ea)', background: '#f8f8fc', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden', cursor: imageMode === 'upload' ? 'pointer' : 'default' }}
+                        onClick={() => imageMode === 'upload' && fileInputRef.current?.click()}
+                        title={imageMode === 'upload' ? 'Click to choose image' : ''}
+                      >
+                        {formData.platform_image
+                          ? <img src={formData.platform_image} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <Image size={18} color="#bbb" />}
+                      </div>
+                      {imageMode === 'url' ? (
+                        <input
+                          className="form-input"
+                          style={{ flex: 1 }}
+                          value={formData.platform_image || ''}
+                          onChange={e => setFormData(f => ({ ...f, platform_image: e.target.value }))}
+                          placeholder="https://example.com/logo.png"
+                        />
+                      ) : (
+                        <div
+                          style={{ flex: 1, border: '2px dashed var(--divider-color, #e6e6ea)', borderRadius: 8, padding: '10px 14px', textAlign: 'center', cursor: 'pointer', background: '#f8f8fc', transition: 'border-color 0.2s' }}
+                          onClick={() => fileInputRef.current?.click()}
+                          onDragOver={e => e.preventDefault()}
+                          onDrop={e => { e.preventDefault(); handleImageFile(e.dataTransfer.files[0]); }}
+                        >
+                          <Upload size={14} color="#aaa" style={{ display: 'inline-block', marginRight: 6 }} />
+                          <span style={{ fontSize: 12, color: 'var(--text-muted, #8c8c9a)' }}>
+                            {formData.platform_image && imageMode === 'upload' ? 'Image loaded ✓ — click to change' : 'Click or drag & drop an image'}
+                          </span>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={e => handleImageFile(e.target.files[0])}
+                          />
+                        </div>
+                      )}
+                      {formData.platform_image && (
+                        <button type="button" onClick={() => setFormData(f => ({ ...f, platform_image: '' }))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: 4, flexShrink: 0 }} title="Clear">
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <Field label="Brand Color"><input type="color" className="form-input" value={formData.platform_color || '#7C3AED'} onChange={e => setFormData(f => ({ ...f, platform_color: e.target.value }))} style={{ height: 38, cursor: 'pointer' }} /></Field>
                 <Field label="Platform URL"><input className="form-input" value={formData.platform_url || ''} onChange={e => setFormData(f => ({ ...f, platform_url: e.target.value }))} placeholder="https://…" /></Field>
                 <Field label="Quota Check URL"><input className="form-input" value={formData.platform_quota_url || ''} onChange={e => setFormData(f => ({ ...f, platform_quota_url: e.target.value }))} placeholder="https://…" /></Field>
                 <Field label="Level (1–10)"><input type="number" className="form-input" value={formData.platform_level} onChange={e => setFormData(f => ({ ...f, platform_level: Number(e.target.value) }))} min={1} max={10} /></Field>
                 <Field label="Sort Order"><input type="number" className="form-input" value={formData.sort} onChange={e => setFormData(f => ({ ...f, sort: Number(e.target.value) }))} /></Field>
+                <Field label="Platform Click URL"><input className="form-input" value={formData.platform_click_url || ''} onChange={e => setFormData(f => ({ ...f, platform_click_url: e.target.value }))} placeholder="https://…" /></Field>
+                <Field label="API App ID"><input className="form-input" value={formData.app_id || ''} onChange={e => setFormData(f => ({ ...f, app_id: e.target.value }))} placeholder="Enter App ID / Supplier ID..." /></Field>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <Field label="API App Key (app_token)"><input className="form-input" value={formData.app_key || ''} onChange={e => setFormData(f => ({ ...f, app_key: e.target.value }))} placeholder="Enter Authorization App Key..." /></Field>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                 {[{ key: 'is_list', label: 'Survey List' }, { key: 'is_wall', label: 'Offerwall' }, { key: 'is_quota', label: 'Quota Check' }, { key: 'is_disable', label: 'Disabled' }].map(({ key, label }) => (

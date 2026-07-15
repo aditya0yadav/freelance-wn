@@ -87,11 +87,16 @@ export default function Topbar({
     <header className="topbar">
       {/* ── Left: logo ─────────────────────────────────────────── */}
       <div className="topbar-left">
-        <div className="topbar-logo" onClick={() => navigate('/')}>
-          <img src="/images/logo.png" alt="XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD" className="topbar-logo-img" />
-          <span className="topbar-brand-name">XUZHOU WEIJINGJUYAN</span>
+        <div className="topbar-logo" onClick={() => navigate('/')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <img src="/images/logo.png" alt="Wanhong Survey" className="topbar-logo-img" />
+            <span className="topbar-brand-name" style={{ fontWeight: 800 }}>Wanhong Survey</span>
+          </div>
+          <span className="topbar-brand-sub" style={{ fontSize: '9px', fontWeight: 600, color: 'var(--t3)', marginLeft: '32px', marginTop: '-4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>by XUZHOU WEIJINGJUYAN</span>
         </div>
       </div>
+
+
 
       {/* ── Center: nav ────────────────────────────────────────── */}
       <nav className="topbar-nav">
@@ -106,7 +111,6 @@ export default function Topbar({
             >
               <span className="nav-link-icon">{item.icon}</span>
               <span className="nav-link-label">{item.label}</span>
-              {active && <span className="nav-link-bar" />}
             </button>
           );
         })}

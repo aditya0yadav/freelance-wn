@@ -33,7 +33,7 @@ export default function PrivacyView() {
         <div className="legal-content">
           <section id="s1">
             <h2>1. Information We Collect</h2>
-            <p>XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD collects information that you provide directly and data generated through your use of the platform:</p>
+            <p>Wanhong Survey by XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD collects information that you provide directly and data generated through your use of the platform:</p>
             <ul>
               <li><strong>Account data</strong> – nickname, hashed password, and team affiliation supplied during account creation.</li>
               <li><strong>Activity data</strong> – survey completions, offer interactions, coins earned, and timestamp of each action.</li>
@@ -44,7 +44,7 @@ export default function PrivacyView() {
 
           <section id="s2">
             <h2>2. How We Use Your Data</h2>
-            <p>Your data is used exclusively to operate and improve the XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD service:</p>
+            <p>Your data is used exclusively to operate and improve the Wanhong Survey by XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD service:</p>
             <ul>
               <li>Authenticate your account and maintain secure sessions.</li>
               <li>Credit coins for completed surveys and offerwall actions.</li>
@@ -67,7 +67,7 @@ export default function PrivacyView() {
 
           <section id="s4">
             <h2>4. Cookies &amp; Tracking</h2>
-            <p>XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD uses only <strong>essential</strong> cookies and browser local-storage tokens to:</p>
+            <p>Wanhong Survey by XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD uses only <strong>essential</strong> cookies and browser local-storage tokens to:</p>
             <ul>
               <li>Maintain your authenticated session (JWT stored in <code>localStorage</code>).</li>
               <li>Remember your UI preferences such as light/dark mode.</li>
