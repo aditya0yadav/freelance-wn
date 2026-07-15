@@ -132,21 +132,33 @@ export default function App() {
   };
 
   // ── Boot: if token exists go to home or active page ──────────────────────────
+  // Load platforms and member profile only when token or member session changes (e.g. login, reload)
   useEffect(() => {
     if (token && member) {
       loadHome();
-      const path = location.pathname;
-      if (path === '/login') {
-        navigate('/');
-      } else if (path === '/statistics') {
-        loadStats('my', 1);
-      } else if (path === '/leaderboard') {
-        loadLeaderboard('daily');
-      }
-    } else {
-      navigate('/login');
     }
   }, [token, member]);
+
+  // Handle route guards and page-specific data loaders without re-fetching platforms
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.startsWith('/admin')) {
+      return;
+    }
+
+    if (!token || !member) {
+      navigate('/login');
+      return;
+    }
+
+    if (path === '/login') {
+      navigate('/');
+    } else if (path === '/statistics') {
+      loadStats('my', 1);
+    } else if (path === '/leaderboard') {
+      loadLeaderboard('daily');
+    }
+  }, [token, member, location.pathname]);
 
   // Handle direct url navigation / refresh for platform page
   const match = location.pathname.match(/\/platform\/(\d+)/);

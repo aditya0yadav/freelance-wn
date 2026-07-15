@@ -500,7 +500,7 @@ class PlatformController {
             }).toString();
             const response = await axios.get(`${platform.platform_click_url}?${queryParams}`, {
               headers: { 'Accept': 'application/json', 'ZAMP-KEY': params['app_key'] },
-              timeout: 30000
+              timeout: 10000
             });
             if (response.data && response.data.result && response.data.result.data && response.data.result.data[0]) {
               const liveLink = response.data.result.data[0].LiveLink;
@@ -531,7 +531,7 @@ class PlatformController {
               'payload': params['app_id'],
               'Content-Type': 'application/json'
             },
-            timeout: 30000
+            timeout: 10000
           });
 
           // Log transaction for debug
@@ -552,7 +552,11 @@ class PlatformController {
         }
       }
     } catch (err) {
-      return res.status(500).send(`Internal Redirect Error: ${err.message}`);
+      console.error('Redirect processing error:', err);
+      const CallbackController = require('./callbackController');
+      return res.status(500).send(CallbackController.renderErrorPage(
+        `The survey platform is currently unresponsive or returned an error. Please try another survey. (Detail: ${err.message})`
+      ));
     }
   }
 
