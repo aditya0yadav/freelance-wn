@@ -2,7 +2,7 @@
  * Admin API utility - wraps fetch calls for the admin backend
  */
 
-const BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/admin/platform`;
+const BASE_URL = `${import.meta.env.VITE_API_URL || 'https://api.wanhongsurvey.com'}/api/admin/platform`;
 
 export const adminFetch = async (endpoint, method = 'GET', body = null, token = null) => {
   const headers = { 'Content-Type': 'application/json' };

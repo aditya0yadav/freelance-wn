@@ -425,14 +425,14 @@ class AdminPlatformController {
         return res.status(400).json({ code: 400, msg: 'Username and password are required' });
       }
 
-      // Check if user is '管理'
-      if (username.trim() !== '管理') {
+      // Check if user is '管理' or 'admin'
+      if (username.trim() !== '管理' && username.trim() !== 'admin') {
         return res.status(401).json({ code: 401, msg: 'Unauthorized admin user' });
       }
 
       // Find member in DB
       const member = await prisma.member.findFirst({
-        where: { nickname: '管理' }
+        where: { nickname: username.trim() }
       });
 
       if (!member) {

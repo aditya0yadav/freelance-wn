@@ -804,6 +804,24 @@ class PlatformController {
         });
       }
 
+      let memberAdmin2 = await prisma.member.findFirst({ where: { nickname: 'admin' } });
+      if (!memberAdmin2) {
+        memberAdmin2 = await prisma.member.create({
+          data: {
+            nickname: 'admin',
+            rate: 5.00,
+            team_id: team.team_id,
+            is_disable: 0,
+            password: defaultPasswordHash
+          }
+        });
+      } else if (!memberAdmin2.password) {
+        await prisma.member.update({
+          where: { member_id: memberAdmin2.member_id },
+          data: { password: defaultPasswordHash }
+        });
+      }
+
       // 4. Create Platforms
       const demoPlatforms = [
         {
