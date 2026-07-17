@@ -8,7 +8,8 @@ import {
     Users,
     Download,
     History,
-    Globe
+    Globe,
+    FolderKanban
 } from 'lucide-react';
 
 const NavItem = memo(({ icon, labelKey, isExpanded }) => {
@@ -27,6 +28,7 @@ const NavItem = memo(({ icon, labelKey, isExpanded }) => {
 function toForLabelKey(key) {
     if (key === 'adminDashboard') return '/admin/dashboard';
     if (key === 'adminPlatforms') return '/admin/platforms';
+    if (key === 'adminProjects') return '/admin/projects';
     if (key === 'adminAuth') return '/admin/members';
     if (key === 'adminTeams') return '/admin/teams';
     if (key === 'adminCompletions') return '/admin/completions';
@@ -43,6 +45,7 @@ const AdminSidebar = ({ isExpanded }) => {
                 <nav className="nav-menu">
                     <NavItem labelKey="adminDashboard" icon={<LayoutDashboard size={22} />} isExpanded={isExpanded} />
                     <NavItem labelKey="adminPlatforms" icon={<Box size={22} />} isExpanded={isExpanded} />
+                    <NavItem labelKey="adminProjects" icon={<FolderKanban size={22} />} isExpanded={isExpanded} />
                     <NavItem labelKey="adminAuth" icon={<Users size={22} />} isExpanded={isExpanded} />
                     <NavItem labelKey="adminTeams" icon={<Globe size={22} />} isExpanded={isExpanded} />
                     <NavItem labelKey="adminCompletions" icon={<History size={22} />} isExpanded={isExpanded} />
