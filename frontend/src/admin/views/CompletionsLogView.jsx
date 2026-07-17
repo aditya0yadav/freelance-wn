@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
+import { useAdminTheme } from '../context/AdminThemeContext';
 import { History, Search, Loader2, Database, ExternalLink, X, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
 
 export default function CompletionsLogView() {
   const token = getAdminToken();
+  const { theme } = useAdminTheme();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -337,99 +339,101 @@ export default function CompletionsLogView() {
 
       {/* Details Modal */}
       {selectedRecord && createPortal(
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="premium-metric-card" style={{ width: '100%', maxWidth: '520px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '16px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-color)' }}>Transaction Audit & Telemetry</h3>
-              <button onClick={() => setSelectedRecord(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px' }}>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Transaction ID</span>
-                  <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600, fontFamily: 'monospace' }}>{selectedRecord.txn_id}</div>
-                </div>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Session UUID</span>
-                  <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600, fontFamily: 'monospace' }}>{selectedRecord.uuid}</div>
-                </div>
+        <div className="admin-theme" data-theme={theme}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div className="premium-metric-card" style={{ width: '100%', maxWidth: '520px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '16px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-color)' }}>Transaction Audit & Telemetry</h3>
+                <button onClick={() => setSelectedRecord(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
               </div>
- 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px' }}>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>IP Address</span>
-                  <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>{selectedRecord.ip || 'N/A'}</div>
-                </div>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Audited Flags</span>
-                  <div style={{ fontSize: '13px', color: selectedRecord.is_mark === 1 ? '#EF4444' : '#10B981', fontWeight: 600 }}>
-                    {selectedRecord.is_mark === 1 ? '⚠️ Speeder (Fast Complete)' : '✓ Verified Standard'}
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px' }}>
+                  <div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Transaction ID</span>
+                    <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600, fontFamily: 'monospace' }}>{selectedRecord.txn_id}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Session UUID</span>
+                    <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600, fontFamily: 'monospace' }}>{selectedRecord.uuid}</div>
                   </div>
                 </div>
+   
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px' }}>
+                  <div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>IP Address</span>
+                    <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>{selectedRecord.ip || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Audited Flags</span>
+                    <div style={{ fontSize: '13px', color: selectedRecord.is_mark === 1 ? '#EF4444' : '#10B981', fontWeight: 600 }}>
+                      {selectedRecord.is_mark === 1 ? '⚠️ Speeder (Fast Complete)' : '✓ Verified Standard'}
+                    </div>
+                  </div>
+                </div>
+   
+                <div style={{ borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px' }}>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>User Agent Header</span>
+                  <div style={{ fontSize: '12px', color: 'var(--text-color)', marginTop: '4px', lineHeight: '1.4' }}>{selectedRecord.ua || 'N/A'}</div>
+                </div>
+   
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px' }}>
+                  <div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Start Time</span>
+                    <div style={{ fontSize: '12px', color: 'var(--text-color)' }}>{selectedRecord.start_time || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Callback Time</span>
+                    <div style={{ fontSize: '12px', color: 'var(--text-color)' }}>{selectedRecord.create_time || 'N/A'}</div>
+                  </div>
+                </div>
+   
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Full Payout</span>
+                    <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>${(selectedRecord.payout / selectedRecord.usd_currency_coins).toFixed(4)}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Team Reward</span>
+                    <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>${(selectedRecord.team_payout / selectedRecord.usd_currency_coins).toFixed(4)}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Member Earning</span>
+                    <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>${(selectedRecord.member_payout / selectedRecord.usd_currency_coins).toFixed(4)}</div>
+                  </div>
+                </div>
+   
+                <div style={{ borderTop: '1px solid var(--divider-color)', paddingTop: '16px', marginTop: '14px' }}>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Moderate Transaction Status</span>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                    <select
+                      value={selectedStatus || ''}
+                      onChange={e => setSelectedStatus(e.target.value)}
+                      style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '13px', outline: 'none' }}
+                    >
+                      <option value="1">Success</option>
+                      <option value="2">Disqualified</option>
+                      <option value="3">Overquota</option>
+                      <option value="4">Terminated</option>
+                      <option value="6">Reconciliation (Deduction)</option>
+                    </select>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleUpdateStatus}
+                      disabled={updatingStatus || Number(selectedStatus) === selectedRecord.reward_status}
+                      style={{ padding: '8px 16px', fontSize: '13px', background: 'var(--primary-brand)', borderColor: 'var(--primary-brand)' }}
+                    >
+                      {updatingStatus ? 'Saving...' : 'Save Status'}
+                    </button>
+                  </div>
+                </div>
+   
               </div>
- 
-              <div style={{ borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>User Agent Header</span>
-                <div style={{ fontSize: '12px', color: 'var(--text-color)', marginTop: '4px', lineHeight: '1.4' }}>{selectedRecord.ua || 'N/A'}</div>
+              
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setSelectedRecord(null)}>Close Audit Details</button>
               </div>
- 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px' }}>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Start Time</span>
-                  <div style={{ fontSize: '12px', color: 'var(--text-color)' }}>{selectedRecord.start_time || 'N/A'}</div>
-                </div>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Callback Time</span>
-                  <div style={{ fontSize: '12px', color: 'var(--text-color)' }}>{selectedRecord.create_time || 'N/A'}</div>
-                </div>
-              </div>
- 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Full Payout</span>
-                  <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>${(selectedRecord.payout / selectedRecord.usd_currency_coins).toFixed(4)}</div>
-                </div>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Team Reward</span>
-                  <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>${(selectedRecord.team_payout / selectedRecord.usd_currency_coins).toFixed(4)}</div>
-                </div>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Member Earning</span>
-                  <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>${(selectedRecord.member_payout / selectedRecord.usd_currency_coins).toFixed(4)}</div>
-                </div>
-              </div>
- 
-              <div style={{ borderTop: '1px solid var(--divider-color)', paddingTop: '16px', marginTop: '14px' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Moderate Transaction Status</span>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-                  <select
-                    value={selectedStatus || ''}
-                    onChange={e => setSelectedStatus(e.target.value)}
-                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '13px', outline: 'none' }}
-                  >
-                    <option value="1">Success</option>
-                    <option value="2">Disqualified</option>
-                    <option value="3">Overquota</option>
-                    <option value="4">Terminated</option>
-                    <option value="6">Reconciliation (Deduction)</option>
-                  </select>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleUpdateStatus}
-                    disabled={updatingStatus || Number(selectedStatus) === selectedRecord.reward_status}
-                    style={{ padding: '8px 16px', fontSize: '13px', background: 'var(--primary-brand)', borderColor: 'var(--primary-brand)' }}
-                  >
-                    {updatingStatus ? 'Saving...' : 'Save Status'}
-                  </button>
-                </div>
-              </div>
- 
-            </div>
-            
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setSelectedRecord(null)}>Close Audit Details</button>
             </div>
           </div>
         </div>,

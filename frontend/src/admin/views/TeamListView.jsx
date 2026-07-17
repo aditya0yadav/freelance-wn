@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
+import { useAdminTheme } from '../context/AdminThemeContext';
 import { Plus, X, Edit2, Trash2, Globe, Users, Settings } from 'lucide-react';
 
 const Field = ({ label, children }) => (
@@ -12,6 +13,7 @@ const Field = ({ label, children }) => (
 
 export default function TeamListView() {
   const token = getAdminToken();
+  const { theme } = useAdminTheme();
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(false);
   
@@ -166,62 +168,64 @@ export default function TeamListView() {
 
       {/* Create / Edit Modal */}
       {showModal && createPortal(
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="dialog-modal" style={{ maxWidth: '460px' }}>
-            <div className="dialog-header">
-              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text-color)' }}>
-                {editingTeam ? 'Edit Publisher Team' : 'Create Publisher Team'}
-              </h3>
-              <button onClick={() => setShowModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+        <div className="admin-theme" data-theme={theme}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div className="dialog-modal" style={{ maxWidth: '460px' }}>
+              <div className="dialog-header">
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text-color)' }}>
+                  {editingTeam ? 'Edit Publisher Team' : 'Create Publisher Team'}
+                </h3>
+                <button onClick={() => setShowModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+              </div>
+
+              <form onSubmit={handleSave}>
+                <div className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Team Name *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Franchise Team A"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      className="form-input"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Host Subdomain / Custom Domain</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. partner1.wanhongsurvey.com or otherdomain.com"
+                      value={host}
+                      onChange={e => setHost(e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Commission Ratio (0-100%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      placeholder="e.g. 10.5"
+                      value={ratio}
+                      onChange={e => setRatio(e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="dialog-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" style={{ background: 'var(--primary-brand)', border: 'none' }}>
+                    {editingTeam ? 'Save Changes' : 'Create Team'}
+                  </button>
+                </div>
+              </form>
             </div>
-
-            <form onSubmit={handleSave}>
-              <div className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div className="form-group">
-                  <label className="form-label">Team Name *</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Franchise Team A"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    className="form-input"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Host Subdomain / Custom Domain</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. partner1.wanhongsurvey.com or otherdomain.com"
-                    value={host}
-                    onChange={e => setHost(e.target.value)}
-                    className="form-input"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Commission Ratio (0-100%)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    placeholder="e.g. 10.5"
-                    value={ratio}
-                    onChange={e => setRatio(e.target.value)}
-                    className="form-input"
-                  />
-                </div>
-              </div>
-
-              <div className="dialog-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" style={{ background: 'var(--primary-brand)', border: 'none' }}>
-                  {editingTeam ? 'Save Changes' : 'Create Team'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>,
         document.body

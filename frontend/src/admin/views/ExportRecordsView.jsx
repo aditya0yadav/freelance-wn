@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
+import { useAdminTheme } from '../context/AdminThemeContext';
 import { Download, Trash2, Database, Search, Loader2, Edit2, RotateCcw, Plus, X } from 'lucide-react';
 
 export default function ExportRecordsView() {
   const token = getAdminToken();
+  const { theme } = useAdminTheme();
   const [activeTab, setActiveTab] = useState('list'); // 'list' or 'recycle'
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -356,32 +358,34 @@ export default function ExportRecordsView() {
 
       {/* Generate Modal */}
       {showGenerateModal && createPortal(
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="premium-metric-card" style={{ width: '100%', maxWidth: '440px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '16px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-color)' }}>Generate New Export</h3>
-              <button onClick={() => setShowGenerateModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+        <div className="admin-theme" data-theme={theme}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div className="premium-metric-card" style={{ width: '100%', maxWidth: '440px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-color)' }}>Generate New Export</h3>
+                <button onClick={() => setShowGenerateModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+              </div>
+              <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group">
+                  <label className="form-label">Export Module</label>
+                  <select value={exportType} onChange={(e) => setExportType(e.target.value)} className="form-select">
+                    <option value="1">Team Rewards (Completions Log)</option>
+                    <option value="2">Member Directory</option>
+                    <option value="3">Platforms Configs</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Remarks</label>
+                  <textarea rows="3" placeholder="Optional remark (e.g. June Monthly Report)..." value={exportRemark} onChange={(e) => setExportRemark(e.target.value)} className="form-textarea" style={{ resize: 'none' }} />
+                </div>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowGenerateModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" disabled={generating}>
+                    {generating ? 'Exporting...' : 'Generate CSV'}
+                  </button>
+                </div>
+              </form>
             </div>
-            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="form-group">
-                <label className="form-label">Export Module</label>
-                <select value={exportType} onChange={(e) => setExportType(e.target.value)} className="form-select">
-                  <option value="1">Team Rewards (Completions Log)</option>
-                  <option value="2">Member Directory</option>
-                  <option value="3">Platforms Configs</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Remarks</label>
-                <textarea rows="3" placeholder="Optional remark (e.g. June Monthly Report)..." value={exportRemark} onChange={(e) => setExportRemark(e.target.value)} className="form-textarea" style={{ resize: 'none' }} />
-              </div>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowGenerateModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={generating}>
-                  {generating ? 'Exporting...' : 'Generate CSV'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>,
         document.body
@@ -389,24 +393,26 @@ export default function ExportRecordsView() {
 
       {/* Edit Modal */}
       {editingRecord && createPortal(
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="premium-metric-card" style={{ width: '100%', maxWidth: '440px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '16px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-color)' }}>Edit Remarks</h3>
-              <button onClick={() => setEditingRecord(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+        <div className="admin-theme" data-theme={theme}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div className="premium-metric-card" style={{ width: '100%', maxWidth: '440px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-color)' }}>Edit Remarks</h3>
+                <button onClick={() => setEditingRecord(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+              </div>
+              <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group">
+                  <label className="form-label">Remarks</label>
+                  <textarea rows="3" placeholder="Update remark..." value={editRemark} onChange={(e) => setEditRemark(e.target.value)} className="form-textarea" style={{ resize: 'none' }} />
+                </div>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setEditingRecord(null)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" disabled={editing}>
+                    {editing ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
             </div>
-            <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="form-group">
-                <label className="form-label">Remarks</label>
-                <textarea rows="3" placeholder="Update remark..." value={editRemark} onChange={(e) => setEditRemark(e.target.value)} className="form-textarea" style={{ resize: 'none' }} />
-              </div>
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setEditingRecord(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={editing}>
-                  {editing ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>,
         document.body
