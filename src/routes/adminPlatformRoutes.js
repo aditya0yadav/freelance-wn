@@ -29,6 +29,9 @@ router.post('/auth/dele', verifyAdminToken, AdminPlatformController.authDele);
 // Project/Survey listings
 router.get('/project/list', verifyAdminToken, AdminPlatformController.projectList);
 router.post('/project/toggle', verifyAdminToken, AdminPlatformController.projectToggle);
+router.post('/project/add', verifyAdminToken, AdminPlatformController.projectAdd);
+router.post('/project/edit', verifyAdminToken, AdminPlatformController.projectEdit);
+router.post('/project/delete', verifyAdminToken, AdminPlatformController.projectDelete);
 
 // Teams directory
 router.get('/team/list', verifyAdminToken, AdminPlatformController.teamList);

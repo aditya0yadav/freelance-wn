@@ -1370,6 +1370,132 @@ class AdminPlatformController {
       return res.status(500).json({ code: 500, msg: err.message });
     }
   }
+
+  /**
+   * POST /api/admin/platform/project/add
+   */
+  static async projectAdd(req, res) {
+    try {
+      const {
+        project_no,
+        platform_id,
+        project_name,
+        project_cpi,
+        project_currency,
+        project_quota,
+        project_loi,
+        project_ir,
+        project_click_url,
+        is_disable
+      } = req.body;
+
+      if (!project_no || !platform_id || !project_name || !project_currency || !project_click_url) {
+        return res.status(400).json({ code: 400, msg: 'Missing required project parameters' });
+      }
+
+      // Generate a unique project_pno
+      const project_pno = `M_${platform_id}_${project_no}_${Date.now().toString().slice(-6)}`;
+
+      // Check if project_pno exists or is unique
+      const existing = await prisma.project.findFirst({
+        where: { project_pno }
+      });
+      if (existing) {
+        return res.status(400).json({ code: 400, msg: 'Generated Project PNO is not unique, try again' });
+      }
+
+      const project = await prisma.project.create({
+        data: {
+          project_pno,
+          project_no: String(project_no),
+          platform_id: Number(platform_id),
+          project_name,
+          project_cpi: Number(project_cpi) || 0.00,
+          project_currency: Number(project_currency),
+          project_quota: Number(project_quota) || 0,
+          project_loi: Number(project_loi) || 0,
+          project_ir: Number(project_ir) || 0,
+          project_click_url,
+          is_disable: Number(is_disable) || 0,
+          is_api: 0, // Manual project
+          create_time: new Date()
+        }
+      });
+
+      return res.json({ code: 200, msg: 'success', data: project });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
+
+  /**
+   * POST /api/admin/platform/project/edit
+   */
+  static async projectEdit(req, res) {
+    try {
+      const id = Number(req.body.project_id);
+      if (!id) return res.status(400).json({ code: 400, msg: 'Missing project_id' });
+
+      const {
+        project_no,
+        platform_id,
+        project_name,
+        project_cpi,
+        project_currency,
+        project_quota,
+        project_loi,
+        project_ir,
+        project_click_url,
+        is_disable
+      } = req.body;
+
+      const updateData = {};
+      if (project_no !== undefined) updateData.project_no = String(project_no);
+      if (platform_id !== undefined) updateData.platform_id = Number(platform_id);
+      if (project_name !== undefined) updateData.project_name = project_name;
+      if (project_cpi !== undefined) updateData.project_cpi = Number(project_cpi);
+      if (project_currency !== undefined) updateData.project_currency = Number(project_currency);
+      if (project_quota !== undefined) updateData.project_quota = Number(project_quota);
+      if (project_loi !== undefined) updateData.project_loi = Number(project_loi);
+      if (project_ir !== undefined) updateData.project_ir = Number(project_ir);
+      if (project_click_url !== undefined) updateData.project_click_url = project_click_url;
+      if (is_disable !== undefined) updateData.is_disable = Number(is_disable);
+
+      updateData.update_time = new Date();
+
+      const updated = await prisma.project.update({
+        where: { project_id: id },
+        data: updateData
+      });
+
+      return res.json({ code: 200, msg: 'success', data: updated });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
+
+  /**
+   * POST /api/admin/platform/project/delete
+   */
+  static async projectDelete(req, res) {
+    try {
+      const id = Number(req.body.project_id);
+      if (!id) return res.status(400).json({ code: 400, msg: 'Missing project_id' });
+
+      // Soft delete by setting delete_time
+      const updated = await prisma.project.update({
+        where: { project_id: id },
+        data: {
+          delete_time: new Date(),
+          is_disable: 1
+        }
+      });
+
+      return res.json({ code: 200, msg: 'success', data: updated });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
 }
 
 // Helper utilities for file metrics and execution timing
