@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
 import { Download, Trash2, Database, Search, Loader2, Edit2, RotateCcw, Plus, X } from 'lucide-react';
 
@@ -354,7 +355,7 @@ export default function ExportRecordsView() {
       </div>
 
       {/* Generate Modal */}
-      {showGenerateModal && (
+      {showGenerateModal && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="premium-metric-card" style={{ width: '100%', maxWidth: '440px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '16px', padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -382,11 +383,12 @@ export default function ExportRecordsView() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Edit Modal */}
-      {editingRecord && (
+      {editingRecord && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="premium-metric-card" style={{ width: '100%', maxWidth: '440px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '16px', padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -406,7 +408,8 @@ export default function ExportRecordsView() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

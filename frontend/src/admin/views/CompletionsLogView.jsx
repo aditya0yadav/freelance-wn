@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
 import { History, Search, Loader2, Database, ExternalLink, X, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
 
@@ -335,7 +336,7 @@ export default function CompletionsLogView() {
       </div>
 
       {/* Details Modal */}
-      {selectedRecord && (
+      {selectedRecord && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="premium-metric-card" style={{ width: '100%', maxWidth: '520px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '16px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -398,7 +399,7 @@ export default function CompletionsLogView() {
                   <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>${(selectedRecord.member_payout / selectedRecord.usd_currency_coins).toFixed(4)}</div>
                 </div>
               </div>
-
+ 
               <div style={{ borderTop: '1px solid var(--divider-color)', paddingTop: '16px', marginTop: '14px' }}>
                 <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Moderate Transaction Status</span>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
@@ -424,14 +425,15 @@ export default function CompletionsLogView() {
                   </button>
                 </div>
               </div>
-
+ 
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
               <button type="button" className="btn btn-secondary" onClick={() => setSelectedRecord(null)}>Close Audit Details</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
