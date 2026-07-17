@@ -29,6 +29,7 @@ import CurrencyListView from './admin/views/CurrencyListView';
 import MemberListView from './admin/views/MemberListView';
 import ExportRecordsView from './admin/views/ExportRecordsView';
 import CompletionsLogView from './admin/views/CompletionsLogView';
+import TeamListView from './admin/views/TeamListView';
 
 
 // Wrapper so AdminLoginView can use useNavigate (must be inside Router context)
@@ -472,7 +473,8 @@ export default function App() {
                   <Route path="platforms" element={<PlatformListView />} />
                   <Route path="projects" element={<ProjectListView />} />
                   <Route path="currency" element={<CurrencyListView />} />
-                  <Route path="members" element={<MemberListView />} />
+                   <Route path="members" element={<MemberListView />} />
+                  <Route path="teams" element={<TeamListView />} />
                   <Route path="exports" element={<ExportRecordsView />} />
                   <Route path="completions" element={<CompletionsLogView />} />
                   <Route path="" element={<Navigate to="/admin/dashboard" replace />} />
