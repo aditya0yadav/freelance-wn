@@ -45,20 +45,6 @@ class CallbackController {
 
       const txnId = crypto.createHash('md5').update(uid).digest('hex');
 
-      // Check if duplicate transaction
-      const existingReward = await prisma.reward.findUnique({
-        where: { txn_id: txnId }
-      });
-
-      if (existingReward) {
-        return res.send(CallbackController.renderSuccessPage({
-          uuid: uid,
-          statusText: CallbackController.getStatusText(existingReward.reward_status),
-          payout: existingReward.member_payout,
-          isDuplicate: true
-        }));
-      }
-
       // Map status
       let cstatus = 5; // Other
       const cleanStatus = String(status).toUpperCase();
@@ -66,6 +52,52 @@ class CallbackController {
       else if (['S', '2'].includes(cleanStatus)) cstatus = 2; // Disqualified
       else if (['Q', '3'].includes(cleanStatus)) cstatus = 3; // Overquota
       else if (['T', '4'].includes(cleanStatus)) cstatus = 4; // Terminated
+      else if (['R', '6', 'RECONCILE', 'RECONCILIATION', 'REVERSED', 'CHARGEBACK'].includes(cleanStatus)) cstatus = 6;
+
+      // Check if duplicate transaction
+      const existingReward = await prisma.reward.findUnique({
+        where: { txn_id: txnId }
+      });
+
+      if (existingReward) {
+        // If status changed (e.g. a chargeback or reconciliation event), update status in DB
+        if (cstatus !== existingReward.reward_status) {
+          await prisma.reward.update({
+            where: { txn_id: txnId },
+            data: { reward_status: cstatus }
+          });
+
+          // Decrement project complete count if moving away from Success status
+          if (existingReward.reward_status === 1 && cstatus !== 1 && existingReward.project_pno) {
+            try {
+              const project = await prisma.project.findFirst({
+                where: { project_pno: existingReward.project_pno }
+              });
+              if (project) {
+                await prisma.project.update({
+                  where: { project_id: project.project_id },
+                  data: { project_complete: { decrement: 1 } }
+                });
+              }
+            } catch (e) {}
+          }
+
+          return res.send(CallbackController.renderSuccessPage({
+            uuid: uid,
+            statusText: CallbackController.getStatusText(cstatus),
+            payout: existingReward.member_payout,
+            isDuplicate: false,
+            saved: true
+          }));
+        }
+
+        return res.send(CallbackController.renderSuccessPage({
+          uuid: uid,
+          statusText: CallbackController.getStatusText(existingReward.reward_status),
+          payout: existingReward.member_payout,
+          isDuplicate: true
+        }));
+      }
 
       const member = await prisma.member.findUnique({ where: { member_id: flowing.member_id } });
       const team = member ? await prisma.team.findUnique({ where: { team_id: member.team_id } }) : null;
@@ -267,6 +299,7 @@ class CallbackController {
       case 2: return 'Disqualified (Screenout)';
       case 3: return 'Overquota (Quota Full)';
       case 4: return 'Terminated (Disallowed)';
+      case 6: return 'Reconciliation (Reversed)';
       default: return 'Outcome Pending Audit';
     }
   }
