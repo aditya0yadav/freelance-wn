@@ -10,11 +10,30 @@ class PlatformController {
    * Helper to get client IP
    */
   static getIpAddress(req) {
+    // 1. Cloudflare real IP header
+    if (req.headers['cf-connecting-ip']) {
+      return req.headers['cf-connecting-ip'];
+    }
+    // 2. Nginx Real IP header
+    if (req.headers['x-real-ip']) {
+      return req.headers['x-real-ip'];
+    }
+    // 3. Standard Forwarded For list
     const forwarded = req.headers['x-forwarded-for'];
     if (forwarded) {
-      return forwarded.split(',')[0].trim();
+      const parts = forwarded.split(',');
+      if (parts.length > 0) {
+        const clientIp = parts[0].trim();
+        if (clientIp) return clientIp;
+      }
     }
-    return req.socket.remoteAddress || '127.0.0.1';
+    // 4. Socket fallback
+    let ip = req.socket.remoteAddress || '127.0.0.1';
+    if (ip === '::1' || ip === '::ffff:127.0.0.1' || ip === '127.0.0.1') {
+      // Local development or unconfigured proxy fallback
+      return '8.8.8.8'; 
+    }
+    return ip;
   }
 
   /**
