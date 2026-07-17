@@ -32,6 +32,9 @@ router.post('/project/toggle', verifyAdminToken, AdminPlatformController.project
 
 // Teams directory
 router.get('/team/list', verifyAdminToken, AdminPlatformController.teamList);
+router.post('/team/create', verifyAdminToken, AdminPlatformController.teamCreate);
+router.post('/team/update', verifyAdminToken, AdminPlatformController.teamUpdate);
+router.post('/team/delete', verifyAdminToken, AdminPlatformController.teamDelete);
 
 // Security & Analytics
 router.get('/dashboard-stats', verifyAdminToken, AdminPlatformController.dashboardStats);
@@ -39,6 +42,7 @@ router.post('/member/ban', verifyAdminToken, AdminPlatformController.banMember);
 router.post('/reward/clear-mark', verifyAdminToken, AdminPlatformController.clearRewardMark);
 router.get('/reward/list', verifyAdminToken, AdminPlatformController.rewardList);
 router.post('/reward/update-status', verifyAdminToken, AdminPlatformController.rewardUpdateStatus);
+router.post('/reward/bulk-update-status', verifyAdminToken, AdminPlatformController.rewardBulkUpdateStatus);
 
 // Extra actions
 router.get('/statistic', verifyAdminToken, AdminPlatformController.platformStatistic);

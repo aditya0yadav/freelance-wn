@@ -670,6 +670,69 @@ class AdminPlatformController {
       return res.status(500).json({ code: 500, msg: err.message });
     }
   }
+
+  static async teamCreate(req, res) {
+    try {
+      const { team_name, team_host, commission_ratio } = req.body;
+      if (!team_name) {
+        return res.status(400).json({ code: 400, msg: 'Missing team_name' });
+      }
+      const ratio = commission_ratio !== undefined ? Number(commission_ratio) : 0.00;
+
+      const newTeam = await prisma.team.create({
+        data: {
+          team_name,
+          team_host: team_host || '',
+          commission_ratio: ratio,
+          is_disable: 0
+        }
+      });
+      return res.json({ code: 200, msg: 'success', data: newTeam });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
+
+  static async teamUpdate(req, res) {
+    try {
+      const { team_id, team_name, team_host, commission_ratio, is_disable } = req.body;
+      if (!team_id) {
+        return res.status(400).json({ code: 400, msg: 'Missing team_id' });
+      }
+
+      const updateData = {};
+      if (team_name !== undefined) updateData.team_name = team_name;
+      if (team_host !== undefined) updateData.team_host = team_host;
+      if (commission_ratio !== undefined) updateData.commission_ratio = Number(commission_ratio);
+      if (is_disable !== undefined) updateData.is_disable = Number(is_disable);
+
+      const updated = await prisma.team.update({
+        where: { team_id: Number(team_id) },
+        data: updateData
+      });
+      return res.json({ code: 200, msg: 'success', data: updated });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
+
+  static async teamDelete(req, res) {
+    try {
+      const { team_id } = req.body;
+      if (!team_id) {
+        return res.status(400).json({ code: 400, msg: 'Missing team_id' });
+      }
+
+      // Soft delete by setting is_disable = 1
+      const deleted = await prisma.team.update({
+        where: { team_id: Number(team_id) },
+        data: { is_disable: 1 }
+      });
+      return res.json({ code: 200, msg: 'success', data: deleted });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
   /**
    * GET /api/admin/platform/member/list
    */
@@ -925,9 +988,9 @@ class AdminPlatformController {
           r.team?.team_name || 'Unknown',
           r.platform?.platform_name || 'Unknown',
           r.project_pno || 'Manual',
-          r.payout.toFixed(2),
-          r.team_payout.toFixed(2),
-          r.member_payout.toFixed(2),
+          (r.payout / r.usd_currency_coins).toFixed(2),
+          (r.team_payout / r.usd_currency_coins).toFixed(2),
+          (r.member_payout / r.usd_currency_coins).toFixed(2),
           r.uuid,
           r.reward_status === 1 ? 'Success' : r.reward_status === 2 ? 'Disqualified' : r.reward_status === 3 ? 'Overquota' : 'Processing',
           r.create_time ? new Date(r.create_time).toISOString().replace('T', ' ').substring(0, 16) : ''
@@ -1199,7 +1262,7 @@ class AdminPlatformController {
    */
   static async rewardList(req, res) {
     try {
-      const { page = 1, limit = 20, status, platform_id, team_id, member_id, search_field, search_value } = req.query;
+      const { page = 1, limit = 20, status, platform_id, team_id, member_id, search_field, search_value, start_date, end_date } = req.query;
       const skip = (Number(page) - 1) * Number(limit);
       const take = Number(limit);
 
@@ -1208,6 +1271,13 @@ class AdminPlatformController {
       if (platform_id) where.platform_id = Number(platform_id);
       if (team_id) where.team_id = Number(team_id);
       if (member_id) where.member_id = Number(member_id);
+
+      if (start_date && end_date) {
+        where.create_time = {
+          gte: new Date(`${start_date}T00:00:00.000Z`),
+          lte: new Date(`${end_date}T23:59:59.999Z`)
+        };
+      }
 
       if (search_field && search_value) {
         if (search_field === 'nickname') {
@@ -1268,6 +1338,33 @@ class AdminPlatformController {
         code: 200,
         msg: 'success',
         data: updatedReward
+      });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
+
+  static async rewardBulkUpdateStatus(req, res) {
+    try {
+      const { reward_ids, reward_status } = req.body;
+      if (!reward_ids || !Array.isArray(reward_ids) || reward_ids.length === 0) {
+        return res.status(400).json({ code: 400, msg: 'Missing or invalid reward_ids' });
+      }
+
+      const statusVal = Number(reward_status);
+      if (![1, 2, 3, 4, 6].includes(statusVal)) {
+        return res.status(400).json({ code: 400, msg: 'Invalid status. Must be 1 (Success), 2 (Disqualified), 3 (Overquota), 4 (Terminated), or 6 (Reconciliation)' });
+      }
+
+      const updated = await prisma.reward.updateMany({
+        where: { reward_id: { in: reward_ids.map(Number) } },
+        data: { reward_status: statusVal }
+      });
+
+      return res.json({
+        code: 200,
+        msg: 'success',
+        data: { count: updated.count }
       });
     } catch (err) {
       return res.status(500).json({ code: 500, msg: err.message });

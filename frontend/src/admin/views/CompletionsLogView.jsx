@@ -14,6 +14,12 @@ export default function CompletionsLogView() {
   const [searchField, setSearchField] = useState('project_name');
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  // Bulk Selection
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   // Selected item detail modal
   const [selectedRecord, setSelectedRecord] = useState(null);
@@ -48,6 +54,33 @@ export default function CompletionsLogView() {
     }
   };
 
+  const handleBulkUpdateStatus = async (statusVal) => {
+    if (selectedIds.length === 0) return;
+    const count = selectedIds.length;
+    const label = STATUS_MAP[statusVal]?.label || `Status ${statusVal}`;
+    if (!window.confirm(`Are you sure you want to update ${count} transaction(s) to status [${label}]?`)) {
+      return;
+    }
+    setBulkUpdating(true);
+    try {
+      const res = await adminFetch('/reward/bulk-update-status', 'POST', {
+        reward_ids: selectedIds,
+        reward_status: Number(statusVal)
+      }, token);
+      if (res.code === 200) {
+        setRecords(prev => prev.map(r => selectedIds.includes(r.reward_id) ? { ...r, reward_status: Number(statusVal) } : r));
+        setSelectedIds([]);
+        alert(`Successfully updated ${count} transaction(s).`);
+      } else {
+        alert(res.msg || 'Failed to update transaction statuses');
+      }
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
   const STATUS_MAP = {
     '1': { label: 'Success', color: '#10B981', bg: 'rgba(16, 185, 129, 0.1)', icon: <CheckCircle2 size={14} /> },
     '2': { label: 'Disqualified', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.1)', icon: <XCircle size={14} /> },
@@ -58,12 +91,15 @@ export default function CompletionsLogView() {
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
+    setSelectedIds([]); // Clear selection on fetch
     try {
       const queryParams = new URLSearchParams({
         page: String(page),
         limit: String(limit)
       });
       if (statusFilter) queryParams.append('status', statusFilter);
+      if (startDate) queryParams.append('start_date', startDate);
+      if (endDate) queryParams.append('end_date', endDate);
       if (searchValue) {
         queryParams.append('search_field', searchField);
         queryParams.append('search_value', searchValue);
@@ -79,7 +115,7 @@ export default function CompletionsLogView() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, searchField, searchValue, token]);
+  }, [page, statusFilter, searchField, searchValue, startDate, endDate, token]);
 
   useEffect(() => {
     fetchRecords();
@@ -114,6 +150,24 @@ export default function CompletionsLogView() {
           </select>
         </div>
 
+        {/* Date Filters */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>From:</span>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '13px', outline: 'none' }}
+          />
+          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>To:</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '13px', outline: 'none' }}
+          />
+        </div>
+
         {/* Search */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '240px' }}>
           <select value={searchField} onChange={(e) => setSearchField(e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px 0 0 8px', border: '1px solid var(--divider-color)', borderRight: 'none', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '13px', outline: 'none' }}>
@@ -132,11 +186,43 @@ export default function CompletionsLogView() {
         </div>
 
         <button className="btn btn-secondary" onClick={() => {
-          setStatusFilter(''); setSearchValue(''); setPage(1);
+          setStatusFilter(''); setSearchValue(''); setStartDate(''); setEndDate(''); setPage(1);
         }} style={{ padding: '8px 16px', fontSize: '13px' }}>
           Reset
         </button>
       </div>
+
+      {/* Bulk Action Bar */}
+      {selectedIds.length > 0 && (
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', padding: '12px 16px', borderRadius: '12px', marginBottom: '16px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-color)' }}>
+            Selected {selectedIds.length} item(s)
+          </span>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={() => handleBulkUpdateStatus(2)}
+            disabled={bulkUpdating}
+            className="btn btn-secondary"
+            style={{ padding: '6px 14px', fontSize: '12px', border: '1px solid #EF4444', color: '#EF4444', background: 'transparent' }}
+          >
+            Bulk Disqualify
+          </button>
+          <button
+            onClick={() => handleBulkUpdateStatus(6)}
+            disabled={bulkUpdating}
+            className="btn btn-primary"
+            style={{ padding: '6px 14px', fontSize: '12px', background: '#EC4899', borderColor: '#EC4899', color: '#fff' }}
+          >
+            Bulk Reconcile
+          </button>
+          <button
+            onClick={() => setSelectedIds([])}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '12px', padding: '0 8px' }}
+          >
+            Clear Selection
+          </button>
+        </div>
+      )}
 
       {/* Flat Borderless Table */}
       <div className="table-container" style={{ border: 'none', background: 'transparent' }}>
@@ -154,6 +240,20 @@ export default function CompletionsLogView() {
           <table className="admin-table" style={{ background: 'transparent' }}>
             <thead>
               <tr style={{ background: 'transparent' }}>
+                <th style={{ background: 'transparent', padding: '12px 16px', width: '40px' }}>
+                  <input
+                    type="checkbox"
+                    checked={records.length > 0 && selectedIds.length === records.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedIds(records.map(r => r.reward_id));
+                      } else {
+                        setSelectedIds([]);
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  />
+                </th>
                 <th style={{ background: 'transparent', padding: '12px 16px 12px 0' }}>ID</th>
                 <th style={{ background: 'transparent', padding: '12px 16px' }}>Member</th>
                 <th style={{ background: 'transparent', padding: '12px 16px' }}>Platform</th>
@@ -167,6 +267,20 @@ export default function CompletionsLogView() {
             <tbody>
               {records.map(r => (
                 <tr key={r.reward_id} style={{ background: 'transparent' }}>
+                  <td style={{ padding: '16px' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(r.reward_id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedIds(prev => [...prev, r.reward_id]);
+                        } else {
+                          setSelectedIds(prev => prev.filter(id => id !== r.reward_id));
+                        }
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </td>
                   <td style={{ padding: '16px 16px 16px 0', fontWeight: 600, color: 'var(--text-muted)' }}>#{r.reward_id}</td>
                   <td style={{ padding: '16px' }}>
                     <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-color)' }}>
