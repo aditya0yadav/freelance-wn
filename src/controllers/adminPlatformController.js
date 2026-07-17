@@ -1255,8 +1255,8 @@ class AdminPlatformController {
       }
 
       const statusVal = Number(reward_status);
-      if (![1, 2, 3, 4].includes(statusVal)) {
-        return res.status(400).json({ code: 400, msg: 'Invalid status. Must be 1 (Success), 2 (Disqualified), 3 (Overquota), or 4 (Terminated)' });
+      if (![1, 2, 3, 4, 6].includes(statusVal)) {
+        return res.status(400).json({ code: 400, msg: 'Invalid status. Must be 1 (Success), 2 (Disqualified), 3 (Overquota), 4 (Terminated), or 6 (Reconciliation)' });
       }
 
       const updatedReward = await prisma.reward.update({
