@@ -167,52 +167,57 @@ export default function TeamListView() {
       {/* Create / Edit Modal */}
       {showModal && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="premium-metric-card" style={{ width: '100%', maxWidth: '440px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '16px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-color)' }}>
+          <div className="dialog-modal" style={{ maxWidth: '460px' }}>
+            <div className="dialog-header">
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: 'var(--text-color)' }}>
                 {editingTeam ? 'Edit Publisher Team' : 'Create Publisher Team'}
               </h3>
               <button onClick={() => setShowModal(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
             </div>
 
-            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <Field label="Team Name *">
-                <input
-                  type="text"
-                  placeholder="e.g. Franchise Team A"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '13px', outline: 'none' }}
-                  required
-                />
-              </Field>
+            <form onSubmit={handleSave}>
+              <div className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group">
+                  <label className="form-label">Team Name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Franchise Team A"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="form-input"
+                    required
+                  />
+                </div>
 
-              <Field label="Host Subdomain / Custom Domain">
-                <input
-                  type="text"
-                  placeholder="e.g. partner1.wanhongsurvey.com or otherdomain.com"
-                  value={host}
-                  onChange={e => setHost(e.target.value)}
-                  style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '13px', outline: 'none' }}
-                />
-              </Field>
+                <div className="form-group">
+                  <label className="form-label">Host Subdomain / Custom Domain</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. partner1.wanhongsurvey.com or otherdomain.com"
+                    value={host}
+                    onChange={e => setHost(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
 
-              <Field label="Commission Ratio (0-100%)">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  placeholder="e.g. 10.5"
-                  value={ratio}
-                  onChange={e => setRatio(e.target.value)}
-                  style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '13px', outline: 'none' }}
-                />
-              </Field>
+                <div className="form-group">
+                  <label className="form-label">Commission Ratio (0-100%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    placeholder="e.g. 10.5"
+                    value={ratio}
+                    onChange={e => setRatio(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} style={{ fontSize: 13 }}>Cancel</button>
-                <button type="submit" className="btn btn-primary" style={{ fontSize: 13, background: 'var(--primary-brand)', border: 'none' }}>
+              <div className="dialog-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ background: 'var(--primary-brand)', border: 'none' }}>
                   {editingTeam ? 'Save Changes' : 'Create Team'}
                 </button>
               </div>
