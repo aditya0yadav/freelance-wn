@@ -491,12 +491,17 @@ class AdminPlatformController {
       });
       const conversion = clicks > 0 ? Number(((completes / clicks) * 100).toFixed(2)) : 0.00;
       
-      const revenueData = await prisma.reward.aggregate({
+      const rewards = await prisma.reward.findMany({
         where: { reward_status: 1, ...dateFilter },
-        _sum: { payout: true, team_payout: true }
+        select: { payout: true, team_payout: true, usd_currency_coins: true }
       });
-      const revenue = revenueData._sum.payout || 0.00;
-      const teamPayoutSum = revenueData._sum.team_payout || 0.00;
+      let revenue = 0.00;
+      let teamPayoutSum = 0.00;
+      for (const r of rewards) {
+        const rate = r.usd_currency_coins || 100.00;
+        revenue += r.payout / rate;
+        teamPayoutSum += r.team_payout / rate;
+      }
       const netEarning = revenue - teamPayoutSum;
 
       // Recent conversions
@@ -516,7 +521,7 @@ class AdminPlatformController {
         nickname: c.member?.nickname || 'Unknown',
         team_name: c.team?.team_name || 'Unknown',
         project_pno: c.project_pno || 'Manual',
-        payout: c.payout,
+        payout: Number((c.payout / (c.usd_currency_coins || 100.00)).toFixed(4)),
         reward_status: c.reward_status,
         is_mark: c.is_mark,
         platform_id: c.platform_id,
