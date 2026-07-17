@@ -224,8 +224,8 @@ function AllMembersTab({ token }) {
                 </select>
               </Field>
 
-              <Field label="Commission Rate (0-1)">
-                <input className="form-input" type="number" step="0.01" min="0" max="1" value={formData.rate} onChange={e => setFormData(f => ({ ...f, rate: parseFloat(e.target.value) }))} required />
+              <Field label="Commission Rate (0-100%)">
+                <input className="form-input" type="number" step="0.1" min="0" max="100" value={formData.rate} onChange={e => setFormData(f => ({ ...f, rate: parseFloat(e.target.value) }))} required />
               </Field>
 
               <Field label={selectedMember ? 'Password (leave blank to keep current)' : 'Password *'}>

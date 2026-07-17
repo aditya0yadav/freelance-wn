@@ -10,7 +10,7 @@ export default function TeamAuthListView() {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedAuth, setSelectedAuth] = useState(null);
-  const [formData, setFormData] = useState({ platform_id: '', team_id: '', auth_rate: 0.80 });
+  const [formData, setFormData] = useState({ platform_id: '', team_id: '', auth_rate: 80 });
   const [errorMsg, setErrorMsg] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -42,7 +42,7 @@ export default function TeamAuthListView() {
       setFormData({ platform_id: auth.platform_id, team_id: auth.team_id, auth_rate: auth.auth_rate });
     } else {
       setSelectedAuth(null);
-      setFormData({ platform_id: platforms[0]?.platform_id || '', team_id: teams[0]?.team_id || '', auth_rate: 0.80 });
+      setFormData({ platform_id: platforms[0]?.platform_id || '', team_id: teams[0]?.team_id || '', auth_rate: 80 });
     }
     setErrorMsg('');
     setModalOpen(true);
@@ -56,8 +56,8 @@ export default function TeamAuthListView() {
       setErrorMsg('Select both a Team and Platform.');
       return;
     }
-    if (isNaN(rateVal) || rateVal < 0 || rateVal > 1) {
-      setErrorMsg('Auth rate must be between 0.00 and 1.00.');
+    if (isNaN(rateVal) || rateVal < 0 || rateVal > 100) {
+      setErrorMsg('Auth rate must be between 0.00% and 100.00%.');
       return;
     }
 
@@ -145,13 +145,13 @@ export default function TeamAuthListView() {
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ flex: 1, maxWidth: '100px', height: '6px', borderRadius: '99px', background: 'var(--pm-border-layout)', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${auth.auth_rate * 100}%`, background: 'var(--pm-accent)', borderRadius: '99px' }} />
+                        <div style={{ height: '100%', width: `${auth.auth_rate}%`, background: 'var(--pm-accent)', borderRadius: '99px' }} />
                       </div>
                       <span style={{ fontWeight: 800, color: 'var(--pm-accent)', fontSize: '15px' }}>
-                        {(auth.auth_rate * 100).toFixed(0)}%
+                        {auth.auth_rate.toFixed(0)}%
                       </span>
                       <span style={{ fontSize: '11px', color: 'var(--pm-text-tertiary)' }}>
-                        (×{auth.auth_rate})
+                        (×{(auth.auth_rate / 100).toFixed(2)})
                       </span>
                     </div>
                   </td>
@@ -223,13 +223,13 @@ export default function TeamAuthListView() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <input
                     type="range"
-                    min="0.10" max="1.00" step="0.05"
+                    min="0" max="100" step="5"
                     value={formData.auth_rate}
                     onChange={e => setFormData(p => ({ ...p, auth_rate: parseFloat(e.target.value) }))}
                     style={{ flex: 1, accentColor: 'var(--pm-accent)' }}
                   />
                   <span style={{ minWidth: '48px', fontWeight: 800, fontSize: '16px', color: 'var(--pm-accent)', textAlign: 'right' }}>
-                    {Math.round(formData.auth_rate * 100)}%
+                    {formData.auth_rate}%
                   </span>
                 </div>
                 <p style={{ fontSize: '11px', color: 'var(--pm-text-tertiary)' }}>
