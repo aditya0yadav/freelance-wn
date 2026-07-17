@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import OfferCard from '../components/OfferCard';
 import { PlatformLogo } from '../components/PlatformCard';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function OffersView({
   selectedPlatform,
@@ -29,6 +30,7 @@ export default function OffersView({
   setShowUSD
 }) {
   const navigate = useNavigate();
+  const { language } = useLanguage();
 
   if (!selectedPlatform) return null;
 
