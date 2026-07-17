@@ -126,6 +126,7 @@ class PlatformController {
       const teamId = req.user.team_id;
       const memberId = req.user.member_id;
 
+
       const member = await prisma.member.findUnique({ where: { member_id: memberId } });
       const team = await prisma.team.findUnique({ where: { team_id: teamId } });
       if (!member || !team) {
@@ -195,6 +196,7 @@ class PlatformController {
         const teamRatio = (100 - team.commission_ratio) / 100;
         const authRate = (100 - authRateVal) / 100;
         const memberRate = (100 - member.rate) / 100;
+        console.log(rawCoins,teamRatio,authRate,memberRate,authRateVal);
 
         const memberPayout = rawCoins * teamRatio * authRate * memberRate;
 
