@@ -17,6 +17,36 @@ export default function CompletionsLogView() {
 
   // Selected item detail modal
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  useEffect(() => {
+    if (selectedRecord) {
+      setSelectedStatus(selectedRecord.reward_status);
+    }
+  }, [selectedRecord]);
+
+  const handleUpdateStatus = async () => {
+    if (!selectedRecord) return;
+    setUpdatingStatus(true);
+    try {
+      const res = await adminFetch('/reward/update-status', 'POST', {
+        reward_id: selectedRecord.reward_id,
+        reward_status: Number(selectedStatus)
+      }, token);
+      if (res.code === 200) {
+        // Update local state list
+        setRecords(prev => prev.map(r => r.reward_id === selectedRecord.reward_id ? { ...r, reward_status: Number(selectedStatus) } : r));
+        setSelectedRecord(null);
+      } else {
+        alert(res.msg || 'Failed to update transaction status');
+      }
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   const STATUS_MAP = {
     '1': { label: 'Success', color: '#10B981', bg: 'rgba(16, 185, 129, 0.1)', icon: <CheckCircle2 size={14} /> },
@@ -253,10 +283,35 @@ export default function CompletionsLogView() {
                 </div>
               </div>
 
+              <div style={{ borderTop: '1px solid var(--divider-color)', paddingTop: '16px', marginTop: '14px' }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Moderate Transaction Status</span>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                  <select
+                    value={selectedStatus || ''}
+                    onChange={e => setSelectedStatus(e.target.value)}
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '13px', outline: 'none' }}
+                  >
+                    <option value="1">Success</option>
+                    <option value="2">Disqualified</option>
+                    <option value="3">Overquota</option>
+                    <option value="4">Terminated</option>
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleUpdateStatus}
+                    disabled={updatingStatus || Number(selectedStatus) === selectedRecord.reward_status}
+                    style={{ padding: '8px 16px', fontSize: '13px', background: 'var(--primary-brand)', borderColor: 'var(--primary-brand)' }}
+                  >
+                    {updatingStatus ? 'Saving...' : 'Save Status'}
+                  </button>
+                </div>
+              </div>
+
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
-              <button type="button" className="btn btn-primary" onClick={() => setSelectedRecord(null)}>Close Audit Details</button>
+              <button type="button" className="btn btn-secondary" onClick={() => setSelectedRecord(null)}>Close Audit Details</button>
             </div>
           </div>
         </div>

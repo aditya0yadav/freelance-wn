@@ -38,6 +38,7 @@ router.get('/dashboard-stats', verifyAdminToken, AdminPlatformController.dashboa
 router.post('/member/ban', verifyAdminToken, AdminPlatformController.banMember);
 router.post('/reward/clear-mark', verifyAdminToken, AdminPlatformController.clearRewardMark);
 router.get('/reward/list', verifyAdminToken, AdminPlatformController.rewardList);
+router.post('/reward/update-status', verifyAdminToken, AdminPlatformController.rewardUpdateStatus);
 
 // Extra actions
 router.get('/statistic', verifyAdminToken, AdminPlatformController.platformStatistic);

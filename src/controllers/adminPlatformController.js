@@ -1246,6 +1246,33 @@ class AdminPlatformController {
       return res.status(500).json({ code: 500, msg: err.message });
     }
   }
+
+  static async rewardUpdateStatus(req, res) {
+    try {
+      const { reward_id, reward_status } = req.body;
+      if (!reward_id) {
+        return res.status(400).json({ code: 400, msg: 'Missing reward_id' });
+      }
+
+      const statusVal = Number(reward_status);
+      if (![1, 2, 3, 4].includes(statusVal)) {
+        return res.status(400).json({ code: 400, msg: 'Invalid status. Must be 1 (Success), 2 (Disqualified), 3 (Overquota), or 4 (Terminated)' });
+      }
+
+      const updatedReward = await prisma.reward.update({
+        where: { reward_id: Number(reward_id) },
+        data: { reward_status: statusVal }
+      });
+
+      return res.json({
+        code: 200,
+        msg: 'success',
+        data: updatedReward
+      });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
 }
 
 // Helper utilities for file metrics and execution timing
