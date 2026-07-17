@@ -2,15 +2,16 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Sun, Moon, LogOut, Menu } from 'lucide-react';
 import { useAdminTheme } from '../context/AdminThemeContext';
 import { getAdminUser, clearAdminSession } from '../utils/adminApi';
+import { useLanguage } from '../../context/LanguageContext';
 
-const PAGE_TITLES = {
-  '/admin/dashboard': 'Dashboard',
-  '/admin/platforms': 'Platform Management',
-  '/admin/projects': 'Survey Explorer',
-  '/admin/currency': 'Currency Configuration',
-  '/admin/auth': 'Team Authorizations',
-  '/admin/exports': 'Export Records Center',
-  '/admin/completions': 'Completions & Earnings Log',
+const PAGE_TITLE_KEYS = {
+  '/admin/dashboard': 'adminDashboard',
+  '/admin/platforms': 'adminPlatforms',
+  '/admin/projects': 'adminProjects',
+  '/admin/currency': 'adminCurrency',
+  '/admin/auth': 'adminAuth',
+  '/admin/exports': 'adminExports',
+  '/admin/completions': 'adminCompletions',
 };
 
 export default function AdminTopbar({ isExpanded, setIsExpanded }) {
@@ -18,7 +19,10 @@ export default function AdminTopbar({ isExpanded, setIsExpanded }) {
   const location = useLocation();
   const navigate = useNavigate();
   const user = getAdminUser();
-  const pageTitle = PAGE_TITLES[location.pathname] || 'Admin Panel';
+  const { language, toggleLanguage, t } = useLanguage();
+
+  const titleKey = PAGE_TITLE_KEYS[location.pathname];
+  const pageTitle = titleKey ? t(titleKey) : (language === 'en' ? 'Admin Panel' : '管理控制台');
 
   const handleLogout = () => {
     clearAdminSession();
@@ -40,7 +44,7 @@ export default function AdminTopbar({ isExpanded, setIsExpanded }) {
       zIndex: 50,
     }}>
       {/* Sidebar Toggle */}
-      <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           style={{
@@ -51,14 +55,34 @@ export default function AdminTopbar({ isExpanded, setIsExpanded }) {
             cursor: 'pointer', color: 'var(--text-muted)',
             transition: 'all 0.2s',
           }}
-          title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
+          title={isExpanded ? t('collapseSidebar') : t('expandSidebar')}
         >
           <Menu size={18} />
         </button>
+        <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-color)' }}>
+          {pageTitle}
+        </span>
       </div>
 
       {/* Actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {/* Language switch */}
+        <button
+          onClick={toggleLanguage}
+          style={{
+            width: '38px', height: '38px', borderRadius: '10px',
+            background: 'var(--bg-color)',
+            border: '1px solid var(--divider-color)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: 'var(--text-muted)',
+            fontSize: '11px', fontWeight: '700',
+            transition: 'all 0.2s',
+          }}
+          title={language === 'en' ? '切换至中文' : 'Switch to English'}
+        >
+          {language === 'en' ? '中' : 'EN'}
+        </button>
+
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
@@ -70,7 +94,7 @@ export default function AdminTopbar({ isExpanded, setIsExpanded }) {
             cursor: 'pointer', color: 'var(--text-muted)',
             transition: 'all 0.2s',
           }}
-          title="Toggle Theme"
+          title={language === 'en' ? 'Toggle Theme' : '切换主题'}
         >
           {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
         </button>
@@ -86,7 +110,7 @@ export default function AdminTopbar({ isExpanded, setIsExpanded }) {
             cursor: 'pointer', color: 'var(--text-muted)',
             transition: 'all 0.2s',
           }}
-          title="Sign Out"
+          title={t('adminSignOut')}
         >
           <LogOut size={16} />
         </button>
@@ -114,7 +138,7 @@ export default function AdminTopbar({ isExpanded, setIsExpanded }) {
               {user?.nickname || 'Admin'}
             </div>
             <div style={{ fontSize: '11px', color: 'var(--primary-brand)', fontWeight: 600 }}>
-              Administrator
+              {t('administrator')}
             </div>
           </div>
         </div>

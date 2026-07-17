@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { adminFetch, setAdminSession } from '../utils/adminApi';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function AdminLoginView({ onLoginSuccess }) {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export default function AdminLoginView({ onLoginSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { language, toggleLanguage, t } = useLanguage();
 
   // Ensure login page always shows in light mode regardless of saved theme
   useEffect(() => {
@@ -416,7 +418,35 @@ export default function AdminLoginView({ onLoginSuccess }) {
         }
       `}</style>
 
-      <div className="admin-login-root">
+      <div className="admin-login-root" style={{ position: 'relative' }}>
+        {/* Floating Language Switcher */}
+        <button
+          type="button"
+          onClick={toggleLanguage}
+          style={{
+            position: 'absolute',
+            top: '24px',
+            right: '24px',
+            width: '38px',
+            height: '38px',
+            borderRadius: '10px',
+            background: 'rgba(255, 255, 255, 0.9)',
+            border: '1px solid #cbd5e1',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: '#475569',
+            fontWeight: '700',
+            fontSize: '11px',
+            zIndex: 100,
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+          }}
+          title={language === 'en' ? '切换至中文' : 'Switch to English'}
+        >
+          {language === 'en' ? '中' : 'EN'}
+        </button>
+
         {/* LEFT PANEL */}
         <div className="login-left">
           {/* Brand */}
@@ -438,22 +468,26 @@ export default function AdminLoginView({ onLoginSuccess }) {
           <div className="login-hero">
             <div className="login-hero-badge">
               <span className="dot" />
-              System Operational
+              {language === 'en' ? 'System Operational' : '系统运行正常'}
             </div>
             <h1>
-              Control &<br/>
-              <span>Grow</span> Your<br/>
-              Survey Network
+              {language === 'en' ? (
+                <>Control &<br/><span>Grow</span> Your<br/>Survey Network</>
+              ) : (
+                <>控制和发展您的<br/><span>网络调查</span>系统平台</>
+              )}
             </h1>
             <p>
-              A unified dashboard to manage platforms, publishers, surveys, and real-time analytics — all from one secure place.
+              {language === 'en' 
+                ? 'A unified dashboard to manage platforms, publishers, surveys, and real-time analytics — all from one secure place.'
+                : '统一的数据管理控制台，用于实时管理渠道平台、调查问卷、兑换结算和流量统计分析 — 一切均在安全处掌控。'}
             </p>
             <div className="login-features">
               {[
-                'Live survey completion analytics',
-                'Multi-platform provider management',
-                'Team authorization & payout splits',
-                'Fraud detection & speeder flags',
+                language === 'en' ? 'Live survey completion analytics' : '实时在线完成分析',
+                language === 'en' ? 'Multi-platform provider management' : '多问卷渠道商统一接口管理',
+                language === 'en' ? 'Team authorization & payout splits' : '团队与子代理比例分成结算',
+                language === 'en' ? 'Fraud detection & speeder flags' : '欺诈防御机制与答题质量监控',
               ].map((f) => (
                 <div key={f} className="login-feature-item">
                   <div className="login-feature-icon">
@@ -467,7 +501,9 @@ export default function AdminLoginView({ onLoginSuccess }) {
 
           {/* Footer quote */}
           <div className="login-footer-quote">
-            <p>&ldquo;Data-driven decisions start with clean, organized survey infrastructure.&rdquo;</p>
+            <p>{language === 'en' 
+              ? '“Data-driven decisions start with clean, organized survey infrastructure.”'
+              : '“数据驱动的决策始于清晰、有条理的网络调查基础架构。”'}</p>
           </div>
         </div>
 
@@ -475,8 +511,8 @@ export default function AdminLoginView({ onLoginSuccess }) {
         <div className="login-right">
           <div className="login-form-box">
             <div className="login-form-header">
-              <h2>Welcome back</h2>
-              <p>Sign in to access the admin control panel</p>
+              <h2>{language === 'en' ? 'Welcome back' : '欢迎回来'}</h2>
+              <p>{t('adminLoginSub')}</p>
             </div>
 
             {error && (
@@ -488,7 +524,7 @@ export default function AdminLoginView({ onLoginSuccess }) {
 
             <form onSubmit={handleSubmit}>
               <div className="login-input-group">
-                <label className="login-label">Admin Username</label>
+                <label className="login-label">{language === 'en' ? 'Admin Username' : '管理员账号'}</label>
                 <div className="login-input-wrap">
                   <input
                     type="text"
@@ -503,14 +539,14 @@ export default function AdminLoginView({ onLoginSuccess }) {
               </div>
 
               <div className="login-input-group">
-                <label className="login-label">Password</label>
+                <label className="login-label">{t('password')}</label>
                 <div className="login-input-wrap">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     className="login-input"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder={language === 'en' ? 'Enter your password' : '请输入密码'}
                     autoComplete="current-password"
                     style={{ paddingRight: '44px' }}
                   />
@@ -532,11 +568,11 @@ export default function AdminLoginView({ onLoginSuccess }) {
                 {loading ? (
                   <>
                     <span className="login-spinner" />
-                    Signing in...
+                    {t('verifying')}
                   </>
                 ) : (
                   <>
-                    Sign In
+                    {t('signIn')}
                     <ArrowRight size={16} />
                   </>
                 )}
@@ -545,11 +581,11 @@ export default function AdminLoginView({ onLoginSuccess }) {
 
             <div className="login-default-hint">
               <CheckCircle2 size={14} color="#16a34a" style={{ flexShrink: 0 }} />
-              Default credentials: <strong>管理</strong> / <strong>123456</strong>
+              <span>{language === 'en' ? 'Default credentials:' : '默认凭据：'} <strong>管理</strong> / <strong>123456</strong></span>
             </div>
 
             <div className="login-divider">
-              Protected system · Unauthorized access is prohibited
+              {language === 'en' ? 'Protected system · Unauthorized access is prohibited' : '系统保护安全控制 · 禁止未经授权的访问'}
             </div>
           </div>
         </div>

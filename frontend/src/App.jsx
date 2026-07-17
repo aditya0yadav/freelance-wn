@@ -78,6 +78,7 @@ export default function App() {
   const [offersTotal, setOffersTotal] = useState(0);
   const [profileOpen, setProfileOpen] = useState(false);
   const [toast, setToast] = useState({ message: '', error: false, visible: false });
+  const [showUSD, setShowUSD] = useState(false);
   const [refreshLoading, setRefreshLoading] = useState(false);
 
   // Modal
@@ -401,6 +402,22 @@ export default function App() {
     }
   };
 
+  // ── Copy survey link ───────────────────────────────────────────────────────
+  const handleCopyLink = async (pno) => {
+    try {
+      const res = await api(`/api/member/platform/copy?project_pno=${pno}`);
+      if (res.code === 200 && res.data) {
+        await navigator.clipboard.writeText(res.data);
+        showToast('Survey link copied to clipboard!');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      showToast(e.message, true);
+      return false;
+    }
+  };
+
   // ── Quota modal ───────────────────────────────────────────────────────────
   const handleOpenModal = async (offer) => {
     setModalSurvey(offer);
@@ -496,6 +513,7 @@ export default function App() {
               offersLoading={offersLoading}
               handleStartSurvey={handleStartSurvey}
               handleOpenModal={handleOpenModal}
+              handleCopyLink={handleCopyLink}
               memberCoins={memberCoins}
               avatarChar={avatarChar}
               displayName={displayName}
@@ -506,6 +524,8 @@ export default function App() {
               loadOffers={loadOffers}
               refreshInventory={refreshInventory}
               refreshLoading={refreshLoading}
+              showUSD={showUSD}
+              setShowUSD={setShowUSD}
             />
           }
         />
@@ -554,6 +574,9 @@ export default function App() {
                         handleGlobalSearch={handleGlobalSearch}
                         handleStartSurvey={handleStartSurvey}
                         handleOpenModal={handleOpenModal}
+                        handleCopyLink={handleCopyLink}
+                        showUSD={showUSD}
+                        setShowUSD={setShowUSD}
                       />
                     }
                   />

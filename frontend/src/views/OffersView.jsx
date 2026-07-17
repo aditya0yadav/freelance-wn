@@ -14,6 +14,7 @@ export default function OffersView({
   offersLoading,
   handleStartSurvey,
   handleOpenModal,
+  handleCopyLink,
   memberCoins,
   avatarChar,
   displayName,
@@ -23,7 +24,9 @@ export default function OffersView({
   offersTotal = 0,
   loadOffers,
   refreshInventory,
-  refreshLoading
+  refreshLoading,
+  showUSD = false,
+  setShowUSD
 }) {
   const navigate = useNavigate();
 
@@ -184,6 +187,56 @@ export default function OffersView({
             {refreshLoading ? 'Syncing...' : 'Sync Inventory'}
           </button>
           <span className="result-count">{offersTotal.toLocaleString()} surveys matched</span>
+          {/* Auto-refresh notice */}
+          <span style={{ fontSize: '11px', opacity: 0.5, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            Auto-synced every 15 min
+          </span>
+          {/* Coins / USD Toggle */}
+          {setShowUSD && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: 'var(--bg-3)',
+              border: '1px solid var(--border)',
+              borderRadius: '20px',
+              padding: '3px',
+              gap: '2px',
+              fontSize: '12px',
+              fontWeight: 700,
+            }}>
+              <button
+                onClick={() => setShowUSD(false)}
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: '16px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: !showUSD ? 'var(--accent)' : 'transparent',
+                  color: !showUSD ? '#fff' : 'var(--t2)',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  transition: 'all 0.2s',
+                }}
+              >🪙 Coins</button>
+              <button
+                onClick={() => setShowUSD(true)}
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: '16px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: showUSD ? 'var(--accent)' : 'transparent',
+                  color: showUSD ? '#fff' : 'var(--t2)',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  transition: 'all 0.2s',
+                }}
+              >$ USD</button>
+            </div>
+          )}
         </div>
 
         {/* Offers list */}
@@ -207,6 +260,8 @@ export default function OffersView({
                   offer={offer}
                   onStart={() => handleStartSurvey(offer.project_pno)}
                   onSpecs={() => handleOpenModal(offer)}
+                  onCopyLink={handleCopyLink}
+                  showUSD={showUSD}
                 />
               ))}
             </div>

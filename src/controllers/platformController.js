@@ -184,6 +184,9 @@ class PlatformController {
           project_name: item.project_name,
           project_code: item.project_code,
           project_cpi: Number(memberPayout.toFixed(2)),
+          project_cpi_usd: Number(item.project_cpi.toFixed(4)), // raw USD CPI before coin conversion
+          currency_coins: item.currency?.currency_coins || 100.00,
+          currency_code: item.currency?.currency_code || 'USD',
           project_currency: item.project_currency,
           project_loi: item.project_loi,
           project_ir: item.project_ir,

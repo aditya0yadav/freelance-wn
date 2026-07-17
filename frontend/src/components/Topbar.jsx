@@ -1,8 +1,10 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 
 const NAV_ITEMS = [
   {
+    labelKey: 'platforms',
     label: 'Platforms',
     path: '/',
     match: (p) => p === '/' || p.startsWith('/platform/'),
@@ -14,6 +16,7 @@ const NAV_ITEMS = [
     ),
   },
   {
+    labelKey: 'statistics',
     label: 'Statistics',
     path: '/statistics',
     match: (p) => p === '/statistics',
@@ -24,6 +27,7 @@ const NAV_ITEMS = [
     ),
   },
   {
+    labelKey: 'leaderboard',
     label: 'Leaderboard',
     path: '/leaderboard',
     match: (p) => p === '/leaderboard',
@@ -34,6 +38,7 @@ const NAV_ITEMS = [
     ),
   },
   {
+    labelKey: 'support',
     label: 'Support',
     path: '/support',
     match: (p) => p === '/support',
@@ -67,6 +72,7 @@ export default function Topbar({
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
+  const { language, toggleLanguage, t } = useLanguage();
 
   const handleNavClick = (item) => {
     navigate(item.path);
@@ -96,8 +102,6 @@ export default function Topbar({
         </div>
       </div>
 
-
-
       {/* ── Center: nav ────────────────────────────────────────── */}
       <nav className="topbar-nav">
         {NAV_ITEMS.map((item) => {
@@ -107,10 +111,10 @@ export default function Topbar({
               key={item.path}
               className={`nav-link ${active ? 'active' : ''}`}
               onClick={() => handleNavClick(item)}
-              title={item.label}
+              title={t(item.labelKey)}
             >
               <span className="nav-link-icon">{item.icon}</span>
-              <span className="nav-link-label">{item.label}</span>
+              <span className="nav-link-label">{t(item.labelKey)}</span>
             </button>
           );
         })}
@@ -118,6 +122,30 @@ export default function Topbar({
 
       {/* ── Right: controls + profile ──────────────────────────── */}
       <div className="topbar-right">
+        {/* Language switch */}
+        <button
+          className="topbar-icon-btn lang-toggle-btn"
+          onClick={toggleLanguage}
+          title={language === 'en' ? '切换至中文' : 'Switch to English'}
+          style={{
+            fontWeight: '700',
+            fontSize: '11px',
+            fontFamily: 'inherit',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            background: 'var(--bg-card, rgba(255, 255, 255, 0.04))',
+            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+            color: 'var(--t1, #ffffff)',
+            cursor: 'pointer'
+          }}
+        >
+          {language === 'en' ? '中' : 'EN'}
+        </button>
+
         {/* Theme toggle */}
         <button
           className="topbar-icon-btn theme-toggle-btn"
@@ -191,7 +219,7 @@ export default function Topbar({
                     onClick={() => { handleNavClick(item); setProfileOpen(false); }}
                   >
                     <span className="dropdown-item-icon">{item.icon}</span>
-                    {item.label}
+                    {t(item.labelKey)}
                   </button>
                 ))}
               </div>
@@ -206,7 +234,7 @@ export default function Topbar({
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
                     </svg>
                   </span>
-                  Sign Out
+                  {t('logout')}
                 </button>
               </div>
             </div>

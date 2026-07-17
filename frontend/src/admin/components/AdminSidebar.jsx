@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import './AdminSidebar.css';
 import { NavLink } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 import {
     LayoutDashboard,
     Box,
@@ -9,16 +10,27 @@ import {
     History
 } from 'lucide-react';
 
-const NavItem = memo(({ icon, label, to, isExpanded }) => {
+const NavItem = memo(({ icon, labelKey, isExpanded }) => {
+    const { t } = useLanguage();
     return (
-        <NavLink to={to} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <NavLink to={toForLabelKey(labelKey)} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <div className="icon-container">
                 {icon}
             </div>
-            {isExpanded && <span className="nav-label">{label}</span>}
+            {isExpanded && <span className="nav-label">{t(labelKey)}</span>}
         </NavLink>
     );
 });
+
+// Helper mapping to avoid routing break
+function toForLabelKey(key) {
+    if (key === 'adminDashboard') return '/admin/dashboard';
+    if (key === 'adminPlatforms') return '/admin/platforms';
+    if (key === 'adminAuth') return '/admin/members';
+    if (key === 'adminCompletions') return '/admin/completions';
+    if (key === 'adminExports') return '/admin/exports';
+    return '/admin/dashboard';
+}
 
 const AdminSidebar = ({ isExpanded }) => {
     return (
@@ -27,11 +39,11 @@ const AdminSidebar = ({ isExpanded }) => {
                 <div style={{ height: '20px' }} />
 
                 <nav className="nav-menu">
-                    <NavItem to="/admin/dashboard" icon={<LayoutDashboard size={22} />} label="Dashboard" isExpanded={isExpanded} />
-                    <NavItem to="/admin/platforms" icon={<Box size={22} />} label="Platform Management" isExpanded={isExpanded} />
-                    <NavItem to="/admin/members" icon={<Users size={22} />} label="Team Management" isExpanded={isExpanded} />
-                    <NavItem to="/admin/completions" icon={<History size={22} />} label="Completions Log" isExpanded={isExpanded} />
-                    <NavItem to="/admin/exports" icon={<Download size={22} />} label="Export Records" isExpanded={isExpanded} />
+                    <NavItem labelKey="adminDashboard" icon={<LayoutDashboard size={22} />} isExpanded={isExpanded} />
+                    <NavItem labelKey="adminPlatforms" icon={<Box size={22} />} isExpanded={isExpanded} />
+                    <NavItem labelKey="adminAuth" icon={<Users size={22} />} isExpanded={isExpanded} />
+                    <NavItem labelKey="adminCompletions" icon={<History size={22} />} isExpanded={isExpanded} />
+                    <NavItem labelKey="adminExports" icon={<Download size={22} />} isExpanded={isExpanded} />
                 </nav>
             </div>
         </div>
