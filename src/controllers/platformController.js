@@ -536,7 +536,7 @@ class PlatformController {
             }).toString();
             const response = await axios.get(`${platform.platform_click_url}?${queryParams}`, {
               headers: { 'Accept': 'application/json', 'ZAMP-KEY': params['app_key'] },
-              timeout: 10000
+              timeout: 30000
             });
             if (response.data && response.data.result && response.data.result.data && response.data.result.data[0]) {
               const liveLink = response.data.result.data[0].LiveLink;
@@ -574,7 +574,7 @@ class PlatformController {
               'payload': params['app_id'],
               'Content-Type': 'application/json'
             },
-            timeout: 10000
+            timeout: 30000
           });
 
           // Log transaction for debug
