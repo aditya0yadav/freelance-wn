@@ -350,9 +350,18 @@ class PlatformController {
         return res.status(404).json({ code: 404, msg: 'Project not found' });
       }
 
-      const protocol = req.secure ? 'https' : 'http';
-      const host = req.get('host');
-      const rootUrl = `${protocol}://${host}`;
+      let rootUrl = process.env.APP_URL;
+      if (!rootUrl) {
+        let protocol = req.secure ? 'https' : 'http';
+        let host = req.get('host') || '';
+        if (host.includes(':443')) {
+          protocol = 'https';
+          host = host.replace(':443', '');
+        } else if (host.includes(':80')) {
+          host = host.replace(':80', '');
+        }
+        rootUrl = `${protocol}://${host}`;
+      }
       const token = req.headers['authorization']?.startsWith('Bearer ')
         ? req.headers['authorization'].slice(7)
         : req.query.key;
@@ -392,9 +401,18 @@ class PlatformController {
       });
       if (!platform) return res.status(404).json({ code: 404, msg: 'Platform not found' });
 
-      const protocol = req.secure ? 'https' : 'http';
-      const host = req.get('host');
-      const rootUrl = `${protocol}://${host}`;
+      let rootUrl = process.env.APP_URL;
+      if (!rootUrl) {
+        let protocol = req.secure ? 'https' : 'http';
+        let host = req.get('host') || '';
+        if (host.includes(':443')) {
+          protocol = 'https';
+          host = host.replace(':443', '');
+        } else if (host.includes(':80')) {
+          host = host.replace(':80', '');
+        }
+        rootUrl = `${protocol}://${host}`;
+      }
       const token = req.headers['authorization']?.startsWith('Bearer ')
         ? req.headers['authorization'].slice(7)
         : req.query.key;
@@ -515,9 +533,18 @@ class PlatformController {
         }
 
         case 'Gowebsurveys': {
-          const protocol = req.secure ? 'https' : 'http';
-          const host = req.get('host');
-          const rootUrl = `${protocol}://${host}`;
+          let rootUrl = process.env.APP_URL;
+          if (!rootUrl) {
+            let protocol = req.secure ? 'https' : 'http';
+            let host = req.get('host') || '';
+            if (host.includes(':443')) {
+              protocol = 'https';
+              host = host.replace(':443', '');
+            } else if (host.includes(':80')) {
+              host = host.replace(':80', '');
+            }
+            rootUrl = `${protocol}://${host}`;
+          }
           const postData = {
             surveyID: Number(project.project_no) || project.project_no,
             SuccessLink: `${rootUrl}/api/callback?platform=${platform.platform_sign}&uid={{panellist_id}}&status=C`,
