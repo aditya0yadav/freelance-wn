@@ -100,8 +100,8 @@ class CallbackController {
 
       const cpi = project ? project.project_cpi : 0;
       const payout = cpi * coinsExchange;
-      const teamPayout = payout * ((100 - team.commission_ratio) / 100) * ((100 - platformAuth.auth_rate) / 100);
-      const memberPayout = teamPayout * ((100 - member.rate) / 100);
+      const teamPayout = payout * ((100 - team.commission_ratio) / 100) * (1 - platformAuth.auth_rate);
+      const memberPayout = teamPayout * (1 - member.rate);
 
       let recordSaved = false;
 
@@ -222,8 +222,8 @@ class CallbackController {
         const coinsExchange = usdCurrency?.currency_coins || 100.00;
 
         const payout = cpiVal * coinsExchange;
-        const teamPayout = payout * ((100 - team.commission_ratio) / 100) * ((100 - platformAuth.auth_rate) / 100);
-        const memberPayout = teamPayout * ((100 - member.rate) / 100);
+        const teamPayout = payout * ((100 - team.commission_ratio) / 100) * (1 - platformAuth.auth_rate);
+        const memberPayout = teamPayout * (1 - member.rate);
 
         await prisma.reward.create({
           data: {

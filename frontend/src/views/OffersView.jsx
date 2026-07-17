@@ -145,6 +145,50 @@ export default function OffersView({
             <option value="cpi-asc">Lowest Payout</option>
             <option value="loi-asc">Quickest</option>
           </select>
+          {/* Coins / USD Toggle — prominent position */}
+          {setShowUSD && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: 'var(--bg-3)',
+              border: '1px solid var(--border)',
+              borderRadius: '20px',
+              padding: '3px',
+              gap: '0',
+              flexShrink: 0,
+            }}>
+              <button
+                onClick={() => setShowUSD(false)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '16px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: !showUSD ? 'var(--accent)' : 'transparent',
+                  color: !showUSD ? '#fff' : 'var(--t2)',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                }}
+              >🪙 {language === 'en' ? 'Coins' : '金币'}</button>
+              <button
+                onClick={() => setShowUSD(true)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '16px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: showUSD ? 'var(--accent)' : 'transparent',
+                  color: showUSD ? '#fff' : 'var(--t2)',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                }}
+              >$ USD</button>
+            </div>
+          )}
           <button
             className="btn-refresh"
             onClick={() => refreshInventory(selectedPlatform.platform_id)}
@@ -192,51 +236,8 @@ export default function OffersView({
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
             </svg>
-            Auto-synced every 15 min
+            {language === 'en' ? 'Auto-synced every 15 min' : '每15分钟自动同步'}
           </span>
-          {/* Coins / USD Toggle */}
-          {setShowUSD && (
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              background: 'var(--bg-3)',
-              border: '1px solid var(--border)',
-              borderRadius: '20px',
-              padding: '3px',
-              gap: '2px',
-              fontSize: '12px',
-              fontWeight: 700,
-            }}>
-              <button
-                onClick={() => setShowUSD(false)}
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: '16px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: !showUSD ? 'var(--accent)' : 'transparent',
-                  color: !showUSD ? '#fff' : 'var(--t2)',
-                  fontWeight: 700,
-                  fontSize: '12px',
-                  transition: 'all 0.2s',
-                }}
-              >🪙 Coins</button>
-              <button
-                onClick={() => setShowUSD(true)}
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: '16px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: showUSD ? 'var(--accent)' : 'transparent',
-                  color: showUSD ? '#fff' : 'var(--t2)',
-                  fontWeight: 700,
-                  fontSize: '12px',
-                  transition: 'all 0.2s',
-                }}
-              >$ USD</button>
-            </div>
-          )}
         </div>
 
         {/* Offers list */}
