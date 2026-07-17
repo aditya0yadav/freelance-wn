@@ -52,7 +52,8 @@ export default function CompletionsLogView() {
     '1': { label: 'Success', color: '#10B981', bg: 'rgba(16, 185, 129, 0.1)', icon: <CheckCircle2 size={14} /> },
     '2': { label: 'Disqualified', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.1)', icon: <XCircle size={14} /> },
     '3': { label: 'Overquota', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.1)', icon: <Clock size={14} /> },
-    '4': { label: 'Terminated', color: '#6B7280', bg: 'rgba(107, 114, 128, 0.1)', icon: <AlertTriangle size={14} /> }
+    '4': { label: 'Terminated', color: '#6B7280', bg: 'rgba(107, 114, 128, 0.1)', icon: <AlertTriangle size={14} /> },
+    '6': { label: 'Reconciliation', color: '#EC4899', bg: 'rgba(236, 72, 153, 0.1)', icon: <AlertTriangle size={14} /> }
   };
 
   const fetchRecords = useCallback(async () => {
@@ -109,6 +110,7 @@ export default function CompletionsLogView() {
             <option value="2">Disqualified</option>
             <option value="3">Overquota</option>
             <option value="4">Terminated</option>
+            <option value="6">Reconciliation</option>
           </select>
         </div>
 
@@ -295,6 +297,7 @@ export default function CompletionsLogView() {
                     <option value="2">Disqualified</option>
                     <option value="3">Overquota</option>
                     <option value="4">Terminated</option>
+                    <option value="6">Reconciliation (Deduction)</option>
                   </select>
                   <button
                     type="button"

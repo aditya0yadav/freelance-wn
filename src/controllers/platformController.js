@@ -1067,17 +1067,25 @@ class PlatformController {
       }
 
       // Sum completed payouts
-      const totalCoins = await prisma.reward.aggregate({
+      const successCoins = await prisma.reward.aggregate({
         where: { member_id: memberId, reward_status: 1 },
         _sum: { member_payout: true }
       });
+
+      // Sum deduction payouts
+      const deductionCoins = await prisma.reward.aggregate({
+        where: { member_id: memberId, reward_status: 6 },
+        _sum: { member_payout: true }
+      });
+
+      const coinsBalance = (successCoins._sum.member_payout || 0.00) - (deductionCoins._sum.member_payout || 0.00);
 
       return res.json({
         code: 200,
         data: {
           member_id: member.member_id,
           nickname: member.nickname,
-          coins: totalCoins._sum.member_payout || 0.00
+          coins: Number(coinsBalance.toFixed(2))
         }
       });
     } catch (err) {
