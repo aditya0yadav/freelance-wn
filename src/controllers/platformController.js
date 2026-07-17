@@ -203,7 +203,7 @@ class PlatformController {
           project_name: item.project_name,
           project_code: item.project_code,
           project_cpi: Number(memberPayout.toFixed(2)),
-          project_cpi_usd: Number(item.project_cpi.toFixed(4)), // raw USD CPI before coin conversion
+          project_cpi_usd: Number((memberPayout / (item.currency?.currency_coins || 100.00)).toFixed(4)), // sanitized USD CPI post coin and splits conversion
           currency_coins: item.currency?.currency_coins || 100.00,
           currency_code: item.currency?.currency_code || 'USD',
           project_currency: item.project_currency,
@@ -1298,9 +1298,9 @@ class PlatformController {
         code: 200,
         data: {
           offers,
-          teamdeduction: teamDeductionAgg._sum.team_payout || 0.00,
-          teamsuccess: teamSuccessAgg._sum.team_payout || 0.00,
-          teamfailed: teamFailedAgg._sum.team_payout || 0.00,
+          teamdeduction: memberDeductionAgg._sum.member_payout || 0.00,
+          teamsuccess: memberSuccessAgg._sum.member_payout || 0.00,
+          teamfailed: memberFailedAgg._sum.member_payout || 0.00,
           memberdeduction: memberDeductionAgg._sum.member_payout || 0.00,
           membersuccess: memberSuccessAgg._sum.member_payout || 0.00,
           memberfailed: memberFailedAgg._sum.member_payout || 0.00
@@ -1436,10 +1436,22 @@ class PlatformController {
         }
       });
 
+      const sanitizedList = list.map(item => ({
+        reward_id: item.reward_id,
+        txn_id: item.txn_id,
+        project_pno: item.project_pno,
+        member_payout: item.member_payout,
+        create_time: item.create_time,
+        ip: item.ip,
+        reward_status: item.reward_status,
+        member: item.member,
+        platform: item.platform
+      }));
+
       return res.json({
         code: 200,
         data: {
-          list,
+          list: sanitizedList,
           total,
           page: pageNum,
           limit: limitNum,
