@@ -188,7 +188,7 @@ export default function CompletionsLogView() {
                         ${(r.member_payout / r.usd_currency_coins).toFixed(2)}
                       </span>
                       <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                        Net Payout: ${r.payout.toFixed(2)}
+                        Net Payout: ${(r.payout / r.usd_currency_coins).toFixed(2)}
                       </span>
                     </div>
                   </td>
@@ -238,7 +238,7 @@ export default function CompletionsLogView() {
                   <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600, fontFamily: 'monospace' }}>{selectedRecord.uuid}</div>
                 </div>
               </div>
-
+ 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px' }}>
                 <div>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>IP Address</span>
@@ -251,12 +251,12 @@ export default function CompletionsLogView() {
                   </div>
                 </div>
               </div>
-
+ 
               <div style={{ borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px' }}>
                 <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>User Agent Header</span>
                 <div style={{ fontSize: '12px', color: 'var(--text-color)', marginTop: '4px', lineHeight: '1.4' }}>{selectedRecord.ua || 'N/A'}</div>
               </div>
-
+ 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px' }}>
                 <div>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Start Time</span>
@@ -267,15 +267,15 @@ export default function CompletionsLogView() {
                   <div style={{ fontSize: '12px', color: 'var(--text-color)' }}>{selectedRecord.create_time || 'N/A'}</div>
                 </div>
               </div>
-
+ 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                 <div>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Full Payout</span>
-                  <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>${selectedRecord.payout.toFixed(4)}</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>${(selectedRecord.payout / selectedRecord.usd_currency_coins).toFixed(4)}</div>
                 </div>
                 <div>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Team Reward</span>
-                  <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>${selectedRecord.team_payout.toFixed(4)}</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-color)', fontWeight: 600 }}>${(selectedRecord.team_payout / selectedRecord.usd_currency_coins).toFixed(4)}</div>
                 </div>
                 <div>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Member Earning</span>
