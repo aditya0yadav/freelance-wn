@@ -80,7 +80,6 @@ class PlatformController {
         const platformAuth = platformAuths.find(auth => auth.platform_id === p.platform_id);
         const authRateVal = platformAuth ? platformAuth.auth_rate : 0;
 
-        const authRate = (100 - authRateVal) / 100;
         const memberRate = (100 - member.rate) / 100;
 
         const activeProjects = p.projects || [];
@@ -90,10 +89,7 @@ class PlatformController {
         let maxCoins = 0;
         for (const item of activeProjects) {
           const rawCoins = item.project_cpi * (item.currency?.currency_coins || 100.00);
-          let memberPayout = rawCoins * authRate * memberRate;
-          if (member.nickname === 'admin' || member.nickname === '管理') {
-            memberPayout = rawCoins;
-          }
+          const memberPayout = rawCoins * memberRate;
           if (memberPayout > maxCoins) {
             maxCoins = memberPayout;
           }
@@ -195,14 +191,9 @@ class PlatformController {
         const authRateVal = platformAuth ? platformAuth.auth_rate : 0;
 
         const rawCoins = item.project_cpi * (item.currency?.currency_coins || 100.00);
-        const authRate = (100 - authRateVal) / 100;
         const memberRate = (100 - member.rate) / 100;
-        console.log(rawCoins,authRate,memberRate,authRateVal);
 
-        let memberPayout = rawCoins * authRate * memberRate;
-        if (member.nickname === 'admin' || member.nickname === '管理') {
-          memberPayout = rawCoins;
-        }
+        const memberPayout = rawCoins * memberRate;
 
         const result = {
           project_pno: item.project_pno,
@@ -287,13 +278,9 @@ class PlatformController {
         const authRateVal = platformAuth ? platformAuth.auth_rate : 0;
 
         const rawCoins = item.project_cpi * (item.currency?.currency_coins || 100.00);
-        const authRate = (100 - authRateVal) / 100;
         const memberRate = (100 - member.rate) / 100;
 
-        let memberPayout = rawCoins * authRate * memberRate;
-        if (member.nickname === 'admin' || member.nickname === '管理') {
-          memberPayout = rawCoins;
-        }
+        const memberPayout = rawCoins * memberRate;
 
         return {
           project_pno: item.project_pno,
