@@ -341,8 +341,8 @@ class PlatformController {
       // Fetch live quota
       const checkResult = await SurveyIntegrationService.checkQuota(project, platform);
 
-      // Save content cache in DB if content is rendered
-      if (checkResult.type === 'content' && checkResult.content) {
+      // Save content cache in DB if content is rendered (API projects only)
+      if (checkResult.type === 'content' && checkResult.content && project.is_api === 1) {
         await prisma.project.update({
           where: { project_id: project.project_id },
           data: {
