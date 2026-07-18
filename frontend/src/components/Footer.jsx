@@ -18,7 +18,7 @@ export default function Footer() {
             The professional survey &amp; offerwall management portal for <strong>Wanhong Survey</strong> by <strong>XUZHOU WEIJINGJUYAN TECHNOLOGY CO.,LTD</strong>. Empowering market-research teams to track, optimise, and reward their performance — all in one place.
           </p>
           <div className="footer-socials">
-            <a className="footer-social-btn" href="mailto:support@surveyspecter.com" title="Email us" aria-label="Email">
+            <a className="footer-social-btn" href="mailto:support@wansurvey.com" title="Email us" aria-label="Email">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             </a>
           </div>
@@ -55,7 +55,7 @@ export default function Footer() {
             </li>
             <li>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              support@surveyspecter.com
+              support@wansurvey.com
             </li>
             <li>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>

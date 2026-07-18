@@ -33,7 +33,7 @@ export default function ContactView() {
             </div>
             <div>
               <h4>Email</h4>
-              <p>support@surveyspecter.com</p>
+              <p>support@wansurvey.com</p>
             </div>
           </div>
           <div className="contact-info-card">
