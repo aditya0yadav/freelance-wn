@@ -209,34 +209,16 @@ class SurveyIntegrationService {
       }
     }
 
-    let htmlContent = '';
-    if (project.project_quota > 0) {
-      const css = `<style>
-        .qs-panel{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
-        .qs-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px 16px;}
-        .qs-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-weight:500;margin-bottom:6px;}
-        .qs-value{font-size:22px;font-weight:700;color:inherit;}
-        .qs-value.ok{color:rgba(14,255,78,.85);}
-      </style>`;
-      htmlContent = css + `<div class="qs-panel">
-        <div class="qs-card"><div class="qs-label">Total Quota</div><div class="qs-value">${project.project_quota}</div></div>
-        <div class="qs-card"><div class="qs-label">Completed</div><div class="qs-value">${project.project_complete}</div></div>
-        <div class="qs-card"><div class="qs-label">Remaining</div><div class="qs-value ok">${Math.max(0, project.project_quota - project.project_complete)}</div></div>
-      </div>`;
-    }
-
-    if (project.project_content && (project.project_content.startsWith('http://') || project.project_content.startsWith('https://'))) {
-      if (htmlContent) {
-        htmlContent += `<div style="text-align:center;margin-top:20px;">
-          <a href="${project.project_content}" target="_blank" rel="noreferrer" class="btn-primary-sm" style="display:inline-block;padding:10px 20px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Open Survey Link</a>
-        </div>`;
-        return { type: 'content', content: htmlContent };
+    const isLink = project.project_content && (project.project_content.startsWith('http://') || project.project_content.startsWith('https://'));
+    return {
+      type: 'structured',
+      project: {
+        project_quota: project.project_quota,
+        project_complete: project.project_complete,
+        project_content: isLink ? null : project.project_content,
+        project_link: isLink ? project.project_content : null
       }
-      return { type: 'link', content: project.project_content };
-    }
-
-    const mainContent = project.project_content || 'No live qualifications requirements defined.';
-    return { type: 'content', content: htmlContent + `<div style="margin-top:10px;">${mainContent}</div>` };
+    };
   }
 
   /**
