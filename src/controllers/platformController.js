@@ -172,6 +172,16 @@ class PlatformController {
 
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 20;
+      const sortOption = req.query.sort || 'default';
+
+      let orderBy = { sort: 'desc' };
+      if (sortOption === 'cpi-desc') {
+        orderBy = { project_cpi: 'desc' };
+      } else if (sortOption === 'cpi-asc') {
+        orderBy = { project_cpi: 'asc' };
+      } else if (sortOption === 'loi-asc') {
+        orderBy = { project_loi: 'asc' };
+      }
 
       const total = await prisma.project.count({ where: whereClause });
       const pages = Math.ceil(total / limit);
@@ -183,7 +193,7 @@ class PlatformController {
         },
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { sort: 'desc' }
+        orderBy: orderBy
       });
 
       const customList = list.map(item => {

@@ -322,7 +322,8 @@ export default function App() {
       const q = new URLSearchParams({
         platform_id: platformId,
         page: page,
-        limit: 100
+        limit: 100,
+        sort: sortOption
       });
       if (search && search.trim()) {
         q.append('search', search.trim());
@@ -358,7 +359,7 @@ export default function App() {
     }
   };
 
-  // Debounce backend offers search when typing query
+  // Debounce backend offers search when typing query or changing sort option
   useEffect(() => {
     if (selectedPlatform) {
       const delayFn = setTimeout(() => {
@@ -366,7 +367,7 @@ export default function App() {
       }, 400);
       return () => clearTimeout(delayFn);
     }
-  }, [searchQuery]);
+  }, [searchQuery, sortOption]);
 
   // ── Offers processing ─────────────────────────────────────────────────────
   const processedOffers = useMemo(() => {
