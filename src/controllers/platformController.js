@@ -490,6 +490,11 @@ class PlatformController {
       });
       if (!project || project.delete_time !== null) return res.status(404).send('Project does not exist or is disabled.');
 
+      if (project.project_quota > 0 && project.project_complete >= project.project_quota) {
+        const CallbackController = require('./callbackController');
+        return res.status(400).send(CallbackController.renderErrorPage('This survey has reached its maximum completion quota. Please try another survey.'));
+      }
+
       const platform = project.platform;
       if (!platform || platform.is_disable === 1) return res.status(404).send('Platform is disabled or does not exist.');
 

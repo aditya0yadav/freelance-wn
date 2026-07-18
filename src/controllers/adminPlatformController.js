@@ -1391,6 +1391,7 @@ class AdminPlatformController {
         project_loi,
         project_ir,
         project_click_url,
+        project_content,
         is_disable
       } = req.body;
 
@@ -1421,6 +1422,7 @@ class AdminPlatformController {
           project_loi: Number(project_loi) || 0,
           project_ir: Number(project_ir) || 0,
           project_click_url,
+          project_content: project_content || null,
           is_disable: Number(is_disable) || 0,
           is_api: 0, // Manual project
           create_time: new Date()
@@ -1451,6 +1453,7 @@ class AdminPlatformController {
         project_loi,
         project_ir,
         project_click_url,
+        project_content,
         is_disable
       } = req.body;
 
@@ -1464,6 +1467,7 @@ class AdminPlatformController {
       if (project_loi !== undefined) updateData.project_loi = Number(project_loi);
       if (project_ir !== undefined) updateData.project_ir = Number(project_ir);
       if (project_click_url !== undefined) updateData.project_click_url = project_click_url;
+      if (project_content !== undefined) updateData.project_content = project_content || null;
       if (is_disable !== undefined) updateData.is_disable = Number(is_disable);
 
       updateData.update_time = new Date();

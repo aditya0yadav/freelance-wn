@@ -37,6 +37,7 @@ export default function ProjectListView() {
   const [projLoi, setProjLoi] = useState('0');
   const [projIr, setProjIr] = useState('0');
   const [projClickUrl, setProjClickUrl] = useState('');
+  const [projContent, setProjContent] = useState('');
   const [projIsDisable, setProjIsDisable] = useState(0);
 
   const token = getAdminToken();
@@ -103,6 +104,7 @@ export default function ProjectListView() {
     setProjLoi('15');
     setProjIr('80');
     setProjClickUrl('');
+    setProjContent('');
     setProjIsDisable(0);
     setShowModal(true);
   };
@@ -118,6 +120,7 @@ export default function ProjectListView() {
     setProjLoi(p.project_loi);
     setProjIr(p.project_ir);
     setProjClickUrl(p.project_click_url || '');
+    setProjContent(p.project_content || '');
     setProjIsDisable(p.is_disable);
     setShowModal(true);
   };
@@ -135,6 +138,7 @@ export default function ProjectListView() {
         project_loi: Number(projLoi),
         project_ir: Number(projIr),
         project_click_url: projClickUrl,
+        project_content: projContent,
         is_disable: Number(projIsDisable)
       };
 
@@ -511,6 +515,21 @@ export default function ProjectListView() {
                         <option value="1">Disabled</option>
                       </select>
                     </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Quota & Qualification Details (Raw text or HTML)</label>
+                    <textarea
+                      placeholder="Paste targeting credentials, demographic requirements, quota breakdown, or raw HTML content directly from the survey email..."
+                      value={projContent}
+                      onChange={e => setProjContent(e.target.value)}
+                      className="form-input"
+                      rows="4"
+                      style={{ resize: 'vertical', minHeight: '80px', fontFamily: 'inherit' }}
+                    />
+                    <small style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Pasted text/HTML details will be rendered directly inside the live specifications modal for members.
+                    </small>
                   </div>
 
                   <div className="form-group">
