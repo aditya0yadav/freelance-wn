@@ -501,38 +501,14 @@ class AdminPlatformController {
         });
       }
 
-      // 2. Correct partially migrated records that still have the 10% commission (225.00) to 100% (250.00)
-      const checkCommission = await prisma.reward.findFirst({
-        where: { txn_id: 'TXN10001', team_payout: 225.00 }
-      });
-      if (checkCommission) {
-        await prisma.reward.updateMany({
-          where: { txn_id: 'TXN10001' },
-          data: { team_payout: 250.00 }
-        });
-        await prisma.reward.updateMany({
-          where: { txn_id: 'TXN10002' },
-          data: { team_payout: 300.00 }
-        });
-        await prisma.reward.updateMany({
-          where: { txn_id: 'TXN10003' },
-          data: { team_payout: 300.00 }
-        });
-        await prisma.reward.updateMany({
-          where: { txn_id: 'TXN10004' },
-          data: { team_payout: 100.00 }
-        });
-        await prisma.reward.updateMany({
-          where: { txn_id: 'TXN10005' },
-          data: { team_payout: 80.00 }
-        });
-        await prisma.reward.updateMany({
-          where: { txn_id: 'TXN10006' },
-          data: { team_payout: 250.00 }
-        });
-      }
+      // 2. Database-wide alignment: Set team_payout = payout for all successful reward records that had a legacy cut
+      await prisma.$executeRawUnsafe(`
+        UPDATE ya_reward 
+        SET team_payout = payout 
+        WHERE reward_status = 1 AND team_payout < payout
+      `);
     } catch (err) {
-      console.error('Failed to correct mock data:', err.message);
+      console.error('Failed to correct mock/legacy data:', err.message);
     }
   }
 
