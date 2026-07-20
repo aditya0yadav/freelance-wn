@@ -548,6 +548,124 @@ class AdminPlatformController {
   }
 
   /**
+   * GET /api/admin/platform/dashboard-chart
+   * Returns live date-grouped statistics for Recharts chart
+   */
+  static async dashboardChart(req, res) {
+    try {
+      const { type = '30day', startDate, endDate } = req.query;
+      const now = new Date();
+      let start = new Date();
+      let end = new Date();
+      let isMonthly = false;
+
+      if (type === '7day') {
+        start.setUTCDate(now.getUTCDate() - 6);
+        start.setUTCHours(0, 0, 0, 0);
+        end.setUTCHours(23, 59, 59, 999);
+      } else if (type === '30day') {
+        start.setUTCDate(now.getUTCDate() - 29);
+        start.setUTCHours(0, 0, 0, 0);
+        end.setUTCHours(23, 59, 59, 999);
+      } else if (type === 'annual') {
+        start.setUTCMonth(now.getUTCMonth() - 11);
+        start.setUTCDate(1);
+        start.setUTCHours(0, 0, 0, 0);
+        end.setUTCHours(23, 59, 59, 999);
+        isMonthly = true;
+      } else if (type === 'custom') {
+        if (startDate && endDate) {
+          start = new Date(startDate);
+          start.setUTCHours(0, 0, 0, 0);
+          end = new Date(endDate);
+          end.setUTCHours(23, 59, 59, 999);
+        } else {
+          start.setUTCDate(now.getUTCDate() - 29);
+          start.setUTCHours(0, 0, 0, 0);
+          end.setUTCHours(23, 59, 59, 999);
+        }
+      }
+
+      // Format MySQL date grouping depending on interval
+      const formatStr = isMonthly ? '%Y-%m' : '%Y-%m-%d';
+
+      // Perform raw MySQL grouping query
+      const rewards = await prisma.$queryRawUnsafe(`
+        SELECT 
+          DATE_FORMAT(create_time, '${formatStr}') as date_str,
+          CAST(COUNT(*) AS CHAR) as completions,
+          SUM(payout / usd_currency_coins) as total_payout,
+          SUM(team_payout / usd_currency_coins) as team_payout,
+          SUM(member_payout / usd_currency_coins) as member_payout
+        FROM ya_reward
+        WHERE reward_status = 1 AND create_time >= ? AND create_time <= ?
+        GROUP BY date_str
+        ORDER BY date_str ASC
+      `, start, end);
+
+      // Create lookup map
+      const lookup = {};
+      for (const r of rewards) {
+        lookup[r.date_str] = {
+          completions: Number(r.completions || 0),
+          total_payout: Number(Number(r.total_payout || 0).toFixed(2)),
+          team_payout: Number(Number(r.team_payout || 0).toFixed(2)),
+          member_payout: Number(Number(r.member_payout || 0).toFixed(2))
+        };
+      }
+
+      const timeline = [];
+      const curr = new Date(start);
+
+      if (isMonthly) {
+        // Annual monthly increment
+        while (curr <= end) {
+          const year = curr.getUTCFullYear();
+          const monthStr = String(curr.getUTCMonth() + 1).padStart(2, '0');
+          const dateStr = `${year}-${monthStr}`;
+          
+          const val = lookup[dateStr] || { completions: 0, total_payout: 0, team_payout: 0, member_payout: 0 };
+          timeline.push({
+            date: dateStr,
+            completions: val.completions,
+            total_payout: val.total_payout,
+            team_payout: val.team_payout,
+            member_payout: val.member_payout
+          });
+          curr.setUTCMonth(curr.getUTCMonth() + 1);
+        }
+      } else {
+        // Daily increment
+        while (curr <= end) {
+          const year = curr.getUTCFullYear();
+          const monthStr = String(curr.getUTCMonth() + 1).padStart(2, '0');
+          const dayStr = String(curr.getUTCDate()).padStart(2, '0');
+          const dateStr = `${year}-${monthStr}-${dayStr}`;
+          const labelStr = `${monthStr}-${dayStr}`;
+
+          const val = lookup[dateStr] || { completions: 0, total_payout: 0, team_payout: 0, member_payout: 0 };
+          timeline.push({
+            date: labelStr,
+            completions: val.completions,
+            total_payout: val.total_payout,
+            team_payout: val.team_payout,
+            member_payout: val.member_payout
+          });
+          curr.setUTCDate(curr.getUTCDate() + 1);
+        }
+      }
+
+      return res.json({
+        code: 200,
+        msg: 'success',
+        data: timeline
+      });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
+
+  /**
    * POST /api/admin/platform/member/ban
    */
   static async banMember(req, res) {

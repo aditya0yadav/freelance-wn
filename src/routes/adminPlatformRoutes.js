@@ -41,6 +41,7 @@ router.post('/team/delete', verifyAdminToken, AdminPlatformController.teamDelete
 
 // Security & Analytics
 router.get('/dashboard-stats', verifyAdminToken, AdminPlatformController.dashboardStats);
+router.get('/dashboard-chart', verifyAdminToken, AdminPlatformController.dashboardChart);
 router.post('/member/ban', verifyAdminToken, AdminPlatformController.banMember);
 router.post('/reward/clear-mark', verifyAdminToken, AdminPlatformController.clearRewardMark);
 router.get('/reward/list', verifyAdminToken, AdminPlatformController.rewardList);

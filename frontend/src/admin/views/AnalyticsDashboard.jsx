@@ -16,7 +16,8 @@ import {
   PieChart,
   Pie,
   Cell,
-  BarChart
+  BarChart,
+  LineChart // Added LineChart import
 } from 'recharts';
 
 export default function AnalyticsDashboard() {
@@ -27,6 +28,62 @@ export default function AnalyticsDashboard() {
   const [loading, setLoading] = useState(false);
   const token = getAdminToken();
   const user = getAdminUser();
+
+  // Chart States
+  const [chartType, setChartType] = useState('30day');
+  const [chartData, setChartData] = useState([]);
+  const [chartLoading, setChartLoading] = useState(false);
+  const [customDates, setCustomDates] = useState({ start: '', end: '' });
+
+  const fetchChartData = useCallback(async () => {
+    setChartLoading(true);
+    try {
+      let query = `type=${chartType}`;
+      if (chartType === 'custom' && customDates.start && customDates.end) {
+        query += `&startDate=${customDates.start}&endDate=${customDates.end}`;
+      }
+      const res = await adminFetch(`/dashboard-chart?${query}`, 'GET', null, token);
+      if (res.code === 200) {
+        setChartData(res.data || []);
+      }
+    } catch (err) {
+      console.error('Chart fetch error:', err.message);
+    } finally {
+      setChartLoading(false);
+    }
+  }, [token, chartType, customDates]);
+
+  useEffect(() => {
+    if (chartType !== 'custom') {
+      fetchChartData();
+    }
+  }, [chartType, fetchChartData]);
+
+  const handleCustomChartQuery = () => {
+    if (!customDates.start || !customDates.end) {
+      alert('Please select both start and end dates');
+      return;
+    }
+    fetchChartData();
+  };
+
+  const CustomPeakLabel = ({ x, y, value, color }) => {
+    if (!value || Number(value) === 0) return null;
+    return (
+      <text x={x} y={y - 8} fill={color || 'var(--text-color, #1e1e2d)'} fontSize={9} fontWeight={700} textAnchor="middle">
+        {`$${value}`}
+      </text>
+    );
+  };
+
+  const CustomCompletesLabel = ({ x, y, value }) => {
+    if (!value || Number(value) === 0) return null;
+    return (
+      <text x={x} y={y - 8} fill="#9ca3af" fontSize={9} fontWeight={700} textAnchor="middle">
+        {value}
+      </text>
+    );
+  };
 
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
@@ -81,26 +138,7 @@ export default function AnalyticsDashboard() {
     }
   };
 
-  // Synthesize daily metrics curve from actual database stats
-  const buildTimelineData = () => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const totalRevenue = stats.revenue || 120.00;
-    const totalClicks = stats.clicks || 450;
-    const totalCompletes = stats.completes || 85;
 
-    const weights = [0.08, 0.12, 0.15, 0.25, 0.22, 0.08, 0.10];
-    return days.map((day, idx) => {
-      const w = weights[idx];
-      return {
-        name: day,
-        Clicks: Math.round(totalClicks * w * 1.2),
-        Completions: Math.round(totalCompletes * w),
-        Revenue: Number((totalRevenue * w).toFixed(2))
-      };
-    });
-  };
-
-  const chartData = buildTimelineData();
 
   const CustomChartTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -281,7 +319,7 @@ export default function AnalyticsDashboard() {
       {/* Chart Layout: Timeline and Donut */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px', borderTop: '1px solid var(--divider-color)', paddingTop: '28px' }}>
         
-        {/* Timeline Chart Visualizing Clicks, Completes, and Revenue */}
+        {/* Timeline Chart Visualizing live statistics by selected intervals */}
         <div style={{
           background: 'transparent',
           border: 'none',
@@ -290,46 +328,146 @@ export default function AnalyticsDashboard() {
           gap: '20px',
           gridColumn: 'span 2'
         }}>
-          <div>
-            <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-color)', margin: 0 }}>
-              Traffic, Completion & Revenue Composed Timeline
-            </h3>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0 0' }}>
-              Dual-axis analysis showing clicks (area), completions (bar), and revenue output (line).
-            </p>
-          </div>
+          {/* Chart Period Filters Tab Row */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--pm-card, #ffffff)', border: '1px solid var(--divider-color, #e2e8f0)', borderRadius: '14px', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  onClick={() => { setChartType('7day'); }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: chartType === '7day' ? '2px solid #3b82f6' : '1px solid var(--divider-color)',
+                    background: chartType === '7day' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+                    color: chartType === '7day' ? '#3b82f6' : 'var(--text-muted)',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Statistics on the 7th
+                </button>
+                <button 
+                  onClick={() => { setChartType('30day'); }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: chartType === '30day' ? '2px solid #3b82f6' : '1px solid var(--divider-color)',
+                    background: chartType === '30day' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+                    color: chartType === '30day' ? '#3b82f6' : 'var(--text-muted)',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  30-day statistics
+                </button>
+                <button 
+                  onClick={() => { setChartType('annual'); }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: chartType === 'annual' ? '2px solid #3b82f6' : '1px solid var(--divider-color)',
+                    background: chartType === 'annual' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+                    color: chartType === 'annual' ? '#3b82f6' : 'var(--text-muted)',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Annual statistics
+                </button>
+                <button 
+                  onClick={() => { setChartType('custom'); }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: chartType === 'custom' ? '2px solid #3b82f6' : '1px solid var(--divider-color)',
+                    background: chartType === 'custom' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+                    color: chartType === 'custom' ? '#3b82f6' : 'var(--text-muted)',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Custom query
+                </button>
+              </div>
+              
+              {/* Custom Date Picker Fields */}
+              {chartType === 'custom' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input 
+                    type="date" 
+                    value={customDates.start} 
+                    onChange={e => setCustomDates(prev => ({ ...prev, start: e.target.value }))}
+                    style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)' }}
+                  />
+                  <span style={{ color: 'var(--text-muted)' }}>to</span>
+                  <input 
+                    type="date" 
+                    value={customDates.end} 
+                    onChange={e => setCustomDates(prev => ({ ...prev, end: e.target.value }))}
+                    style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)' }}
+                  />
+                  <button 
+                    onClick={handleCustomChartQuery}
+                    style={{ padding: '6px 14px', borderRadius: '6px', background: '#3b82f6', color: '#fff', border: 'none', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Query
+                  </button>
+                </div>
+              )}
 
-          <div style={{ width: '100%', height: '340px' }}>
-            <ResponsiveContainer width="100%" height={340}>
-              <ComposedChart data={chartData} margin={{ top: 10, right: -5, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="areaTrafficGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--chart-info)" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="var(--chart-info)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="var(--divider-color)" opacity={0.3} />
-                <XAxis dataKey="name" tick={{ fill: 'var(--text-muted)', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} dy={8} />
-                
-                {/* Y-Axis Left (Clicks and Completions count) */}
-                <YAxis yAxisId="left" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                
-                {/* Y-Axis Right (Revenue in dollars) */}
-                <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `$${v}`} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                
-                <Tooltip content={<CustomChartTooltip />} cursor={{ stroke: 'var(--divider-color)', strokeWidth: 1, strokeDasharray: '3 3' }} />
-                <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px', fontWeight: 600, paddingBottom: '16px' }} />
-                
-                {/* Clicks Area */}
-                <Area yAxisId="left" type="monotone" dataKey="Clicks" name="Traffic Clicks" fill="url(#areaTrafficGrad)" stroke="var(--chart-info)" strokeWidth={2} isAnimationActive={false} />
-                
-                {/* Completions Bar */}
-                <Bar yAxisId="left" dataKey="Completions" name="Completions" fill="var(--primary-brand)" radius={[4, 4, 0, 0]} maxBarSize={30} isAnimationActive={false} />
-                
-                {/* Revenue Line */}
-                <Line yAxisId="right" type="monotone" dataKey="Revenue" name="Revenue" stroke="var(--chart-accent-1)" strokeWidth={3} dot={{ r: 4, strokeWidth: 0, fill: 'var(--chart-accent-1)' }} activeDot={{ r: 6 }} isAnimationActive={false} />
-              </ComposedChart>
-            </ResponsiveContainer>
+              {/* Quick Chart View Icons */}
+              <div style={{ display: 'flex', gap: '8px', color: 'var(--text-muted)' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: 'pointer' }}><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: 'pointer' }}><path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" /></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: 'pointer' }}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
+              </div>
+            </div>
+
+            {/* Legend row */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-color)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#9ca3af' }} />
+                <span>完成数量</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#10b981' }} />
+                <span>总收益</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#f59e0b' }} />
+                <span>团队收益</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }} />
+                <span>会员收益</span>
+              </div>
+            </div>
+
+            {/* Responsive Container for Recharts LineChart */}
+            <div style={{ width: '100%', height: '340px', marginTop: '12px', position: 'relative' }}>
+              {chartLoading && (
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, borderRadius: '8px' }}>
+                  <div className="loader-ring" />
+                </div>
+              )}
+              
+              <ResponsiveContainer width="100%" height={340}>
+                <LineChart data={chartData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--divider-color)" opacity={0.25} vertical={false} />
+                  <XAxis dataKey="date" tick={{ fill: 'var(--text-muted)', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} dy={8} />
+                  <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <Tooltip 
+                    contentStyle={{ background: 'var(--pm-card, #ffffff)', border: '1px solid var(--divider-color)', borderRadius: '10px' }}
+                    labelStyle={{ color: 'var(--text-color)', fontWeight: 700 }}
+                  />
+                  
+                  <Line type="monotone" dataKey="completions" stroke="#9ca3af" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomCompletesLabel />} />
+                  <Line type="monotone" dataKey="total_payout" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#10b981" />} />
+                  <Line type="monotone" dataKey="team_payout" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#f59e0b" />} />
+                  <Line type="monotone" dataKey="member_payout" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#ef4444" />} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
