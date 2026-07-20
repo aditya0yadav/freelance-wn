@@ -34,6 +34,7 @@ export default function AnalyticsDashboard() {
   const [chartData, setChartData] = useState([]);
   const [chartLoading, setChartLoading] = useState(false);
   const [customDates, setCustomDates] = useState({ start: '', end: '' });
+  const [chartMode, setChartMode] = useState('line'); // 'line', 'bar', 'table'
 
   const fetchChartData = useCallback(async () => {
     setChartLoading(true);
@@ -329,19 +330,22 @@ export default function AnalyticsDashboard() {
           gridColumn: 'span 2'
         }}>
           {/* Chart Period Filters Tab Row */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--pm-card, #ffffff)', border: '1px solid var(--divider-color, #e2e8f0)', borderRadius: '14px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--divider-color)', paddingBottom: '14px', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', background: 'transparent', border: 'none', padding: '20px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--divider-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button 
                   onClick={() => { setChartType('7day'); }}
                   style={{
-                    padding: '8px 16px',
+                    padding: '8px 18px',
                     borderRadius: '8px',
-                    border: chartType === '7day' ? '2px solid #3b82f6' : '1px solid var(--divider-color)',
-                    background: chartType === '7day' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
-                    color: chartType === '7day' ? '#3b82f6' : 'var(--text-muted)',
+                    border: chartType === '7day' ? '2.5px solid #2563eb' : '1px solid var(--divider-color, rgba(0,0,0,0.08))',
+                    background: chartType === '7day' ? 'transparent' : 'var(--pm-card, #ffffff)',
+                    color: chartType === '7day' ? '#2563eb' : 'var(--text-muted, #71717a)',
+                    fontSize: '13px',
                     fontWeight: 700,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    boxShadow: chartType === '7day' ? '0 4px 12px rgba(37, 99, 235, 0.08)' : 'none',
+                    transition: 'all 0.2s ease'
                   }}
                 >
                   Statistics on the 7th
@@ -349,13 +353,16 @@ export default function AnalyticsDashboard() {
                 <button 
                   onClick={() => { setChartType('30day'); }}
                   style={{
-                    padding: '8px 16px',
+                    padding: '8px 18px',
                     borderRadius: '8px',
-                    border: chartType === '30day' ? '2px solid #3b82f6' : '1px solid var(--divider-color)',
-                    background: chartType === '30day' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
-                    color: chartType === '30day' ? '#3b82f6' : 'var(--text-muted)',
+                    border: chartType === '30day' ? '2.5px solid #2563eb' : '1px solid var(--divider-color, rgba(0,0,0,0.08))',
+                    background: chartType === '30day' ? 'transparent' : 'var(--pm-card, #ffffff)',
+                    color: chartType === '30day' ? '#2563eb' : 'var(--text-muted, #71717a)',
+                    fontSize: '13px',
                     fontWeight: 700,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    boxShadow: chartType === '30day' ? '0 4px 12px rgba(37, 99, 235, 0.08)' : 'none',
+                    transition: 'all 0.2s ease'
                   }}
                 >
                   30-day statistics
@@ -363,13 +370,16 @@ export default function AnalyticsDashboard() {
                 <button 
                   onClick={() => { setChartType('annual'); }}
                   style={{
-                    padding: '8px 16px',
+                    padding: '8px 18px',
                     borderRadius: '8px',
-                    border: chartType === 'annual' ? '2px solid #3b82f6' : '1px solid var(--divider-color)',
-                    background: chartType === 'annual' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
-                    color: chartType === 'annual' ? '#3b82f6' : 'var(--text-muted)',
+                    border: chartType === 'annual' ? '2.5px solid #2563eb' : '1px solid var(--divider-color, rgba(0,0,0,0.08))',
+                    background: chartType === 'annual' ? 'transparent' : 'var(--pm-card, #ffffff)',
+                    color: chartType === 'annual' ? '#2563eb' : 'var(--text-muted, #71717a)',
+                    fontSize: '13px',
                     fontWeight: 700,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    boxShadow: chartType === 'annual' ? '0 4px 12px rgba(37, 99, 235, 0.08)' : 'none',
+                    transition: 'all 0.2s ease'
                   }}
                 >
                   Annual statistics
@@ -377,13 +387,16 @@ export default function AnalyticsDashboard() {
                 <button 
                   onClick={() => { setChartType('custom'); }}
                   style={{
-                    padding: '8px 16px',
+                    padding: '8px 18px',
                     borderRadius: '8px',
-                    border: chartType === 'custom' ? '2px solid #3b82f6' : '1px solid var(--divider-color)',
-                    background: chartType === 'custom' ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
-                    color: chartType === 'custom' ? '#3b82f6' : 'var(--text-muted)',
+                    border: chartType === 'custom' ? '2.5px solid #2563eb' : '1px solid var(--divider-color, rgba(0,0,0,0.08))',
+                    background: chartType === 'custom' ? 'transparent' : 'var(--pm-card, #ffffff)',
+                    color: chartType === 'custom' ? '#2563eb' : 'var(--text-muted, #71717a)',
+                    fontSize: '13px',
                     fontWeight: 700,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    boxShadow: chartType === 'custom' ? '0 4px 12px rgba(37, 99, 235, 0.08)' : 'none',
+                    transition: 'all 0.2s ease'
                   }}
                 >
                   Custom query
@@ -416,10 +429,68 @@ export default function AnalyticsDashboard() {
               )}
 
               {/* Quick Chart View Icons */}
-              <div style={{ display: 'flex', gap: '8px', color: 'var(--text-muted)' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: 'pointer' }}><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: 'pointer' }}><path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" /></svg>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: 'pointer' }}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <svg 
+                  width="18" 
+                  height="18" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  onClick={() => setChartMode('bar')}
+                  style={{ 
+                    cursor: 'pointer', 
+                    color: chartMode === 'bar' ? '#2563eb' : 'var(--text-muted, #71717a)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="Bar Chart"
+                >
+                  <line x1="18" y1="20" x2="18" y2="10" />
+                  <line x1="12" y1="20" x2="12" y2="4" />
+                  <line x1="6" y1="20" x2="6" y2="14" />
+                </svg>
+                <svg 
+                  width="18" 
+                  height="18" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  onClick={() => setChartMode('line')}
+                  style={{ 
+                    cursor: 'pointer', 
+                    color: chartMode === 'line' ? '#2563eb' : 'var(--text-muted, #71717a)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="Line Chart"
+                >
+                  <path d="M3 3v18h18" />
+                  <path d="m19 9-5 5-4-4-3 3" />
+                </svg>
+                <svg 
+                  width="18" 
+                  height="18" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  onClick={() => setChartMode('table')}
+                  style={{ 
+                    cursor: 'pointer', 
+                    color: chartMode === 'table' ? '#2563eb' : 'var(--text-muted, #71717a)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="Data Table"
+                >
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
               </div>
             </div>
 
@@ -446,27 +517,70 @@ export default function AnalyticsDashboard() {
             {/* Responsive Container for Recharts LineChart */}
             <div style={{ width: '100%', height: '340px', marginTop: '12px', position: 'relative' }}>
               {chartLoading && (
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, borderRadius: '8px' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, borderRadius: '8px' }}>
                   <div className="loader-ring" />
                 </div>
               )}
               
-              <ResponsiveContainer width="100%" height={340}>
-                <LineChart data={chartData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--divider-color)" opacity={0.25} vertical={false} />
-                  <XAxis dataKey="date" tick={{ fill: 'var(--text-muted)', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} dy={8} />
-                  <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip 
-                    contentStyle={{ background: 'var(--pm-card, #ffffff)', border: '1px solid var(--divider-color)', borderRadius: '10px' }}
-                    labelStyle={{ color: 'var(--text-color)', fontWeight: 700 }}
-                  />
-                  
-                  <Line type="monotone" dataKey="completions" stroke="#9ca3af" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomCompletesLabel />} />
-                  <Line type="monotone" dataKey="total_payout" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#10b981" />} />
-                  <Line type="monotone" dataKey="team_payout" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#f59e0b" />} />
-                  <Line type="monotone" dataKey="member_payout" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#ef4444" />} />
-                </LineChart>
-              </ResponsiveContainer>
+              {chartMode === 'line' ? (
+                <ResponsiveContainer width="100%" height={340}>
+                  <LineChart data={chartData} margin={{ top: 20, right: 15, left: -25, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--divider-color)" opacity={0.25} vertical={false} />
+                    <XAxis dataKey="date" tick={{ fill: 'var(--text-muted)', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} dy={8} />
+                    <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip 
+                      contentStyle={{ background: 'var(--pm-card, #ffffff)', border: '1px solid var(--divider-color)', borderRadius: '10px' }}
+                      labelStyle={{ color: 'var(--text-color)', fontWeight: 700 }}
+                    />
+                    
+                    <Line type="monotone" dataKey="completions" stroke="#9ca3af" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomCompletesLabel />} />
+                    <Line type="monotone" dataKey="total_payout" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#10b981" />} />
+                    <Line type="monotone" dataKey="team_payout" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#f59e0b" />} />
+                    <Line type="monotone" dataKey="member_payout" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#ef4444" />} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : chartMode === 'bar' ? (
+                <ResponsiveContainer width="100%" height={340}>
+                  <BarChart data={chartData} margin={{ top: 20, right: 15, left: -25, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--divider-color)" opacity={0.25} vertical={false} />
+                    <XAxis dataKey="date" tick={{ fill: 'var(--text-muted)', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} dy={8} />
+                    <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip 
+                      contentStyle={{ background: 'var(--pm-card, #ffffff)', border: '1px solid var(--divider-color)', borderRadius: '10px' }}
+                      labelStyle={{ color: 'var(--text-color)', fontWeight: 700 }}
+                    />
+                    <Bar dataKey="completions" fill="#9ca3af" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="total_payout" fill="#10b981" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="team_payout" fill="#f59e0b" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="member_payout" fill="#ef4444" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ height: '340px', overflowY: 'auto', border: '1px solid var(--divider-color)', borderRadius: '10px', background: 'var(--pm-card, #ffffff)' }}>
+                  <table className="admin-table" style={{ margin: 0 }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--divider-color)' }}>
+                      <tr>
+                        <th>Date</th>
+                        <th>Completions</th>
+                        <th>Total Payout</th>
+                        <th>Team Payout</th>
+                        <th>Member Payout</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chartData.map((row, idx) => (
+                        <tr key={idx}>
+                          <td style={{ fontWeight: 700 }}>{row.date}</td>
+                          <td>{row.completions}</td>
+                          <td style={{ color: 'var(--chart-success, #10b981)', fontWeight: 600 }}>${Number(row.total_payout || 0).toFixed(2)}</td>
+                          <td style={{ color: 'var(--chart-info, #3b82f6)', fontWeight: 600 }}>${Number(row.team_payout || 0).toFixed(2)}</td>
+                          <td style={{ color: 'var(--chart-accent-1, #ef4444)', fontWeight: 700 }}>${Number(row.member_payout || 0).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
