@@ -238,6 +238,12 @@ export default function App() {
       if (pf) queryStr += `&platform_id=${pf}`;
       if (st) queryStr += `&reward_status=${st}`;
 
+      // Always reload profile balance alongside stats to keep ui updated
+      apiFetch('/api/member/platform/profile', 'GET', null, activeToken)
+        .then(profRes => {
+          if (profRes.code === 200) setMemberCoins(profRes.data.coins || 0);
+        }).catch(() => {});
+
       if (tab === 'my') {
         queryStr += `&personal=true`;
         const [statsRes, convRes] = await Promise.all([
@@ -309,6 +315,13 @@ export default function App() {
     setOffers([]);
     setSearchQuery('');
     setSortOption('default');
+    // Refresh balance too
+    api('/api/member/platform/profile').then(profRes => {
+      if (profRes.code === 200) {
+        setMemberCoins(profRes.data.coins || 0);
+        setShowUSD(profRes.data.show_usd || false);
+      }
+    }).catch(() => {});
     navigate(`/platform/${p.platform_id}`);
     loadOffers(p.platform_id, 1, '');
   };
@@ -348,6 +361,10 @@ export default function App() {
       const res = await api('/api/member/platform/pull', 'POST', { platform_id: platformId });
       if (res.code === 200) {
         showToast('Survey inventory refreshed successfully!');
+        // Refresh balance too
+        api('/api/member/platform/profile').then(profRes => {
+          if (profRes.code === 200) setMemberCoins(profRes.data.coins || 0);
+        }).catch(() => {});
         await loadOffers(platformId, 1, searchQuery);
       } else {
         showToast(res.msg || 'Refresh failed', true);
@@ -556,6 +573,7 @@ export default function App() {
                 setStatsStatus={setStatsStatus}
                 setStatsNickname={setStatsNickname}
                 setStatsPage={setStatsPage}
+                showUSD={showUSD}
               />
 
               <TickerBar conversions={conversions} />
@@ -604,6 +622,7 @@ export default function App() {
                         personalStats={personalStats}
                         teamStats={teamStats}
                         conversionsData={conversionsData}
+                        showUSD={showUSD}
                       />
                     }
                   />

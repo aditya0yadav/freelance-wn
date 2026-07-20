@@ -1215,7 +1215,7 @@ class PlatformController {
         _sum: { member_payout: true }
       });
       const failedAgg = await prisma.reward.aggregate({
-        where: { ...where, reward_status: { gt: 1 } },
+        where: { ...where, reward_status: { in: [2, 3, 4, 5] } },
         _sum: { member_payout: true }
       });
 
@@ -1287,7 +1287,7 @@ class PlatformController {
         _sum: { team_payout: true }
       });
       const teamFailedAgg = await prisma.reward.aggregate({
-        where: { ...where, reward_status: { gt: 1 } },
+        where: { ...where, reward_status: { in: [2, 3, 4, 5] } },
         _sum: { team_payout: true }
       });
 
@@ -1300,7 +1300,7 @@ class PlatformController {
         _sum: { member_payout: true }
       });
       const memberFailedAgg = await prisma.reward.aggregate({
-        where: { ...where, reward_status: { gt: 1 } },
+        where: { ...where, reward_status: { in: [2, 3, 4, 5] } },
         _sum: { member_payout: true }
       });
 

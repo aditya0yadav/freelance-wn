@@ -68,6 +68,7 @@ export default function Topbar({
   setStatsStatus,
   setStatsNickname,
   setStatsPage,
+  showUSD
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -165,11 +166,19 @@ export default function Topbar({
         </button>
 
         {/* Coin balance */}
-        <div className="coin-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
-          </svg>
-          <span className="coin-num">{Math.round(memberCoins).toLocaleString()}</span>
+        <div className="coin-badge" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          {showUSD ? (
+            <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--green, #10b981)', marginRight: '2px' }}>$</span>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
+            </svg>
+          )}
+          <span className="coin-num">
+            {showUSD 
+              ? (memberCoins / 100).toFixed(2) 
+              : Math.round(memberCoins).toLocaleString() + (language === 'en' ? ' Coins' : ' 金币')}
+          </span>
         </div>
 
         {/* Notification bell */}

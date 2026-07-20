@@ -17,9 +17,17 @@ export default function StatisticsView({
   statsLoading,
   personalStats,
   teamStats,
-  conversionsData
+  conversionsData,
+  showUSD
 }) {
   const { language, t } = useLanguage();
+
+  const fmtVal = (val) => {
+    if (showUSD) {
+      return `$${(val / 100).toFixed(2)}`;
+    }
+    return `${Math.round(val).toLocaleString()} ${t('coins')}`;
+  };
 
   return (
     <main className="stats-main">
@@ -92,15 +100,15 @@ export default function StatisticsView({
                 </div>
                 <div className="summary-card stat-green">
                   <span>{language === 'en' ? 'Success Payouts' : '成功结算'}</span>
-                  <strong>{Math.round(personalStats.success).toLocaleString()} {t('coins')}</strong>
+                  <strong>{fmtVal(personalStats.success)}</strong>
                 </div>
                 <div className="summary-card stat-red">
                   <span>{language === 'en' ? 'Failed Payouts' : '失败结算'}</span>
-                  <strong>{Math.round(personalStats.failed).toLocaleString()} {t('coins')}</strong>
+                  <strong>{fmtVal(personalStats.failed)}</strong>
                 </div>
                 <div className="summary-card stat-orange">
                   <span>{t('language') === 'en' ? 'Deductions' : '扣分记录'}</span>
-                  <strong>{Math.round(personalStats.deduction).toLocaleString()} {t('coins')}</strong>
+                  <strong>{fmtVal(personalStats.deduction)}</strong>
                 </div>
               </div>
             ) : (
@@ -111,15 +119,15 @@ export default function StatisticsView({
                 </div>
                 <div className="summary-card stat-green">
                   <span>{language === 'en' ? 'Total Member Earnings' : '成员成功结算总额'}</span>
-                  <strong>{Math.round(teamStats.teamsuccess).toLocaleString()} {t('coins')}</strong>
+                  <strong>{fmtVal(teamStats.teamsuccess)}</strong>
                 </div>
                 <div className="summary-card stat-red">
                   <span>{language === 'en' ? 'Total Member Failed' : '成员失败结算总额'}</span>
-                  <strong>{Math.round(teamStats.teamfailed).toLocaleString()} {t('coins')}</strong>
+                  <strong>{fmtVal(teamStats.teamfailed)}</strong>
                 </div>
                 <div className="summary-card stat-orange">
                   <span>{language === 'en' ? 'Total Member Deductions' : '成员扣分记录总额'}</span>
-                  <strong>{Math.round(teamStats.teamdeduction).toLocaleString()} {t('coins')}</strong>
+                  <strong>{fmtVal(teamStats.teamdeduction)}</strong>
                 </div>
               </div>
             )}
@@ -164,7 +172,7 @@ export default function StatisticsView({
                               </td>
                               <td>{c.platform?.platform_name || '—'}</td>
                               {statsTab === 'team' && <td>{c.member?.nickname || '—'}</td>}
-                              <td className="cell-money">{Math.round(c.member_payout).toLocaleString()} {t('coins')}</td>
+                              <td className="cell-money">{fmtVal(c.member_payout)}</td>
                               <td className="cell-ip">{c.ip || '—'}</td>
                               <td>
                                 <span className={`status-badge-inline ${statusClass}`}>{statusText}</span>
