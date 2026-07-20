@@ -59,9 +59,9 @@ export default function StatisticsView({
             <select value={statsStatus} onChange={(e) => { setStatsStatus(e.target.value); setStatsPage(1); loadStats(statsTab, 1, statsPlatform, e.target.value, statsNickname); }}>
               <option value="">{language === 'en' ? 'All Statuses' : '所有状态'}</option>
               <option value="1">{language === 'en' ? 'Success' : '成功'}</option>
-              <option value="2">{language === 'en' ? 'Quota Full' : '配额满'}</option>
-              <option value="3">{language === 'en' ? 'Pre-Screen Terminated' : '甄别筛选未通过'}</option>
-              <option value="4">{language === 'en' ? 'Quality Terminated' : '质量审核未通过'}</option>
+              <option value="2">{language === 'en' ? 'Disqualified' : '甄别淘汰'}</option>
+              <option value="3">{language === 'en' ? 'Quota Full' : '配额满'}</option>
+              <option value="4">{language === 'en' ? 'Terminated' : '常规淘汰'}</option>
               <option value="5">{language === 'en' ? 'Unknown Error' : '未知错误'}</option>
               <option value="6">{language === 'en' ? 'Deduction' : '扣除积分'}</option>
             </select>
@@ -144,7 +144,7 @@ export default function StatisticsView({
                     <table className="stats-table">
                       <thead>
                         <tr>
-                          <th>{language === 'en' ? 'Txn ID / Project' : '交易单号 / 调查项目'}</th>
+                          <th>{language === 'en' ? 'Project ID' : '项目ID'}</th>
                           <th>{language === 'en' ? 'Platform' : '渠道'}</th>
                           {statsTab === 'team' && <th>{language === 'en' ? 'Member' : '成员'}</th>}
                           <th>{language === 'en' ? 'Member Payout' : '会员积分结算'}</th>
@@ -158,17 +158,16 @@ export default function StatisticsView({
                           let statusText = language === 'en' ? 'Unknown' : '未知';
                           let statusClass = 'badge-other';
                           if (c.reward_status === 1) { statusText = language === 'en' ? 'Success' : '成功'; statusClass = 'badge-success'; }
-                          else if (c.reward_status === 2) { statusText = language === 'en' ? 'Quota Full' : '配额满'; statusClass = 'badge-fail'; }
-                          else if (c.reward_status === 3) { statusText = language === 'en' ? 'Pre-Screen Terminated' : '筛选淘汰'; statusClass = 'badge-fail'; }
-                          else if (c.reward_status === 4) { statusText = language === 'en' ? 'Quality Terminated' : '质量淘汰'; statusClass = 'badge-fail'; }
+                          else if (c.reward_status === 2) { statusText = language === 'en' ? 'Disqualified' : '甄别淘汰'; statusClass = 'badge-fail'; }
+                          else if (c.reward_status === 3) { statusText = language === 'en' ? 'Quota Full' : '配额满'; statusClass = 'badge-fail'; }
+                          else if (c.reward_status === 4) { statusText = language === 'en' ? 'Terminated' : '常规淘汰'; statusClass = 'badge-fail'; }
                           else if (c.reward_status === 5) { statusText = language === 'en' ? 'Unknown Error' : '未知错误'; statusClass = 'badge-fail'; }
                           else if (c.reward_status === 6) { statusText = language === 'en' ? 'Deduction' : '扣分记录'; statusClass = 'badge-deduct'; }
 
                           return (
                             <tr key={c.reward_id}>
                               <td>
-                                <div className="cell-main">{c.txn_id}</div>
-                                <div className="cell-sub">{c.project_pno || '—'}</div>
+                                <div className="cell-main">{c.project_pno || c.project_no || 'Manual'}</div>
                               </td>
                               <td>{c.platform?.platform_name || '—'}</td>
                               {statsTab === 'team' && <td>{c.member?.nickname || '—'}</td>}
