@@ -1337,15 +1337,15 @@ class PlatformController {
       const now = new Date();
 
       if (type === 'daily') {
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
         dateFilter = { gte: start, lte: now };
       } else if (type === 'weekly') {
-        const day = now.getDay();
-        const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-        const start = new Date(now.getFullYear(), now.getMonth(), diff, 0, 0, 0);
+        const day = now.getUTCDay();
+        const diff = now.getUTCDate() - day + (day === 0 ? -6 : 1);
+        const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), diff, 0, 0, 0));
         dateFilter = { gte: start, lte: now };
       } else if (type === 'monthly') {
-        const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+        const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
         dateFilter = { gte: start, lte: now };
       }
 

@@ -5,9 +5,17 @@ export default function LeaderboardView({
   leaderboardType,
   loadLeaderboard,
   leaderboardLoading,
-  leaderboardData
+  leaderboardData,
+  showUSD
 }) {
   const { language, t } = useLanguage();
+
+  const fmtVal = (val) => {
+    if (showUSD) {
+      return `$${(val / 100).toFixed(2)}`;
+    }
+    return `${Math.round(val).toLocaleString()} ${t('coins')}`;
+  };
 
   return (
     <main className="leaderboard-main">
@@ -45,7 +53,7 @@ export default function LeaderboardView({
                   <div className="podium-rank">2</div>
                   <img className="podium-avatar" src={leaderboardData[1].avatar_url} alt="Silver" />
                   <h4 className="podium-name">{leaderboardData[1].nickname}</h4>
-                  <div className="podium-payout">{Math.round(leaderboardData[1].total_member_payout).toLocaleString()} {t('coins')}</div>
+                  <div className="podium-payout">{fmtVal(leaderboardData[1].total_member_payout)}</div>
                   <div className="podium-count">{leaderboardData[1].total_member_offers} {language === 'en' ? 'surveys' : '次调查'}</div>
                 </div>
               )}
@@ -55,7 +63,7 @@ export default function LeaderboardView({
                   <div className="podium-rank">1</div>
                   <img className="podium-avatar" src={leaderboardData[0].avatar_url} alt="Gold" />
                   <h4 className="podium-name">{leaderboardData[0].nickname}</h4>
-                  <div className="podium-payout">{Math.round(leaderboardData[0].total_member_payout).toLocaleString()} {t('coins')}</div>
+                  <div className="podium-payout">{fmtVal(leaderboardData[0].total_member_payout)}</div>
                   <div className="podium-count">{leaderboardData[0].total_member_offers} {language === 'en' ? 'surveys' : '次调查'}</div>
                 </div>
               )}
@@ -65,7 +73,7 @@ export default function LeaderboardView({
                   <div className="podium-rank">3</div>
                   <img className="podium-avatar" src={leaderboardData[2].avatar_url} alt="Bronze" />
                   <h4 className="podium-name">{leaderboardData[2].nickname}</h4>
-                  <div className="podium-payout">{Math.round(leaderboardData[2].total_member_payout).toLocaleString()} {t('coins')}</div>
+                  <div className="podium-payout">{fmtVal(leaderboardData[2].total_member_payout)}</div>
                   <div className="podium-count">{leaderboardData[2].total_member_offers} {language === 'en' ? 'surveys' : '次调查'}</div>
                 </div>
               )}
@@ -80,7 +88,7 @@ export default function LeaderboardView({
                     <img className="rank-avatar" src={item.avatar_url} alt="" />
                     <div className="rank-name">{item.nickname}</div>
                     <div className="rank-surveys">{item.total_member_offers} {language === 'en' ? 'surveys' : '次调查'}</div>
-                    <div className="rank-earnings">{Math.round(item.total_member_payout).toLocaleString()} {t('coins')}</div>
+                    <div className="rank-earnings">{fmtVal(item.total_member_payout)}</div>
                   </div>
                 ))}
               </div>

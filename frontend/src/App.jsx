@@ -635,6 +635,7 @@ export default function App() {
                         loadLeaderboard={loadLeaderboard}
                         leaderboardLoading={leaderboardLoading}
                         leaderboardData={leaderboardData}
+                        showUSD={showUSD}
                       />
                     }
                   />
