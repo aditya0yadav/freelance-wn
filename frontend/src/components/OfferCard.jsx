@@ -120,6 +120,22 @@ export default function OfferCard({ offer, onStart, onSpecs, onCopyLink, showUSD
 
   const geo = getGeoInfo(offer);
 
+  const getAbbr = (code) => {
+    if (!code) return 'GL';
+    if (code === 'USD') return 'US';
+    if (code === 'EUR') return 'EU';
+    if (code === 'GBP') return 'GB';
+    if (code === 'CNY') return 'CN';
+    if (code === 'JPY') return 'JP';
+    if (code === 'AUD') return 'AU';
+    if (code === 'CAD') return 'CA';
+    if (code === 'INR') return 'IN';
+    return code.substring(0, 2).toUpperCase();
+  };
+
+  const abbr = getAbbr(geo.code);
+  const quotaVal = offer.project_quota !== undefined && offer.project_quota !== null ? offer.project_quota : '—';
+
   const getRelativeTime = (timeStr) => {
     if (!timeStr) return null;
     const diff = new Date() - new Date(timeStr);
@@ -165,23 +181,26 @@ export default function OfferCard({ offer, onStart, onSpecs, onCopyLink, showUSD
               NEW
             </span>
           )}
-          {/* Country / Currency badge with full country name */}
+          {/* Country abbreviation badge with inline remaining quota */}
           <span
-            title={geo.country}
+            title={`${geo.country} | Remaining Quota: ${quotaVal}`}
             style={{
               background: 'rgba(99, 102, 241, 0.08)',
               color: 'var(--t2)',
               border: '1px solid rgba(99, 102, 241, 0.15)',
               padding: '2px 8px',
               borderRadius: '10px',
-              fontSize: '10px',
-              fontWeight: 700,
+              fontSize: '12px',
+              fontWeight: 800,
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
+              gap: '6px',
               cursor: 'default',
             }}>
-            {geo.flag} {geo.country}
+            <span style={{ fontSize: '13px' }}>{geo.flag}</span>
+            <span>{abbr}</span>
+            <span style={{ opacity: 0.4, margin: '0 2px' }}>|</span>
+            <span style={{ color: '#ef4444', fontWeight: 900 }}>Q: {quotaVal}</span>
           </span>
         </div>
         <div className="offer-row-meta" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
