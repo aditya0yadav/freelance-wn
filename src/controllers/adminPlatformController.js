@@ -470,33 +470,65 @@ class AdminPlatformController {
 
   static async ensureMockDataCorrectness() {
     try {
-      const check = await prisma.reward.findFirst({
+      // 1. Correct original USD-seeded records (e.g. 2.50) to coins (250.00)
+      const checkUSD = await prisma.reward.findFirst({
         where: { txn_id: 'TXN10001', payout: 2.50 }
       });
-      if (check) {
+      if (checkUSD) {
         await prisma.reward.updateMany({
           where: { txn_id: 'TXN10001' },
-          data: { payout: 250.00, team_payout: 225.00 }
+          data: { payout: 250.00, team_payout: 250.00 }
         });
         await prisma.reward.updateMany({
           where: { txn_id: 'TXN10002' },
-          data: { payout: 300.00, team_payout: 270.00 }
+          data: { payout: 300.00, team_payout: 300.00 }
         });
         await prisma.reward.updateMany({
           where: { txn_id: 'TXN10003' },
-          data: { payout: 300.00, team_payout: 270.00 }
+          data: { payout: 300.00, team_payout: 300.00 }
         });
         await prisma.reward.updateMany({
           where: { txn_id: 'TXN10004' },
-          data: { payout: 100.00, team_payout: 90.00 }
+          data: { payout: 100.00, team_payout: 100.00 }
         });
         await prisma.reward.updateMany({
           where: { txn_id: 'TXN10005' },
-          data: { payout: 80.00, team_payout: 72.00 }
+          data: { payout: 80.00, team_payout: 80.00 }
         });
         await prisma.reward.updateMany({
           where: { txn_id: 'TXN10006' },
-          data: { payout: 250.00, team_payout: 225.00 }
+          data: { payout: 250.00, team_payout: 250.00 }
+        });
+      }
+
+      // 2. Correct partially migrated records that still have the 10% commission (225.00) to 100% (250.00)
+      const checkCommission = await prisma.reward.findFirst({
+        where: { txn_id: 'TXN10001', team_payout: 225.00 }
+      });
+      if (checkCommission) {
+        await prisma.reward.updateMany({
+          where: { txn_id: 'TXN10001' },
+          data: { team_payout: 250.00 }
+        });
+        await prisma.reward.updateMany({
+          where: { txn_id: 'TXN10002' },
+          data: { team_payout: 300.00 }
+        });
+        await prisma.reward.updateMany({
+          where: { txn_id: 'TXN10003' },
+          data: { team_payout: 300.00 }
+        });
+        await prisma.reward.updateMany({
+          where: { txn_id: 'TXN10004' },
+          data: { team_payout: 100.00 }
+        });
+        await prisma.reward.updateMany({
+          where: { txn_id: 'TXN10005' },
+          data: { team_payout: 80.00 }
+        });
+        await prisma.reward.updateMany({
+          where: { txn_id: 'TXN10006' },
+          data: { team_payout: 250.00 }
         });
       }
     } catch (err) {
