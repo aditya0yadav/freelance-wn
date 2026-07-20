@@ -1108,7 +1108,7 @@ class PlatformController {
    */
   static async profile(req, res) {
     try {
-      const memberId = req.member.member_id;
+      const memberId = req.user?.member_id || req.member?.member_id;
       const member = await prisma.member.findUnique({
         where: { member_id: memberId }
       });
