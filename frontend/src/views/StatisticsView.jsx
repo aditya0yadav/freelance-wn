@@ -167,7 +167,7 @@ export default function StatisticsView({
                           return (
                             <tr key={c.reward_id}>
                               <td>
-                                <div className="cell-main">{c.project_pno || c.project_no || 'Manual'}</div>
+                                <div className="cell-main">{c.project_no || c.project_pno || 'Manual'}</div>
                               </td>
                               <td>{c.platform?.platform_name || '—'}</td>
                               {statsTab === 'team' && <td>{c.member?.nickname || '—'}</td>}

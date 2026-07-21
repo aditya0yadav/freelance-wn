@@ -1450,6 +1450,7 @@ class PlatformController {
         reward_id: item.reward_id,
         txn_id: item.txn_id,
         project_pno: item.project_pno,
+        project_no: item.project_no,
         member_payout: item.member_payout,
         create_time: item.create_time,
         ip: item.ip,
