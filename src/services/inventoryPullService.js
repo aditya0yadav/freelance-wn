@@ -8,7 +8,11 @@ class InventoryPullService {
    */
   static async pullAll() {
     const platforms = await prisma.platform.findMany({
-      where: { delete_time: null, is_disable: 0 }
+      where: {
+        delete_time: null,
+        is_disable: 0,
+        platform_sign: { in: ['Gowebsurveys', 'Zamplia'] }
+      }
     });
 
     for (const platform of platforms) {
@@ -24,6 +28,11 @@ class InventoryPullService {
    * Sync single platform based on its unique signing strategy
    */
   static async pullPlatform(platform) {
+    if (platform.platform_sign !== 'Gowebsurveys' && platform.platform_sign !== 'Zamplia') {
+      console.log(`Platform ${platform.platform_name} does not support automated inventory pull.`);
+      return;
+    }
+
     const platformParams = platform.params ? JSON.parse(platform.params) : [];
     const paramsMap = {};
     platformParams.forEach(p => { paramsMap[p.name] = p.value; });
@@ -48,8 +57,6 @@ class InventoryPullService {
       case 'Zamplia':
         await this.pullZamplia(platform, paramsMap, currency);
         break;
-      default:
-        console.log(`Platform ${platform.platform_name} does not support automated inventory pull.`);
     }
   }
 
@@ -66,7 +73,50 @@ class InventoryPullService {
     });
 
     if (res.data && res.data.surveys) {
-      await this.saveOffers(platform.platform_id, currency.currency_id, res.data.surveys.map(survey => ({
+      const allSurveys = res.data.surveys;
+      const liveSurveys = [];
+
+      // Query quota status in batches of 25 to see which ones are live (surveyStatus = 3)
+      const batchSize = 25;
+      for (let i = 0; i < allSurveys.length; i += batchSize) {
+        const batch = allSurveys.slice(i, i + batchSize);
+        const surveyIDs = batch.map(s => s.surveyID).join(',');
+
+        try {
+          const quotaRes = await axios.post(platform.platform_quota_url, {
+            surveyIDs: surveyIDs
+          }, {
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': params['app_key'] || '',
+              'payload': params['app_id'] || '',
+              'Content-Type': 'application/json'
+            },
+            timeout: 30000
+          });
+
+          if (quotaRes.data && quotaRes.data.apiStatus === 1 && quotaRes.data.surveyInfo) {
+            const surveyInfoList = quotaRes.data.surveyInfo;
+            // Map surveyID to its status
+            const statusMap = new Map();
+            surveyInfoList.forEach(info => {
+              statusMap.set(String(info.surveyID), Number(info.surveyStatus));
+            });
+
+            // Filter batch items where surveyStatus is 2
+            batch.forEach(survey => {
+              const status = statusMap.get(String(survey.surveyID));
+              if (status === 2) {
+                liveSurveys.push(survey);
+              }
+            });
+          }
+        } catch (err) {
+          console.error(`Failed to fetch quotaStatus for Gowebsurveys batch starting at index ${i}:`, err.message);
+        }
+      }
+
+      await this.saveOffers(platform.platform_id, currency.currency_id, liveSurveys.map(survey => ({
         project_no: String(survey.surveyID),
         project_name: String(survey.surveyID),
         project_code: survey.countrieISOcode,

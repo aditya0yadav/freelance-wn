@@ -134,6 +134,16 @@ class PlatformController {
       const platformAuths = await prisma.platformAuth.findMany({ where: { team_id: teamId } });
       const authIds = platformAuths.map(a => a.platform_id);
 
+      // Restrict active surveys display to GoWebSurveys and Zamplia
+      const allowedPlatforms = await prisma.platform.findMany({
+        where: {
+          platform_sign: { in: ['Gowebsurveys', 'Zamplia'] },
+          is_disable: 0,
+          delete_time: null
+        }
+      });
+      const allowedPlatformIds = allowedPlatforms.map(p => p.platform_id);
+
       const platformIdQuery = req.query.platform_id;
       let platformId = platformIdQuery ? Number(platformIdQuery) : null;
 
@@ -148,12 +158,13 @@ class PlatformController {
       };
 
       if (platformId) {
-        if (!authIds.includes(platformId)) {
+        if (!authIds.includes(platformId) || !allowedPlatformIds.includes(platformId)) {
           return res.status(403).json({ code: 403, msg: 'Unauthorized platform' });
         }
         whereClause.platform_id = platformId;
       } else {
-        whereClause.platform_id = { in: authIds };
+        const filteredAuthIds = authIds.filter(id => allowedPlatformIds.includes(id));
+        whereClause.platform_id = { in: filteredAuthIds };
       }
 
       // Deep search query matching multiple fields if search term is provided

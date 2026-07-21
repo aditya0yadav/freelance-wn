@@ -326,10 +326,12 @@ export default function App() {
     loadOffers(p.platform_id, 1, '');
   };
 
-  const loadOffers = async (platformId, page = 1, search = '') => {
-    setOffersLoading(true);
-    setOffers([]);
-    setOffersTotal(0);
+  const loadOffers = async (platformId, page = 1, search = '', silent = false) => {
+    if (!silent) {
+      setOffersLoading(true);
+      setOffers([]);
+      setOffersTotal(0);
+    }
     setOffersPage(page);
     try {
       const q = new URLSearchParams({
@@ -343,16 +345,33 @@ export default function App() {
       }
       const res = await api(`/api/member/platform/offers?${q.toString()}`);
       if (res.code === 200 && res.data) {
-        setOffers(res.data.list || []);
+        const newList = res.data.list || [];
+        setOffers(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(newList)) {
+            return newList;
+          }
+          return prev;
+        });
         setOffersPages(res.data.pages || 1);
         setOffersTotal(res.data.count || 0);
       }
     } catch (e) {
-      showToast(e.message, true);
+      if (!silent) showToast(e.message, true);
     } finally {
-      setOffersLoading(false);
+      if (!silent) setOffersLoading(false);
     }
   };
+
+  // Set up periodic polling for reactive updates when on a platform view
+  useEffect(() => {
+    if (!token || !selectedPlatform) return;
+
+    const interval = setInterval(() => {
+      loadOffers(selectedPlatform.platform_id, offersPage, searchQuery, true);
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [selectedPlatform, offersPage, searchQuery, sortOption, token]);
 
   const refreshInventory = async (platformId) => {
     if (refreshLoading) return;
