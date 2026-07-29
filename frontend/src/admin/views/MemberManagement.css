@@ -1,0 +1,34 @@
+/* =====================================================================
+   MEMBER MANAGEMENT — UNIFIED CSS
+   Theme: Indigo & Violet
+   Covers: MemberList, PerformanceList, AuthorizationList
+   ===================================================================== */
+
+:root {
+    --mm-accent: #6366F1;
+    --mm-accent-deep: #4F46E5;
+    --mm-accent-dark: #3730A3;
+    --mm-accent-bg: rgba(99, 102, 241, 0.08);
+    --mm-accent-bg-hover: rgba(99, 102, 241, 0.12);
+    --mm-border: rgba(99, 102, 241, 0.14);
+    
+    --mm-text-primary: #1e1e2d;
+    --mm-text-secondary: #8c8c9a;
+    --mm-card: #ffffff;
+    --mm-border-layout: #e6e6ea;
+}
+
+[data-theme="dark"] {
+    --mm-card: #1E293B;
+    --mm-text-primary: #F8FAFC;
+    --mm-text-secondary: #CBD5E1;
+    --mm-border-layout: rgba(255, 255, 255, 0.08);
+}
+
+/* Base style hooks for MemberList if needed */
+.member-avatar-img {
+    transition: transform 0.2s ease;
+}
+.member-avatar-img:hover {
+    transform: scale(1.05);
+}

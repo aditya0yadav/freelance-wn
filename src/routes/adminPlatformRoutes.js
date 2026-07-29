@@ -32,6 +32,9 @@ router.post('/project/toggle', verifyAdminToken, AdminPlatformController.project
 router.post('/project/add', verifyAdminToken, AdminPlatformController.projectAdd);
 router.post('/project/edit', verifyAdminToken, AdminPlatformController.projectEdit);
 router.post('/project/delete', verifyAdminToken, AdminPlatformController.projectDelete);
+router.get('/project/recycleList', verifyAdminToken, AdminPlatformController.projectRecycleList);
+router.post('/project/recycleReco', verifyAdminToken, AdminPlatformController.projectRecycleReco);
+router.post('/project/recycleDele', verifyAdminToken, AdminPlatformController.projectRecycleDele);
 
 // Teams directory
 router.get('/team/list', verifyAdminToken, AdminPlatformController.teamList);

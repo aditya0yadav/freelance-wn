@@ -80,7 +80,8 @@ class PlatformController {
         const platformAuth = platformAuths.find(auth => auth.platform_id === p.platform_id);
         const authRateVal = platformAuth ? platformAuth.auth_rate : 0;
 
-        const memberRate = (100 - member.rate) / 100;
+        const memberRate = (100 - (member.rate || 0.00)) / 100;
+        const teamCommissionRatio = team ? team.commission_ratio : 0.00;
 
         const activeProjects = p.projects || [];
         const surveyCount = activeProjects.length;
@@ -89,7 +90,8 @@ class PlatformController {
         let maxCoins = 0;
         for (const item of activeProjects) {
           const rawCoins = item.project_cpi * (item.currency?.currency_coins || 100.00);
-          const memberPayout = rawCoins * memberRate;
+          const teamPayout = rawCoins * ((100 - teamCommissionRatio) / 100) * ((100 - authRateVal) / 100);
+          const memberPayout = teamPayout * memberRate;
           if (memberPayout > maxCoins) {
             maxCoins = memberPayout;
           }
@@ -212,9 +214,11 @@ class PlatformController {
         const authRateVal = platformAuth ? platformAuth.auth_rate : 0;
 
         const rawCoins = item.project_cpi * (item.currency?.currency_coins || 100.00);
-        const memberRate = (100 - member.rate) / 100;
+        const memberRate = (100 - (member.rate || 0.00)) / 100;
+        const teamCommissionRatio = team ? team.commission_ratio : 0.00;
 
-        const memberPayout = rawCoins * memberRate;
+        const teamPayout = rawCoins * ((100 - teamCommissionRatio) / 100) * ((100 - authRateVal) / 100);
+        const memberPayout = teamPayout * memberRate;
 
         const result = {
           project_pno: item.project_pno,

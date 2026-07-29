@@ -323,10 +323,20 @@ class AdminPlatformController {
         return res.status(400).json({ code: 400, msg: 'Invalid authorization parameters' });
       }
 
+      const pId = Number(platform_id);
+      const tId = Number(team_id);
+
+      const existingMapping = await prisma.platformAuth.findFirst({
+        where: { platform_id: pId, team_id: tId }
+      });
+      if (existingMapping) {
+        return res.status(409).json({ code: 409, msg: 'An authorization mapping already exists for this team/platform combination.' });
+      }
+
       const auth = await prisma.platformAuth.create({
         data: {
-          platform_id: Number(platform_id),
-          team_id: Number(team_id),
+          platform_id: pId,
+          team_id: tId,
           auth_rate: rateVal
         }
       });
@@ -846,12 +856,22 @@ class AdminPlatformController {
       if (!team_name) {
         return res.status(400).json({ code: 400, msg: 'Missing team_name' });
       }
+      const host = team_host ? team_host.trim().toLowerCase() : '';
       const ratio = commission_ratio !== undefined ? Number(commission_ratio) : 0.00;
+
+      if (host) {
+        const existingHost = await prisma.team.findFirst({
+          where: { team_host: host, is_disable: 0 }
+        });
+        if (existingHost) {
+          return res.status(400).json({ code: 400, msg: `The host "${host}" is already bound to team: ${existingHost.team_name}` });
+        }
+      }
 
       const newTeam = await prisma.team.create({
         data: {
           team_name,
-          team_host: team_host || '',
+          team_host: host,
           commission_ratio: ratio,
           is_disable: 0
         }
@@ -869,14 +889,30 @@ class AdminPlatformController {
         return res.status(400).json({ code: 400, msg: 'Missing team_id' });
       }
 
+      const teamIdParsed = Number(team_id);
       const updateData = {};
       if (team_name !== undefined) updateData.team_name = team_name;
-      if (team_host !== undefined) updateData.team_host = team_host;
+      if (team_host !== undefined) {
+        const host = team_host.trim().toLowerCase();
+        if (host) {
+          const existingHost = await prisma.team.findFirst({
+            where: {
+              team_host: host,
+              is_disable: 0,
+              team_id: { not: teamIdParsed }
+            }
+          });
+          if (existingHost) {
+            return res.status(400).json({ code: 400, msg: `The host "${host}" is already bound to team: ${existingHost.team_name}` });
+          }
+        }
+        updateData.team_host = host;
+      }
       if (commission_ratio !== undefined) updateData.commission_ratio = Number(commission_ratio);
       if (is_disable !== undefined) updateData.is_disable = Number(is_disable);
 
       const updated = await prisma.team.update({
-        where: { team_id: Number(team_id) },
+        where: { team_id: teamIdParsed },
         data: updateData
       });
       return res.json({ code: 200, msg: 'success', data: updated });
@@ -892,12 +928,27 @@ class AdminPlatformController {
         return res.status(400).json({ code: 400, msg: 'Missing team_id' });
       }
 
-      // Soft delete by setting is_disable = 1
-      const deleted = await prisma.team.update({
-        where: { team_id: Number(team_id) },
-        data: { is_disable: 1 }
+      const teamIdParsed = Number(team_id);
+
+      const result = await prisma.$transaction(async (tx) => {
+        const updatedTeam = await tx.team.update({
+          where: { team_id: teamIdParsed },
+          data: { is_disable: 1 }
+        });
+
+        await tx.member.updateMany({
+          where: { team_id: teamIdParsed },
+          data: { is_disable: 1 }
+        });
+
+        await tx.platformAuth.deleteMany({
+          where: { team_id: teamIdParsed }
+        });
+
+        return updatedTeam;
       });
-      return res.json({ code: 200, msg: 'success', data: deleted });
+
+      return res.json({ code: 200, msg: 'success', data: result });
     } catch (err) {
       return res.status(500).json({ code: 500, msg: err.message });
     }
@@ -1274,13 +1325,18 @@ class AdminPlatformController {
    */
   static async exportDele(req, res) {
     try {
-      const { export_id } = req.body;
-      if (!export_id) {
-        return res.status(400).json({ code: 400, msg: 'Missing export ID' });
+      let ids = req.body.ids;
+      const export_id = req.body.export_id;
+      if (export_id) {
+        ids = [export_id];
       }
+      if (!ids || (Array.isArray(ids) && ids.length === 0)) {
+        return res.status(400).json({ code: 400, msg: 'Missing export ID(s)' });
+      }
+      const idsArray = Array.isArray(ids) ? ids.map(Number) : [Number(ids)];
 
-      await prisma.export.update({
-        where: { export_id: Number(export_id) },
+      await prisma.export.updateMany({
+        where: { export_id: { in: idsArray } },
         data: { delete_time: new Date() }
       });
 
@@ -1329,13 +1385,18 @@ class AdminPlatformController {
    */
   static async exportRecycleReco(req, res) {
     try {
-      const { export_id } = req.body;
-      if (!export_id) {
-        return res.status(400).json({ code: 400, msg: 'Missing export ID' });
+      let ids = req.body.ids;
+      const export_id = req.body.export_id;
+      if (export_id) {
+        ids = [export_id];
       }
+      if (!ids || (Array.isArray(ids) && ids.length === 0)) {
+        return res.status(400).json({ code: 400, msg: 'Missing export ID(s)' });
+      }
+      const idsArray = Array.isArray(ids) ? ids.map(Number) : [Number(ids)];
 
-      await prisma.export.update({
-        where: { export_id: Number(export_id) },
+      await prisma.export.updateMany({
+        where: { export_id: { in: idsArray } },
         data: { delete_time: null }
       });
 
@@ -1350,26 +1411,39 @@ class AdminPlatformController {
    */
   static async exportRecycleDele(req, res) {
     try {
-      const { export_id } = req.body;
-      if (!export_id) {
-        return res.status(400).json({ code: 400, msg: 'Missing export ID' });
+      let ids = req.body.ids;
+      const export_id = req.body.export_id;
+      if (export_id) {
+        ids = [export_id];
       }
+      if (!ids || (Array.isArray(ids) && ids.length === 0)) {
+        return res.status(400).json({ code: 400, msg: 'Missing export ID(s)' });
+      }
+      const idsArray = Array.isArray(ids) ? ids.map(Number) : [Number(ids)];
 
-      const record = await prisma.export.findUnique({
-        where: { export_id: Number(export_id) }
+      const records = await prisma.export.findMany({
+        where: { export_id: { in: idsArray } }
       });
 
-      if (record) {
-        const fs = require('fs');
-        const path = require('path');
-        const filePath = path.join(__dirname, '../../public', record.file_path);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
+      const fs = require('fs');
+      const path = require('path');
+
+      for (const record of records) {
+        if (record.file_path) {
+          const filePath = path.join(__dirname, '../../public', record.file_path);
+          if (fs.existsSync(filePath)) {
+            try {
+              fs.unlinkSync(filePath);
+            } catch (e) {
+              console.error('Failed to unlink file:', filePath, e.message);
+            }
+          }
         }
-        await prisma.export.delete({
-          where: { export_id: Number(export_id) }
-        });
       }
+
+      await prisma.export.deleteMany({
+        where: { export_id: { in: idsArray } }
+      });
 
       return res.json({ code: 200, msg: 'Permanently deleted' });
     } catch (err) {
@@ -1665,6 +1739,106 @@ class AdminPlatformController {
       });
 
       return res.json({ code: 200, msg: 'success', data: updated });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
+
+  /**
+   * GET /api/admin/platform/project/recycleList
+   */
+  static async projectRecycleList(req, res) {
+    try {
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 20;
+      const search = req.query.search || '';
+
+      const where = { delete_time: { not: null } };
+      if (search) {
+        where.OR = [
+          { project_pno: { contains: search } },
+          { project_name: { contains: search } }
+        ];
+      }
+
+      const total = await prisma.project.count({ where });
+      const pages = Math.ceil(total / limit);
+
+      const list = await prisma.project.findMany({
+        where,
+        include: {
+          platform: { select: { platform_name: true } }
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { delete_time: 'desc' }
+      });
+
+      return res.json({
+        code: 200,
+        msg: 'success',
+        data: {
+          count: total,
+          pages,
+          page,
+          limit,
+          list
+        }
+      });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
+
+  /**
+   * POST /api/admin/platform/project/recycleReco
+   */
+  static async projectRecycleReco(req, res) {
+    try {
+      let ids = req.body.ids;
+      const project_id = req.body.project_id;
+      if (project_id) {
+        ids = [project_id];
+      }
+      if (!ids || (Array.isArray(ids) && ids.length === 0)) {
+        return res.status(400).json({ code: 400, msg: 'Missing project ID(s)' });
+      }
+      const idsArray = Array.isArray(ids) ? ids.map(Number) : [Number(ids)];
+
+      await prisma.project.updateMany({
+        where: { project_id: { in: idsArray } },
+        data: {
+          delete_time: null,
+          is_disable: 0
+        }
+      });
+
+      return res.json({ code: 200, msg: 'Projects restored successfully' });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
+
+  /**
+   * POST /api/admin/platform/project/recycleDele
+   */
+  static async projectRecycleDele(req, res) {
+    try {
+      let ids = req.body.ids;
+      const project_id = req.body.project_id;
+      if (project_id) {
+        ids = [project_id];
+      }
+      if (!ids || (Array.isArray(ids) && ids.length === 0)) {
+        return res.status(400).json({ code: 400, msg: 'Missing project ID(s)' });
+      }
+      const idsArray = Array.isArray(ids) ? ids.map(Number) : [Number(ids)];
+
+      await prisma.project.deleteMany({
+        where: { project_id: { in: idsArray } }
+      });
+
+      return res.json({ code: 200, msg: 'Permanently deleted from database' });
     } catch (err) {
       return res.status(500).json({ code: 500, msg: err.message });
     }

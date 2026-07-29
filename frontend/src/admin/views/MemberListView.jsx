@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, Plus, X, AlertCircle, Eye, EyeOff, Ban, CheckCircle2, Shield,
@@ -6,10 +7,12 @@ import {
   Users, Globe
 } from 'lucide-react';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
+import { useAdminTheme } from '../context/AdminThemeContext';
+import './MemberManagement.css';
 
 const Field = ({ label, children }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-    <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</label>
+    <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--pm-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</label>
     {children}
   </div>
 );
@@ -23,14 +26,14 @@ const MemberAvatar = ({ name, size = 36 }) => {
       style={{
         width: size, height: size, borderRadius: '50%', flexShrink: 0,
         background: `hsl(${hue},55%,92%)`,
-        border: '2px solid var(--divider-color)', objectFit: 'cover'
+        border: '2px solid var(--pm-border-layout)', objectFit: 'cover'
       }}
     />
   );
 };
 
 /* ── All Members Tab ─────────────────────────────────────────── */
-function AllMembersTab({ token }) {
+function AllMembersTab({ token, theme }) {
   const navigate = useNavigate();
   const [members, setMembers] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -108,16 +111,16 @@ function AllMembersTab({ token }) {
       {/* Stats bar */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 16 }}>
         {[
-          { label: 'Total Members', value: total, color: 'var(--primary-brand)', icon: <User size={16} /> },
-          { label: 'Active', value: members.filter(m => m.is_disable !== 1).length, color: 'var(--chart-success)', icon: <CheckCircle2 size={16} /> },
-          { label: 'Suspended', value: members.filter(m => m.is_disable === 1).length, color: 'var(--chart-danger)', icon: <Ban size={16} /> },
+          { label: 'Total Members', value: total, color: 'var(--pm-accent)', icon: <User size={16} style={{ width: 16, height: 16 }} /> },
+          { label: 'Active', value: members.filter(m => m.is_disable !== 1).length, color: 'var(--pm-success)', icon: <CheckCircle2 size={16} style={{ width: 16, height: 16 }} /> },
+          { label: 'Suspended', value: members.filter(m => m.is_disable === 1).length, color: 'var(--pm-danger)', icon: <Ban size={16} style={{ width: 16, height: 16 }} /> },
         ].map(s => (
-          <div key={s.label} style={{ background: 'var(--bg-color)', border: '1.5px solid var(--divider-color)', borderRadius: 14, padding: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>{s.label}</span>
-              <span style={{ color: s.color }}>{s.icon}</span>
+          <div key={s.label} style={{ background: 'var(--pm-card)', border: '1.5px solid var(--pm-border-layout)', borderRadius: 14, padding: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontSize: 11, color: 'var(--pm-text-secondary)', fontWeight: 600 }}>{s.label}</span>
+              <span style={{ color: s.color, display: 'inline-flex', alignItems: 'center', flexShrink: 0, lineHeight: 0 }}>{s.icon}</span>
             </div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-color)' }}>{s.value}</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--pm-text-primary)' }}>{s.value}</div>
           </div>
         ))}
       </div>
@@ -126,7 +129,7 @@ function AllMembersTab({ token }) {
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 8 }}>
           <div style={{ position: 'relative' }}>
-            <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--pm-text-secondary)' }} />
             <input className="form-input" placeholder="Search nickname…" value={search}
               onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && fetchMembers(1, search)}
@@ -139,7 +142,7 @@ function AllMembersTab({ token }) {
           <button className="btn btn-secondary" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Download size={14} /> Export CSV
           </button>
-          <button className="btn btn-primary" onClick={() => { setSelectedMember(null); setFormData({ nickname: '', rate: 0, team_id: teams[0]?.team_id || '', password: '', is_disable: 0 }); setModalOpen(true); }}>
+          <button className="btn btn-primary" onClick={() => { setSelectedMember(null); setFormData({ nickname: '', rate: 0, team_id: teams[0]?.team_id || '', password: '', is_disable: 0 }); setModalOpen(true); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--primary-brand)', border: 'none' }}>
             <Plus size={16} /> Add Member
           </button>
         </div>
@@ -148,9 +151,9 @@ function AllMembersTab({ token }) {
       {/* Table */}
       <div className="table-container">
         {loading ? (
-          <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Loading members…</div>
+          <div style={{ padding: 48, textAlign: 'center', color: 'var(--pm-text-secondary)' }}>Loading members…</div>
         ) : members.length === 0 ? (
-          <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>No members found.</div>
+          <div style={{ padding: 48, textAlign: 'center', color: 'var(--pm-text-secondary)' }}>No members found.</div>
         ) : (
           <table className="admin-table">
             <thead>
@@ -163,20 +166,20 @@ function AllMembersTab({ token }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <MemberAvatar name={m.nickname} />
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>#{m.member_id}</span>
+                        <span style={{ fontSize: 12, color: 'var(--pm-text-secondary)' }}>#{m.member_id}</span>
                       </div>
                     </div>
                   </td>
                   <td style={{ fontWeight: 700 }}>{m.nickname}</td>
-                  <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                  <td style={{ color: 'var(--pm-text-secondary)', fontSize: 13 }}>
                     {m.team?.team_name || teams.find(t => t.team_id === m.team_id)?.team_name || `Team ${m.team_id}`}
                   </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 60, height: 6, background: 'var(--divider-color)', borderRadius: 99, overflow: 'hidden' }}>
-                        <div style={{ width: `${Math.min(100, (m.rate || 0) * 100)}%`, height: '100%', background: 'var(--primary-brand)', borderRadius: 99 }} />
+                      <div style={{ width: 60, height: 6, background: 'var(--pm-border-layout)', borderRadius: 99, overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.min(100, (m.rate || 0) * 100)}%`, height: '100%', background: 'var(--pm-accent)', borderRadius: 99 }} />
                       </div>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>{m.rate || 0}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--pm-text-secondary)' }}>{m.rate || 0}</span>
                     </div>
                   </td>
                   <td><span className={`badge ${m.is_disable === 1 ? 'badge-danger' : 'badge-success'}`}>{m.is_disable === 1 ? 'Suspended' : 'Active'}</span></td>
@@ -204,48 +207,51 @@ function AllMembersTab({ token }) {
       )}
 
       {/* Add / Edit Modal */}
-      {modalOpen && (
-        <div className="dialog-overlay">
-          <form onSubmit={handleSave} className="dialog-modal" style={{ maxWidth: 500 }}>
-            <div className="dialog-header">
-              <h3 style={{ fontWeight: 700, color: 'var(--text-color)', margin: 0 }}>{selectedMember ? 'Edit Member' : 'Add New Member'}</h3>
-              <button type="button" onClick={() => setModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
-            </div>
-            <div className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {errorMsg && <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 8, padding: '10px 14px', color: '#EF4444', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}><AlertCircle size={15} />{errorMsg}</div>}
-              
-              <Field label="Nickname *">
-                <input className="form-input" value={formData.nickname} onChange={e => setFormData(f => ({ ...f, nickname: e.target.value }))} required />
-              </Field>
+      {modalOpen && createPortal(
+        <div className="admin-theme" data-theme={theme}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <form onSubmit={handleSave} className="dialog-modal" style={{ maxWidth: 500, width: '100%' }}>
+              <div className="dialog-header">
+                <h3 style={{ fontWeight: 700, color: 'var(--pm-text-primary)', margin: 0 }}>{selectedMember ? 'Edit Member' : 'Add New Member'}</h3>
+                <button type="button" onClick={() => setModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pm-text-secondary)' }}><X size={20} /></button>
+              </div>
+              <div className="dialog-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {errorMsg && <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: 8, padding: '10px 14px', color: '#EF4444', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}><AlertCircle size={15} />{errorMsg}</div>}
 
-              <Field label="Team *">
-                <select className="form-input" value={formData.team_id} onChange={e => setFormData(f => ({ ...f, team_id: Number(e.target.value) }))} required>
-                  <option value="" disabled>Select Team</option>
-                  {teams.map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
-                </select>
-              </Field>
+                <Field label="Nickname *">
+                  <input className="form-input" value={formData.nickname} onChange={e => setFormData(f => ({ ...f, nickname: e.target.value }))} required />
+                </Field>
 
-              <Field label="Commission Rate (0-100%)">
-                <input className="form-input" type="number" step="0.1" min="0" max="100" value={formData.rate} onChange={e => setFormData(f => ({ ...f, rate: parseFloat(e.target.value) }))} required />
-              </Field>
+                <Field label="Team *">
+                  <select className="form-input" value={formData.team_id} onChange={e => setFormData(f => ({ ...f, team_id: Number(e.target.value) }))} required>
+                    <option value="" disabled>Select Team</option>
+                    {teams.map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
+                  </select>
+                </Field>
 
-              <Field label={selectedMember ? 'Password (leave blank to keep current)' : 'Password *'}>
-                <input className="form-input" type="password" value={formData.password} onChange={e => setFormData(f => ({ ...f, password: e.target.value }))} required={!selectedMember} minLength={6} />
-              </Field>
+                <Field label="Commission Rate (0-100%)">
+                  <input className="form-input" type="number" step="0.1" min="0" max="100" value={formData.rate} onChange={e => setFormData(f => ({ ...f, rate: parseFloat(e.target.value) }))} required />
+                </Field>
 
-              {selectedMember && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-color)', fontWeight: 600, marginTop: 10 }}>
-                  <input type="checkbox" checked={formData.is_disable === 1} onChange={e => setFormData(f => ({ ...f, is_disable: e.target.checked ? 1 : 0 }))} style={{ accentColor: 'var(--primary-brand)', width: 16, height: 16 }} />
-                  🚫 Suspended Account
-                </label>
-              )}
-            </div>
-            <div className="dialog-footer">
-              <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
-              <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : selectedMember ? 'Update Member' : 'Add Member'}</button>
-            </div>
-          </form>
-        </div>
+                <Field label={selectedMember ? 'Password (leave blank to keep current)' : 'Password *'}>
+                  <input className="form-input" type="password" value={formData.password} onChange={e => setFormData(f => ({ ...f, password: e.target.value }))} required={!selectedMember} minLength={6} />
+                </Field>
+
+                {selectedMember && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--pm-text-primary)', fontWeight: 600, marginTop: 10 }}>
+                    <input type="checkbox" checked={formData.is_disable === 1} onChange={e => setFormData(f => ({ ...f, is_disable: e.target.checked ? 1 : 0 }))} style={{ accentColor: 'var(--pm-accent)', width: 16, height: 16 }} />
+                    🚫 Suspended Account
+                  </label>
+                )}
+              </div>
+              <div className="dialog-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ background: 'var(--primary-brand)', border: 'none' }} disabled={saving}>{saving ? 'Saving…' : selectedMember ? 'Update Member' : 'Add Member'}</button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -260,7 +266,7 @@ function PerformanceTab({ token }) {
     setLoading(true);
     adminFetch('/member/performance?limit=20', 'GET', null, token)
       .then(res => { if (res.code === 200) setRecords(res.data.list || []); })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -268,9 +274,9 @@ function PerformanceTab({ token }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div className="table-container">
         {loading ? (
-          <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Loading performance…</div>
+          <div style={{ padding: 48, textAlign: 'center', color: 'var(--pm-text-secondary)' }}>Loading performance…</div>
         ) : records.length === 0 ? (
-          <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
+          <div style={{ padding: 48, textAlign: 'center', color: 'var(--pm-text-secondary)' }}>
             <UserCheck size={40} style={{ marginBottom: 12, opacity: 0.3 }} />
             <div>No performance records available from the API yet.</div>
           </div>
@@ -283,18 +289,18 @@ function PerformanceTab({ token }) {
               {records.map((r, i) => (
                 <tr key={i}>
                   <td style={{ fontWeight: 700 }}>{r.nickname}</td>
-                  <td style={{ color: 'var(--text-muted)' }}>{r.team_name}</td>
+                  <td style={{ color: 'var(--pm-text-secondary)' }}>{r.team_name}</td>
                   <td style={{ fontWeight: 600 }}>{r.completions || 0}</td>
-                  <td style={{ color: 'var(--chart-success)', fontWeight: 700 }}>${Number(r.revenue || 0).toFixed(2)}</td>
+                  <td style={{ color: 'var(--pm-success)', fontWeight: 700 }}>${Number(r.revenue || 0).toFixed(2)}</td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 50, height: 6, background: 'var(--divider-color)', borderRadius: 99, overflow: 'hidden' }}>
-                        <div style={{ width: `${Math.min(100, (r.rate || 0) * 100)}%`, height: '100%', background: 'var(--primary-brand)', borderRadius: 99 }} />
+                      <div style={{ width: 50, height: 6, background: 'var(--pm-border-layout)', borderRadius: 99, overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.min(100, (r.rate || 0) * 100)}%`, height: '100%', background: 'var(--pm-accent)', borderRadius: 99 }} />
                       </div>
                       <span style={{ fontSize: 12, fontWeight: 600 }}>{r.rate || 0}</span>
                     </div>
                   </td>
-                  <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.date}</td>
+                  <td style={{ fontSize: 12, color: 'var(--pm-text-secondary)' }}>{r.date}</td>
                 </tr>
               ))}
             </tbody>
@@ -322,7 +328,7 @@ function PlatformAuthTab({ token }) {
       if (authRes.code === 200) setAuthList(authRes.data.list || []);
       if (teamRes.code === 200) setTeams(teamRes.data.list || []);
       if (platRes.code === 200) setPlatforms(platRes.data.list || []);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => { }).finally(() => setLoading(false));
   }, []);
 
   const getName = (arr, idKey, nameKey, id) => arr.find(x => x[idKey] === id)?.[nameKey] || String(id);
@@ -331,9 +337,9 @@ function PlatformAuthTab({ token }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div className="table-container">
         {loading ? (
-          <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>Loading authorisations…</div>
+          <div style={{ padding: 48, textAlign: 'center', color: 'var(--pm-text-secondary)' }}>Loading authorisations…</div>
         ) : authList.length === 0 ? (
-          <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>No platform authorisations configured.</div>
+          <div style={{ padding: 48, textAlign: 'center', color: 'var(--pm-text-secondary)' }}>No platform authorisations configured.</div>
         ) : (
           <table className="admin-table">
             <thead>
@@ -342,13 +348,13 @@ function PlatformAuthTab({ token }) {
             <tbody>
               {authList.map((a, i) => (
                 <tr key={i}>
-                  <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>#{a.auth_id || i + 1}</td>
+                  <td style={{ color: 'var(--pm-text-secondary)', fontSize: 12 }}>#{a.auth_id || i + 1}</td>
                   <td style={{ fontWeight: 700 }}>{getName(teams, 'team_id', 'team_name', a.team_id)}</td>
                   <td style={{ fontWeight: 600 }}>{getName(platforms, 'platform_id', 'platform_name', a.platform_id)}</td>
                   <td>
                     <span className="badge badge-info">{(a.auth_rate * 100).toFixed(0)}%</span>
                   </td>
-                  <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{a.create_time}</td>
+                  <td style={{ fontSize: 12, color: 'var(--pm-text-secondary)' }}>{a.create_time}</td>
                 </tr>
               ))}
             </tbody>
@@ -369,16 +375,17 @@ const TABS = [
 export default function MemberListView() {
   const [activeTab, setActiveTab] = useState('members');
   const token = getAdminToken();
+  const { theme } = useAdminTheme();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }} className="anima-fade-in">
       <div>
-        <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-color)', margin: 0, letterSpacing: '-0.5px' }}>Member Management</h2>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>Manage all member accounts, performance records and platform access rights.</p>
+        <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--pm-text-primary)', margin: 0, letterSpacing: '-0.5px' }}>Member Management</h2>
+        <p style={{ fontSize: 13, color: 'var(--pm-text-secondary)', margin: '4px 0 0' }}>Manage all member accounts, performance records and platform access rights.</p>
       </div>
 
       {/* Tab nav */}
-      <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid var(--divider-color)' }}>
+      <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid var(--pm-border-layout)' }}>
         {TABS.map(tab => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
@@ -387,8 +394,8 @@ export default function MemberListView() {
               display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px',
               border: 'none', background: 'none', cursor: 'pointer',
               fontSize: 13, fontWeight: active ? 700 : 500,
-              color: active ? 'var(--primary-brand)' : 'var(--text-muted)',
-              borderBottom: active ? '2px solid var(--primary-brand)' : '2px solid transparent',
+              color: active ? 'var(--pm-accent)' : 'var(--pm-text-secondary)',
+              borderBottom: active ? '2px solid var(--pm-accent)' : '2px solid transparent',
               marginBottom: -2, transition: 'all 0.15s', borderRadius: '8px 8px 0 0'
             }}>
               <Icon size={15} />{tab.label}
@@ -398,7 +405,7 @@ export default function MemberListView() {
       </div>
 
       <div>
-        {activeTab === 'members' && <AllMembersTab token={token} />}
+        {activeTab === 'members' && <AllMembersTab token={token} theme={theme} />}
         {activeTab === 'performance' && <PerformanceTab token={token} />}
         {activeTab === 'auth' && <PlatformAuthTab token={token} />}
       </div>
