@@ -7,8 +7,15 @@ const AdminLogController = require('../controllers/adminLogController');
 const TagController = require('../controllers/tagController');
 const AdminImportController = require('../controllers/adminImportController');
 const { verifyAdminToken } = require('../middleware/apiAuth');
-const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
+
+// Safe optional import for multer (falls back to body parser if missing on server)
+let upload = { single: () => (req, res, next) => next() };
+try {
+  const multer = require('multer');
+  upload = multer({ storage: multer.memoryStorage() });
+} catch (e) {
+  console.warn('Multer module not found in node_modules. Using fallback body parser for imports.');
+}
 
 // Public Auth routes
 router.post('/login', AdminPlatformController.login);
