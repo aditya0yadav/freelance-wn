@@ -44,12 +44,6 @@ class InventoryPullService {
       throw new Error(`Currency configuration ${platform.platform_currency} not found`);
     }
 
-    // Flag previous API inventory as deleted to prevent serving stale items
-    await prisma.project.updateMany({
-      where: { platform_id: platform.platform_id, is_api: 1 },
-      data: { delete_time: new Date(), is_disable: 1 }
-    });
-
     switch (platform.platform_sign) {
       case 'Gowebsurveys':
         await this.pullGowebsurveys(platform, paramsMap, currency);
@@ -232,6 +226,20 @@ class InventoryPullService {
         );
       }
     }
+
+    // 4. Cleanup stale surveys: disable any existing surveys that were not in this sync pull
+    const incomingSigns = offers.map(item => crypto.createHash('md5').update(item.signature).digest('hex'));
+    await prisma.project.updateMany({
+      where: {
+        platform_id: platformId,
+        is_api: 1,
+        project_sign: { notIn: incomingSigns }
+      },
+      data: {
+        delete_time: new Date(),
+        is_disable: 1
+      }
+    });
   }
 }
 

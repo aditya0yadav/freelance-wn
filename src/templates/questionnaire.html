@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fill in personnel information</title>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="/js/index.css">
+    <!-- 引入组件库 -->
+    <script src="/js/vue.min.js"></script>
+    <script src="/js/axios.min.js"></script>
+    <script src="/js/index.js"></script>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        /* 添加一些简单的样式 */
+        .question {
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 14px;
+            margin: 20px 0 10px;
+        }
+
+        a {
+            background-color: #F9F9F9;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: block;
+            color: #666;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        a:hover {
+            background-color: #ff8d32;
+            color: #fff;
+        }
+
+        label {
+            display: block;
+            padding: 20px;
+            cursor: pointer;
+        }
+
+        label input {
+            visibility: hidden;
+        }
+        .v2-loading {
+        display: flex;
+        padding: 20px;
+        justify-content: center;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .v2-loading .loading {
+        width: 80px;
+        height: 64px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .v2-loading .loading div {
+        width: 6px;
+        height: 44px;
+        margin: 4px;
+        margin-top: 0;
+        margin-bottom: 0;
+        background-color: rgb(0,210,100);
+        -webkit-animation: line-scale-pulse-out-rapid 0.9s infinite cubic-bezier(0.11, 0.49, 0.38, 0.78);
+        -moz-animation: line-scale-pulse-out-rapid 0.9s infinite cubic-bezier(0.11, 0.49, 0.38, 0.78);
+        -o-animation: line-scale-pulse-out-rapid 0.9s infinite cubic-bezier(0.11, 0.49, 0.38, 0.78);
+        animation: line-scale-pulse-out-rapid 0.9s infinite cubic-bezier(0.11, 0.49, 0.38, 0.78)
+      }
+
+      .v2-loading .loading div:nth-child(3) {
+        -webkit-animation-delay: -.9s;
+        -moz-animation-delay: -.9s;
+        -o-animation-delay: -.9s;
+        animation-delay: -.9s;
+      }
+
+      .v2-loading .loading div:nth-child(2),
+      .v2-loading .loading div:nth-child(4) {
+        -webkit-animation-delay: -.65s;
+        -moz-animation-delay: -.65s;
+        -o-animation-delay: -.65s;
+        animation-delay: -.65s;
+      }
+
+      .v2-loading .loading div:nth-child(1),
+      .v2-loading .loading div:nth-child(5) {
+        -webkit-animation-delay: -.4s;
+        -moz-animation-delay: -.4s;
+        -o-animation-delay: -.4s;
+        animation-delay: -.4s;
+      }
+
+      @-webkit-keyframes line-scale-pulse-out-rapid {
+        0% {
+          -webkit-transform: scaley(1);
+          transform: scaley(1)
+        }
+
+        80% {
+          -webkit-transform: scaley(0.3);
+          transform: scaley(0.3)
+        }
+
+        90% {
+          -webkit-transform: scaley(1);
+          transform: scaley(1)
+        }
+      }
+
+      @-moz-keyframes line-scale-pulse-out-rapid {
+        0% {
+          -moz-transform: scaley(1);
+          transform: scaley(1)
+        }
+
+        80% {
+          -moz-transform: scaley(0.3);
+          transform: scaley(0.3)
+        }
+
+        90% {
+          -moz-transform: scaley(1);
+          transform: scaley(1)
+        }
+      }
+
+      @-o-keyframes line-scale-pulse-out-rapid {
+        0% {
+          -o-transform: scaley(1);
+          transform: scaley(1)
+        }
+
+        80% {
+          -o-transform: scaley(0.3);
+          transform: scaley(0.3)
+        }
+
+        90% {
+          -o-transform: scaley(1);
+          transform: scaley(1)
+        }
+      }
+
+      @keyframes line-scale-pulse-out-rapid {
+        0% {
+          -webkit-transform: scaley(1);
+          -moz-transform: scaley(1);
+          -o-transform: scaley(1);
+          transform: scaley(1)
+        }
+
+        80% {
+          -webkit-transform: scaley(0.3);
+          -moz-transform: scaley(0.3);
+          -o-transform: scaley(0.3);
+          transform: scaley(0.3)
+        }
+
+        90% {
+          -webkit-transform: scaley(1);
+          -moz-transform: scaley(1);
+          -o-transform: scaley(1);
+          transform: scaley(1)
+        }
+      }
+      /* 图片上传组件样式 */
+      .image-upload-container {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      
+      .image-upload-input {
+        flex: 1;
+      }
+      
+      .image-preview-container {
+        margin-top: 10px;
+      }
+      
+      .image-preview {
+        position: relative;
+        max-width: 200px;
+        max-height: 200px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 10px;
+      }
+      
+      .image-preview img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      
+      .remove-image {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(0,0,0,0.5);
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      
+      .upload-status {
+        margin-top: 5px;
+        font-size: 12px;
+        color: #666;
+      }
+      
+      .error-message {
+        color: #f56c6c;
+        font-size: 12px;
+        margin-top: 5px;
+      }
+    </style>
+</head>
+
+<body>
+    <!-- 答题界面的HTML结构将放在这里 -->
+    <div id="quiz-app">
+        <div
+            style="display: flex;align-items: center;flex-direction: column;width: 100vw;height:100vh;padding:100px;box-sizing:border-box;overflow-y:scroll;">
+             <div style="padding:40px 40px 40px;background-color: #fff;box-shadow: 0 0 5px #dbdbdb;border-radius: 20px;width:500px;max-width:80%;" v-if="questions.length && step==1">
+                <div class="question">
+                    <div v-for="(item,index) in questions">
+                        <div class="item" v-if="item.type=='select'">
+                            <p><span v-if="item.persona_data_must" style="color:red;margin-right:2px;">*</span>{{item.text}}</p>
+                            <el-select v-model="item.value"  :placeholder="item.holder ? item.holder : '请选择'+item.text" style="width:100%" size="small">
+                                <el-option v-for="c in item.options" :label="c.value" :value="c.value" multiple></el-option>
+                            </el-select>
+                        </div>
+                        <div class="item" v-if="item.type=='radio'">
+                            <p><span v-if="item.persona_data_must" style="color:red;margin-right:2px;">*</span>{{item.text}}</p>
+                            <el-select v-model="item.value"  :placeholder="item.holder ? item.holder : '请选择'+item.text" style="width:100%" size="small">
+                                <el-option v-for="c in item.options" :label="c.value" :value="c.value"></el-option>
+                            </el-select>
+                        </div>
+                        <div class="item" v-if="item.type=='date'">
+                            <p><span v-if="item.persona_data_must" style="color:red;margin-right:2px;">*</span>{{item.text}}</p>
+                            <el-date-picker  style="width:100%" v-model="item.value" type="date" :placeholder="item.holder ? item.holder : '请选择'+item.text" size="small" value-format="timestamp">
+                            </el-date-picker>
+                        </div>
+                        <div class="item" v-if="item.type=='input'">
+                            <p><span v-if="item.persona_data_must" style="color:red;margin-right:2px;">*</span>{{item.text}}</p>
+                            <el-input type="text" v-model="item.value" :placeholder="item.holder ? item.holder : '请输入'+item.text" size="small"></el-input>
+                        </div>
+                        <div class="item" v-if="item.type=='image'">
+                            <p><span v-if="item.persona_data_must" style="color:red;margin-right:2px;">*</span>{{item.text}}</p>
+                            <div class="image-upload-container">
+                                <el-input 
+                                    class="image-upload-input"
+                                    type="text" 
+                                    v-model="item.value" 
+                                    :placeholder="item.holder ? item.holder : '上传图片地址'" 
+                                    size="small"
+                                    readonly
+                                ></el-input>
+                                <el-button 
+                                    type="primary" 
+                                    size="small" 
+                                    @click="openFileDialog(index)"
+                                    :loading="item.uploading"
+                                >
+                                    上传
+                                </el-button>
+                                <input 
+                                    type="file" 
+                                    :ref="'fileInput_' + index" 
+                                    style="display: none" 
+                                    accept="image/*"
+                                    @change="handleFileUpload($event, item)"
+                                >
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <el-button type="primary" :loading="loading" style="width:100%" size="normal" @click="submitAnswers">Submit</el-button>
+            </div>
+            <div style="padding:40px 40px 40px;background-color: #fff;box-shadow: 0 0 5px #dbdbdb;border-radius: 20px;width:500px;max-width:80%;" v-if="step==2">
+                 <div v-if="status == 0 || status == 1" style="display:flex;justify-content:center;align-items:center;flex-direction:column;color:#1afa29;font-size:30px;">
+                     <svg t="1746720430144" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2674" width="256" height="256"><path d="M512 22C241.38 22 22 241.38 22 512s219.38 490 490 490 490-219.38 490-490S782.62 22 512 22z m259.66 369.85L481.12 682.38c-13.87 13.87-36.36 13.87-50.23 0L252.34 503.83c-13.87-13.87-13.87-36.36 0-50.23 13.87-13.87 36.36-13.87 50.23 0l153.44 153.44 265.42-265.42c13.87-13.87 36.36-13.87 50.23 0 13.87 13.87 13.87 36.36 0 50.23z" fill="#1afa29" p-id="2675"></path></svg>
+                     <p style="font-size:30px;font-weight:bold;">Success</p>
+                 </div>
+                 <div v-if="status > 1" style="display:flex;justify-content:center;align-items:center;flex-direction:column;font-size:30px;">
+                     <svg t="1748331034969" class="icon" viewBox="0 0 1028 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2644" width="256" height="256"><path d="M875.086452 153.730058C676.053818-45.302575 353.260522-45.302575 154.128323 153.730058s-199.032634 521.825929 0 720.958129 521.825929 199.032634 720.958129 0 199.032634-521.825929 0-720.958129zM725.836868 725.438604c-9.757478 9.757478-25.488922 9.757478-35.246399 0L514.557604 549.405739 338.624306 725.438604c-9.757478 9.757478-25.488922 9.757478-35.2464 0s-9.757478-25.488922 0-35.2464l176.032865-176.032864-176.032865-175.933299c-9.757478-9.757478-9.757478-25.488922 0-35.246399 9.757478-9.757478 25.488922-9.757478 35.2464 0l176.032864 176.032865 176.032865-176.032865c9.757478-9.757478 25.488922-9.757478 35.246399 0 9.757478 9.757478 9.757478 25.488922 0 35.246399L549.804004 514.15934 725.836868 690.192204c9.657912 9.757478 9.657912 25.488922 0 35.2464z" fill="#d81e06" p-id="2645"></path></svg>
+                     <p style="font-size:30px;font-weight:bold;" v-if="status == 2">Failure</p>
+                     <p style="font-size:30px;font-weight:bold;" v-if="status == 3">Pre-Survey Terminate</p>
+                     <p style="font-size:30px;font-weight:bold;" v-if="status == 4">Quality Terminate</p>
+                     <p style="font-size:30px;font-weight:bold;" v-if="status == 5">unknown</p>
+                 </div>
+             </div>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#quiz-app',
+            data: {
+                answers: [],
+                questions: [],
+                loading:false,
+                params: {},
+                status:{$cstatus},
+                reward:{$data|json_encode|raw},
+                step:0,
+            },
+            created(){
+                var data = {$personaData|json_encode|raw};
+                if(data.length > 0){
+                    this.step = 1;
+                    data.forEach(item => {
+                        this.questions.push({
+                            text: item.persona_data_name,
+                            type: item.persona_data_type,
+                            id:item.persona_data_id,
+                            persona_data_must:item.persona_data_must,
+                            holder:item.persona_data_holder,
+                            options: item.persona_data_values,
+                            value:'',
+                            loading:false
+                        })
+                    });
+                } else {
+                    this.step = 2;
+                }
+                
+            },
+            methods: {
+                // 打开文件选择对话框
+                openFileDialog(index) {
+                    this.$refs['fileInput_' + index][0].click();
+                },
+                
+                // 处理文件上传
+                handleFileUpload(event, item) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    // 验证图片类型和大小
+                    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                    const maxSize = 2 * 1024 * 1024; // 2MB
+                    
+                    if (!validTypes.includes(file.type)) {
+                        item.error = '仅支持 JPG, PNG, GIF 或 WebP 格式的图片';
+                        return;
+                    }
+                    
+                    if (file.size > maxSize) {
+                        item.error = '图片大小不能超过 2MB';
+                        return;
+                    }
+                    
+                    // 清除之前的错误
+                    item.error = null;
+                    item.uploading = true;
+                    
+                    // 创建FormData
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    formData.append('txn_id',this.reward.txn_id);
+                    // 发送上传请求
+                    axios.post('/api/index/upload', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    })
+                    .then(response => {
+                        if (response.data.code === 200 && response.data.data.url) {
+                            // 上传成功，设置图片URL到输入框
+                            item.value = response.data.data.url;
+                        }
+                        item.uploading = false;
+                    })
+                    .catch(error => {
+                        console.error('上传错误:', error);
+                    })
+                    .finally(() => {
+                        item.uploading = false;
+                        // 重置文件输入，允许再次选择相同文件
+                        event.target.value = '';
+                    });
+                },
+                
+                // 移除图片
+                removeImage(item) {
+                    item.value = '';
+                    item.error = null;
+                },
+                submitAnswers() {
+                    var url = '/api/index/rs?txn_id='+this.reward.txn_id;
+                    this.questions.forEach(item => {
+                        url +='&anser['+item.id+']='+item.value;
+                    })
+                    if(this.loading){
+                        return;
+                    }
+                    this.loading = true;
+                    axios.get(url)
+                    .then(response => {
+                        const data = response.data;
+                        this.loading = false;
+                        if(data.code == 200){
+                            this.step = 2;
+                        } else {
+                            this.$message.error(data.msg);
+                        }
+                    })
+                },
+            },
+        });
+    </script>
+</body>
+
+</html>

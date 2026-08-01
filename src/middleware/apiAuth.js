@@ -46,7 +46,11 @@ function verifyAdminToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-jwt-auth-secret-key');
-    req.user = decoded.data || decoded;
+    const user = decoded.data || decoded;
+    if (user.is_admin !== true) {
+      return res.status(403).json({ code: 403, msg: 'Access denied: Admin privilege required' });
+    }
+    req.user = user;
     next();
   } catch (err) {
     return res.status(401).json({ code: 401, msg: 'Invalid token' });

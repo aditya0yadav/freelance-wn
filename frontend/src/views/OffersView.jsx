@@ -142,7 +142,7 @@ export default function OffersView({
             />
           </div>
           <select className="sort-select" value={sortOption} onChange={e => setSortOption(e.target.value)}>
-            <option value="default">Default</option>
+            <option value="default">Newest First</option>
             <option value="cpi-desc">Highest Payout</option>
             <option value="cpi-asc">Lowest Payout</option>
             <option value="loi-asc">Quickest</option>

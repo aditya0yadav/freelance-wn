@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const AdminPlatformController = require('../controllers/adminPlatformController');
+const PersonaController = require('../controllers/personaController');
+const PersonaDataController = require('../controllers/personaDataController');
+const AdminLogController = require('../controllers/adminLogController');
+const TagController = require('../controllers/tagController');
 const { verifyAdminToken } = require('../middleware/apiAuth');
 
 // Public Auth routes
@@ -71,5 +75,29 @@ router.post('/export/dele', verifyAdminToken, AdminPlatformController.exportDele
 router.get('/export/recycleList', verifyAdminToken, AdminPlatformController.exportRecycleList);
 router.post('/export/recycleReco', verifyAdminToken, AdminPlatformController.exportRecycleReco);
 router.post('/export/recycleDele', verifyAdminToken, AdminPlatformController.exportRecycleDele);
+
+// Persona templates CRUD routes
+router.get('/persona/list', verifyAdminToken, PersonaController.list);
+router.get('/persona/info', verifyAdminToken, PersonaController.info);
+router.post('/persona/add', verifyAdminToken, PersonaController.add);
+router.post('/persona/edit', verifyAdminToken, PersonaController.edit);
+router.post('/persona/dele', verifyAdminToken, PersonaController.dele);
+router.post('/persona/copy', verifyAdminToken, PersonaController.copy);
+
+// Persona Question Data CRUD routes
+router.get('/persona-data/list', verifyAdminToken, PersonaDataController.list);
+router.get('/persona-data/info', verifyAdminToken, PersonaDataController.info);
+router.post('/persona-data/add', verifyAdminToken, PersonaDataController.add);
+router.post('/persona-data/edit', verifyAdminToken, PersonaDataController.edit);
+router.post('/persona-data/dele', verifyAdminToken, PersonaDataController.dele);
+
+// Tag Management routes
+router.get('/tag/list', verifyAdminToken, TagController.list);
+router.post('/tag/add', verifyAdminToken, TagController.add);
+router.post('/tag/edit', verifyAdminToken, TagController.edit);
+router.post('/tag/dele', verifyAdminToken, TagController.dele);
+
+// Admin Log routes
+router.get('/admin-log/list', verifyAdminToken, AdminLogController.list);
 
 module.exports = router;

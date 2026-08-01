@@ -241,3 +241,66 @@ model Export {
 
   @@map("ya_file_export")
 }
+
+/// Persona model for demographic profiles
+model Persona {
+  persona_id   Int       @id @default(autoincrement())
+  persona_name String
+  persona_type Int       @default(0) // 0 = front/pre-existing, 1 = backend/post
+  sort         Int       @default(0)
+  create_uid   Int       @default(0)
+  create_time  DateTime? @default(now())
+  update_uid   Int       @default(0)
+  update_time  DateTime? @updatedAt
+  delete_uid   Int       @default(0)
+  delete_time  DateTime?
+
+  @@map("ya_persona")
+}
+
+/// PersonaData model for persona questions/inputs
+model PersonaData {
+  persona_data_id     Int       @id @default(autoincrement())
+  persona_id          Int
+  persona_data_name   String
+  persona_data_type   String    // e.g. text, select, radio
+  persona_data_values String?   @db.Text // Options separated by commas or JSON
+  persona_data_holder String?   // Placeholder
+  persona_data_must   Int       @default(0) // 1 = required, 0 = optional
+  sort                Int       @default(0)
+  create_uid          Int       @default(0)
+  create_time         DateTime? @default(now())
+  update_uid          Int       @default(0)
+  update_time         DateTime? @updatedAt
+  delete_uid          Int       @default(0)
+  delete_time         DateTime?
+
+  @@map("ya_persona_data")
+}
+
+/// AdminLog model for auditing administrator actions
+model AdminLog {
+  log_id       Int       @id @default(autoincrement())
+  admin_id     Int       @default(0)
+  admin_name   String    @default("Admin")
+  action       String
+  ip           String?
+  ua           String?
+  create_time  DateTime? @default(now())
+
+  @@map("ya_admin_log")
+}
+
+/// Tag model for member tags
+model MemberTag {
+  tag_id       Int       @id @default(autoincrement())
+  tag_name     String
+  create_uid   Int       @default(0)
+  create_time  DateTime? @default(now())
+  update_uid   Int       @default(0)
+  update_time  DateTime? @updatedAt
+  delete_uid   Int       @default(0)
+  delete_time  DateTime?
+
+  @@map("ya_member_tag")
+}

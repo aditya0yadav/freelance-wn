@@ -498,19 +498,19 @@ export default function AnalyticsDashboard() {
             <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', fontSize: '13px', fontWeight: 600, color: 'var(--text-color)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#9ca3af' }} />
-                <span>完成数量</span>
+                <span>Completed Surveys</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#10b981' }} />
-                <span>总收益</span>
+                <span>Total Revenue</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#f59e0b' }} />
-                <span>团队收益</span>
+                <span>Team Payout</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }} />
-                <span>会员收益</span>
+                <span>Member Payout</span>
               </div>
             </div>
 
@@ -533,10 +533,10 @@ export default function AnalyticsDashboard() {
                       labelStyle={{ color: 'var(--text-color)', fontWeight: 700 }}
                     />
                     
-                    <Line type="monotone" dataKey="completions" stroke="#9ca3af" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomCompletesLabel />} />
-                    <Line type="monotone" dataKey="total_payout" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#10b981" />} />
-                    <Line type="monotone" dataKey="team_payout" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#f59e0b" />} />
-                    <Line type="monotone" dataKey="member_payout" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#ef4444" />} />
+                    <Line type="monotone" dataKey="completions" name="Completed Surveys" stroke="#9ca3af" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomCompletesLabel />} />
+                    <Line type="monotone" dataKey="total_payout" name="Total Revenue" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#10b981" />} />
+                    <Line type="monotone" dataKey="team_payout" name="Team Payout" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#f59e0b" />} />
+                    <Line type="monotone" dataKey="member_payout" name="Member Payout" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} isAnimationActive={false} label={<CustomPeakLabel color="#ef4444" />} />
                   </LineChart>
                 </ResponsiveContainer>
               ) : chartMode === 'bar' ? (
@@ -549,10 +549,10 @@ export default function AnalyticsDashboard() {
                       contentStyle={{ background: 'var(--pm-card, #ffffff)', border: '1px solid var(--divider-color)', borderRadius: '10px' }}
                       labelStyle={{ color: 'var(--text-color)', fontWeight: 700 }}
                     />
-                    <Bar dataKey="completions" fill="#9ca3af" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                    <Bar dataKey="total_payout" fill="#10b981" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                    <Bar dataKey="team_payout" fill="#f59e0b" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                    <Bar dataKey="member_payout" fill="#ef4444" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="completions" name="Completed Surveys" fill="#9ca3af" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="total_payout" name="Total Revenue" fill="#10b981" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="team_payout" name="Team Payout" fill="#f59e0b" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                    <Bar dataKey="member_payout" name="Member Payout" fill="#ef4444" radius={[4, 4, 0, 0]} isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (

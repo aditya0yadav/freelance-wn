@@ -337,6 +337,43 @@ export default function CompletionsLogView() {
         )}
       </div>
 
+      {/* Pagination controls */}
+      {total > limit && (
+        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '16px' }}>
+          <button 
+            className="btn btn-secondary" 
+            style={{ padding: '6px 12px', fontSize: '12px' }} 
+            disabled={page <= 1} 
+            onClick={() => setPage(page - 1)}
+          >
+            ‹ Prev
+          </button>
+          {Array.from({ length: Math.min(Math.ceil(total / limit), 10) }, (_, i) => {
+            const totalPages = Math.ceil(total / limit);
+            const pg = totalPages <= 10 ? i + 1 : Math.max(1, page - 4) + i;
+            if (pg > totalPages) return null;
+            return (
+              <button 
+                key={pg} 
+                className={`btn ${page === pg ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ width: '36px', height: '36px', padding: 0, fontSize: '12px' }} 
+                onClick={() => setPage(pg)}
+              >
+                {pg}
+              </button>
+            );
+          })}
+          <button 
+            className="btn btn-secondary" 
+            style={{ padding: '6px 12px', fontSize: '12px' }} 
+            disabled={page >= Math.ceil(total / limit)} 
+            onClick={() => setPage(page + 1)}
+          >
+            Next ›
+          </button>
+        </div>
+      )}
+
       {/* Details Modal */}
       {selectedRecord && createPortal(
         <div className="admin-theme" data-theme={theme}>

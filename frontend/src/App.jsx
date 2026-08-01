@@ -30,6 +30,11 @@ import MemberListView from './admin/views/MemberListView';
 import ExportRecordsView from './admin/views/ExportRecordsView';
 import CompletionsLogView from './admin/views/CompletionsLogView';
 import TeamListView from './admin/views/TeamListView';
+import CharacterTemplateView from './admin/views/CharacterTemplateView';
+import PerformancePersonaView from './admin/views/PerformancePersonaView';
+import OperationLogView from './admin/views/OperationLogView';
+import TagManagementView from './admin/views/TagManagementView';
+import PerformanceRecordView from './admin/views/PerformanceRecordView';
 
 
 // Wrapper so AdminLoginView can use useNavigate (must be inside Router context)
@@ -411,6 +416,10 @@ export default function App() {
     if (sortOption === 'cpi-desc') result.sort((a, b) => b.project_cpi - a.project_cpi);
     else if (sortOption === 'cpi-asc') result.sort((a, b) => a.project_cpi - b.project_cpi);
     else if (sortOption === 'loi-asc') result.sort((a, b) => (a.project_loi || 999) - (b.project_loi || 999));
+    else {
+      // Creation order: newest projects first
+      result.sort((a, b) => (b.project_id || 0) - (a.project_id || 0));
+    }
     return result;
   }, [offers, sortOption]);
 
@@ -510,8 +519,13 @@ export default function App() {
                   <Route path="platforms" element={<PlatformListView />} />
                   <Route path="projects" element={<ProjectListView />} />
                   <Route path="currency" element={<CurrencyListView />} />
-                   <Route path="members" element={<MemberListView />} />
+                  <Route path="character-template" element={<CharacterTemplateView />} />
+                  <Route path="tag-management" element={<TagManagementView />} />
+                  <Route path="members" element={<MemberListView />} />
+                  <Route path="performance-record" element={<PerformanceRecordView />} />
                   <Route path="teams" element={<TeamListView />} />
+                  <Route path="performance-persona" element={<PerformancePersonaView />} />
+                  <Route path="operation-log" element={<OperationLogView />} />
                   <Route path="exports" element={<ExportRecordsView />} />
                   <Route path="completions" element={<CompletionsLogView />} />
                   <Route path="" element={<Navigate to="/admin/dashboard" replace />} />

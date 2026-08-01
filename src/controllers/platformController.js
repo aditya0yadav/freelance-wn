@@ -187,7 +187,7 @@ class PlatformController {
       const limit = Number(req.query.limit) || 20;
       const sortOption = req.query.sort || 'default';
 
-      let orderBy = { sort: 'desc' };
+      let orderBy = { project_id: 'desc' };
       if (sortOption === 'cpi-desc') {
         orderBy = { project_cpi: 'desc' };
       } else if (sortOption === 'cpi-asc') {
@@ -222,6 +222,7 @@ class PlatformController {
 
         const result = {
           project_pno: item.project_pno,
+          project_id: item.project_id,
           project_name: item.project_name,
           project_code: item.project_code,
           project_cpi: Number(memberPayout.toFixed(2)),
