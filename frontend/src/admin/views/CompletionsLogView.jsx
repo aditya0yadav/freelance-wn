@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
 import { useAdminTheme } from '../context/AdminThemeContext';
-import { History, Search, Loader2, Database, ExternalLink, X, CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { History, Search, Loader2, Database, ExternalLink, X, CheckCircle2, XCircle, Clock, AlertTriangle, Download, Upload, FileText } from 'lucide-react';
 
 export default function CompletionsLogView() {
   const token = getAdminToken();
@@ -28,6 +28,79 @@ export default function CompletionsLogView() {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  // Export states
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportRemark, setExportRemark] = useState('');
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportSubmit = async (e) => {
+    e.preventDefault();
+    setExporting(true);
+    try {
+      const res = await adminFetch('/export/generate', 'POST', {
+        type: 1, // Rewards type
+        export_remark: exportRemark
+      }, token);
+      if (res.code === 200 && res.data) {
+        setExportModalOpen(false);
+        setExportRemark('');
+        // Trigger auto-download
+        const fileUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${res.data.file_path}`;
+        window.open(fileUrl, '_blank');
+      } else {
+        alert(res.msg || 'Export failed');
+      }
+    } catch (err) {
+      alert(`Export error: ${err.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Import states
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importReport, setImportReport] = useState(null);
+
+  const handleDownloadTemplate = () => {
+    const url = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/admin/import/template?type=rewards`;
+    window.open(url, '_blank');
+  };
+
+  const handleImportSubmit = async (e) => {
+    e.preventDefault();
+    if (!importFile) return alert('Please select a CSV file to import');
+    setImporting(true);
+    setImportReport(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('import_file', importFile);
+
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${baseUrl}/api/admin/import/rewards`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const res = await response.json();
+      if (res.code === 200) {
+        setImportReport(res.data);
+        fetchRecords();
+      } else {
+        alert(res.msg || 'Import failed');
+      }
+    } catch (err) {
+      alert(`Import error: ${err.message}`);
+    } finally {
+      setImporting(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedRecord) {
@@ -192,6 +265,14 @@ export default function CompletionsLogView() {
           setStatusFilter(''); setSearchValue(''); setStartDate(''); setEndDate(''); setPage(1);
         }} style={{ padding: '8px 16px', fontSize: '13px' }}>
           Reset
+        </button>
+
+        <button className="btn btn-secondary" onClick={() => { setImportFile(null); setImportReport(null); setImportModalOpen(true); }} style={{ padding: '8px 16px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <Upload size={14} /> Import CSV
+        </button>
+
+        <button className="btn btn-primary" onClick={() => setExportModalOpen(true)} style={{ padding: '8px 16px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'var(--primary-brand)', borderColor: 'var(--primary-brand)' }}>
+          <Download size={14} /> Export Log
         </button>
       </div>
 
@@ -472,6 +553,108 @@ export default function CompletionsLogView() {
                 <button type="button" className="btn btn-secondary" onClick={() => setSelectedRecord(null)}>Close Audit Details</button>
               </div>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Export Modal */}
+      {exportModalOpen && createPortal(
+        <div className="admin-theme" data-theme={theme}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <form onSubmit={handleExportSubmit} className="premium-metric-card" style={{ width: '100%', maxWidth: '420px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-color)' }}>Export Sales Records</h3>
+                <button type="button" onClick={() => setExportModalOpen(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Export Remark</label>
+                  <input
+                    type="text"
+                    placeholder="Enter export remark (e.g. July 2026 Settling)..."
+                    value={exportRemark}
+                    onChange={e => setExportRemark(e.target.value)}
+                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '13px', outline: 'none' }}
+                  />
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  The export files are saved on the server and can also be managed later in the <strong>Data Exports</strong> panel.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setExportModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={exporting} style={{ background: 'var(--primary-brand)', borderColor: 'var(--primary-brand)' }}>
+                  {exporting ? 'Generating...' : 'Export & Download'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+      {/* Import Modal */}
+      {importModalOpen && createPortal(
+        <div className="admin-theme" data-theme={theme}>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <form onSubmit={handleImportSubmit} className="premium-metric-card" style={{ width: '100%', maxWidth: '480px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '16px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-color)' }}>Bulk Import Sales / Completion CSV</h3>
+                <button type="button" onClick={() => setImportModalOpen(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Download Template Step */}
+                <div style={{ padding: '12px 14px', background: 'var(--bg-color)', border: '1px solid var(--divider-color)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-color)' }}>Need the CSV template?</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Download sample headers & format</div>
+                  </div>
+                  <button type="button" className="btn btn-secondary" onClick={handleDownloadTemplate} style={{ fontSize: '12px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <FileText size={14} /> Download Template
+                  </button>
+                </div>
+
+                {/* File picker */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Select CSV File *</label>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={e => setImportFile(e.target.files[0] || null)}
+                    style={{ padding: '8px', borderRadius: '8px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '13px' }}
+                    required
+                  />
+                </div>
+
+                {/* Import Report */}
+                {importReport && (
+                  <div style={{ padding: '12px', borderRadius: '8px', background: importReport.fail_num === 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', border: '1px solid var(--divider-color)', fontSize: '12px' }}>
+                    <div style={{ fontWeight: 700, color: importReport.fail_num === 0 ? '#10B981' : '#F59E0B' }}>
+                      Import Summary: {importReport.success_num} Succeeded, {importReport.fail_num} Failed (Total {importReport.total})
+                    </div>
+                    {importReport.errors && importReport.errors.length > 0 && (
+                      <div style={{ marginTop: '8px', maxHeight: '120px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {importReport.errors.map((err, idx) => (
+                          <div key={idx} style={{ color: '#EF4444', fontSize: '11px' }}>
+                            Line {err.line}: {err.msg}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setImportModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={importing} style={{ background: 'var(--primary-brand)', borderColor: 'var(--primary-brand)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Upload size={14} /> {importing ? 'Processing CSV...' : 'Upload & Import'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>,
         document.body

@@ -1200,21 +1200,37 @@ class AdminPlatformController {
           orderBy: { create_time: 'desc' }
         });
 
-        const headers = ['ID', 'TXN ID', 'Nickname', 'Team Name', 'Platform Name', 'Project PNO', 'Payout ($)', 'Team Payout ($)', 'Member Payout ($)', 'UUID', 'Status', 'Callback Time'];
-        const rows = rewards.map(r => [
-          r.reward_id,
-          r.txn_id,
-          r.member?.nickname || 'Unknown',
-          r.team?.team_name || 'Unknown',
-          r.platform?.platform_name || 'Unknown',
-          r.project_pno || 'Manual',
-          (r.payout / r.usd_currency_coins).toFixed(2),
-          (r.team_payout / r.usd_currency_coins).toFixed(2),
-          (r.member_payout / r.usd_currency_coins).toFixed(2),
-          r.uuid,
-          r.reward_status === 1 ? 'Success' : r.reward_status === 2 ? 'Disqualified' : r.reward_status === 3 ? 'Overquota' : 'Processing',
-          r.create_time ? new Date(r.create_time).toISOString().replace('T', ' ').substring(0, 16) : ''
-        ]);
+        const headers = [
+          'ID', 'TXN ID', 'UUID', 'Project PNO (PID)', 'Project No (ID)', 'Project Name', 
+          'Nickname', 'Team Name', 'Platform Name', 'Payout ($)', 'Team Payout ($)', 
+          'Member Payout ($)', 'Status', 'Refund/Deduction ($)', 'Callback/Completion Time'
+        ];
+        const rows = rewards.map(r => {
+          const isRefund = r.reward_status === 6;
+          const refundAmt = isRefund ? (r.member_payout / r.usd_currency_coins).toFixed(2) : '0.00';
+          const statusLabel = r.reward_status === 1 ? 'Success' : 
+                              r.reward_status === 2 ? 'Disqualified' : 
+                              r.reward_status === 3 ? 'Overquota' : 
+                              r.reward_status === 4 ? 'Terminated' : 
+                              r.reward_status === 6 ? 'Reconciliation/Refund' : 'Processing';
+          return [
+            r.reward_id,
+            r.txn_id,
+            r.uuid,
+            r.project_pno || '—',
+            r.project_no || '—',
+            r.project_name || '—',
+            r.member?.nickname || 'Unknown',
+            r.team?.team_name || 'Unknown',
+            r.platform?.platform_name || 'Unknown',
+            (r.payout / r.usd_currency_coins).toFixed(2),
+            (r.team_payout / r.usd_currency_coins).toFixed(2),
+            (r.member_payout / r.usd_currency_coins).toFixed(2),
+            statusLabel,
+            refundAmt,
+            r.create_time ? new Date(r.create_time).toISOString().replace('T', ' ').substring(0, 16) : ''
+          ];
+        });
 
         csvContent = [headers.join(','), ...rows.map(row => row.map(escapeCSV).join(','))].join('\n');
 

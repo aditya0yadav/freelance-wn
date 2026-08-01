@@ -5,7 +5,10 @@ const PersonaController = require('../controllers/personaController');
 const PersonaDataController = require('../controllers/personaDataController');
 const AdminLogController = require('../controllers/adminLogController');
 const TagController = require('../controllers/tagController');
+const AdminImportController = require('../controllers/adminImportController');
 const { verifyAdminToken } = require('../middleware/apiAuth');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Public Auth routes
 router.post('/login', AdminPlatformController.login);
@@ -75,6 +78,11 @@ router.post('/export/dele', verifyAdminToken, AdminPlatformController.exportDele
 router.get('/export/recycleList', verifyAdminToken, AdminPlatformController.exportRecycleList);
 router.post('/export/recycleReco', verifyAdminToken, AdminPlatformController.exportRecycleReco);
 router.post('/export/recycleDele', verifyAdminToken, AdminPlatformController.exportRecycleDele);
+
+// Data Import management
+router.get('/import/template', verifyAdminToken, AdminImportController.downloadTemplate);
+router.post('/import/rewards', verifyAdminToken, upload.single('import_file'), AdminImportController.importRewards);
+router.post('/import/members', verifyAdminToken, upload.single('import_file'), AdminImportController.importMembers);
 
 // Persona templates CRUD routes
 router.get('/persona/list', verifyAdminToken, PersonaController.list);

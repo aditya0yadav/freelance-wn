@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Search, Plus, X, AlertCircle, Eye, EyeOff, Ban, CheckCircle2, Shield,
   User, Star, RefreshCcw, Edit2, Trash2, Power, BarChart3, UserCheck, Lock, Phone, Download,
-  Users, Globe
+  Users, Globe, Upload, FileText
 } from 'lucide-react';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
 import { useAdminTheme } from '../context/AdminThemeContext';
@@ -63,6 +63,50 @@ function AllMembersTab({ token, theme }) {
       }
     } catch (err) {
       alert(`Export failed: ${err.message}`);
+    }
+  };
+
+  // Member Import states
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importReport, setImportReport] = useState(null);
+
+  const handleDownloadMemberTemplate = () => {
+    const url = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/admin/import/template?type=members`;
+    window.open(url, '_blank');
+  };
+
+  const handleImportMembersSubmit = async (e) => {
+    e.preventDefault();
+    if (!importFile) return alert('Please select a CSV file to import');
+    setImporting(true);
+    setImportReport(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('import_file', importFile);
+
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${baseUrl}/api/admin/import/members`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const res = await response.json();
+      if (res.code === 200) {
+        setImportReport(res.data);
+        fetchMembers(1, search);
+      } else {
+        alert(res.msg || 'Import failed');
+      }
+    } catch (err) {
+      alert(`Import error: ${err.message}`);
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -141,6 +185,9 @@ function AllMembersTab({ token, theme }) {
           <button className="btn btn-secondary" onClick={() => { setSearch(''); fetchMembers(1, ''); }}><RefreshCcw size={13} /> Reset</button>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-secondary" onClick={() => { setImportFile(null); setImportReport(null); setImportModalOpen(true); }} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Upload size={14} /> Import CSV
+          </button>
           <button className="btn btn-secondary" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Download size={14} /> Export CSV
           </button>
@@ -640,6 +687,66 @@ function PerformanceTab({ token, theme }) {
               <button className="btn btn-secondary" onClick={() => setDetailRecord(null)}>Close</button>
             </div>
           </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Member Import Modal */}
+      {importModalOpen && createPortal(
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <form onSubmit={handleImportMembersSubmit} style={{ background: 'var(--pm-card)', borderRadius: 14, width: '100%', maxWidth: 480, maxHeight: '88vh', overflow: 'auto', padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontWeight: 800, fontSize: 16, color: 'var(--pm-text-primary)' }}>Bulk Import Members CSV</h3>
+              <button type="button" style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--pm-text-secondary)' }} onClick={() => setImportModalOpen(false)}><X size={18} /></button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ padding: '12px 14px', background: 'var(--pm-bg)', border: '1px solid var(--pm-border-layout)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--pm-text-primary)' }}>Need the CSV template?</div>
+                  <div style={{ fontSize: 11, color: 'var(--pm-text-secondary)' }}>Download sample member headers</div>
+                </div>
+                <button type="button" className="btn btn-secondary" onClick={handleDownloadMemberTemplate} style={{ fontSize: 12, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <FileText size={14} /> Download Template
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--pm-text-secondary)', textTransform: 'uppercase' }}>Select CSV File *</label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={e => setImportFile(e.target.files[0] || null)}
+                  style={{ padding: 8, borderRadius: 8, border: '1px solid var(--pm-border-layout)', background: 'var(--pm-bg)', color: 'var(--pm-text-primary)', fontSize: 13 }}
+                  required
+                />
+              </div>
+
+              {importReport && (
+                <div style={{ padding: 12, borderRadius: 8, background: importReport.fail_num === 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', border: '1px solid var(--pm-border-layout)', fontSize: 12 }}>
+                  <div style={{ fontWeight: 700, color: importReport.fail_num === 0 ? '#10B981' : '#F59E0B' }}>
+                    Import Summary: {importReport.success_num} Succeeded, {importReport.fail_num} Failed (Total {importReport.total})
+                  </div>
+                  {importReport.errors && importReport.errors.length > 0 && (
+                    <div style={{ marginTop: 8, maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {importReport.errors.map((err, idx) => (
+                        <div key={idx} style={{ color: '#EF4444', fontSize: 11 }}>
+                          Line {err.line}: {err.msg}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setImportModalOpen(false)}>Cancel</button>
+              <button type="submit" className="btn btn-primary" disabled={importing} style={{ background: 'var(--pm-accent)', border: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Upload size={14} /> {importing ? 'Processing CSV...' : 'Upload & Import Members'}
+              </button>
+            </div>
+          </form>
         </div>,
         document.body
       )}
