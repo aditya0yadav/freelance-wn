@@ -17,8 +17,10 @@ export default function CompletionsLogView() {
   const [searchField, setSearchField] = useState('project_name');
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [platformFilter, setPlatformFilter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [platforms, setPlatforms] = useState([]);
 
   // Bulk Selection
   const [selectedIds, setSelectedIds] = useState([]);
@@ -34,14 +36,30 @@ export default function CompletionsLogView() {
   const [exportRemark, setExportRemark] = useState('');
   const [exporting, setExporting] = useState(false);
 
+  useEffect(() => {
+    adminFetch('/list?limit=100', 'GET', null, token)
+      .then(res => { if (res.code === 200) setPlatforms(res.data.list || []); })
+      .catch(() => {});
+  }, [token]);
+
   const handleExportSubmit = async (e) => {
     e.preventDefault();
     setExporting(true);
     try {
-      const res = await adminFetch('/export/generate', 'POST', {
+      const payload = {
         type: 1, // Rewards type
-        export_remark: exportRemark
-      }, token);
+        export_remark: exportRemark,
+        status: statusFilter,
+        platform_id: platformFilter,
+        start_date: startDate,
+        end_date: endDate
+      };
+      if (searchValue) {
+        if (searchField === 'nickname') payload.nickname = searchValue;
+        else payload.search_value = searchValue;
+      }
+
+      const res = await adminFetch('/export/generate', 'POST', payload, token);
       if (res.code === 200 && res.data) {
         setExportModalOpen(false);
         setExportRemark('');
@@ -223,6 +241,21 @@ export default function CompletionsLogView() {
             <option value="3">Overquota</option>
             <option value="4">Terminated</option>
             <option value="6">Reconciliation</option>
+          </select>
+        </div>
+
+        {/* Platform Filter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Platform:</span>
+          <select
+            value={platformFilter}
+            onChange={(e) => { setPlatformFilter(e.target.value); setPage(1); }}
+            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--divider-color)', background: 'var(--bg-color)', color: 'var(--text-color)', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="">All Platforms</option>
+            {platforms.map(p => (
+              <option key={p.platform_id} value={p.platform_id}>{p.platform_name}</option>
+            ))}
           </select>
         </div>
 

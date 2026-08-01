@@ -1195,7 +1195,39 @@ class AdminPlatformController {
         fileName = `rewards-${timestamp}-${randHex}.csv`;
         relativePath = `/export/rewards-${timestamp}-${randHex}.csv`;
 
+        const { platform_id, status, reward_status, member_id, nickname, search_value, start_date, end_date } = req.body;
+        const whereClause = {};
+
+        // Status filter (e.g. 1 for Success)
+        const targetStatus = status || reward_status;
+        if (targetStatus) {
+          whereClause.reward_status = Number(targetStatus);
+        }
+
+        // Platform filter (e.g. Gowebsurveys platform_id)
+        if (platform_id) {
+          whereClause.platform_id = Number(platform_id);
+        }
+
+        // Member filter (member_id or member nickname match)
+        if (member_id) {
+          whereClause.member_id = Number(member_id);
+        } else if (nickname || search_value) {
+          const queryStr = (nickname || search_value).trim();
+          whereClause.member = {
+            nickname: { contains: queryStr }
+          };
+        }
+
+        // Date range filter
+        if (start_date || end_date) {
+          whereClause.create_time = {};
+          if (start_date) whereClause.create_time.gte = new Date(start_date);
+          if (end_date) whereClause.create_time.lte = new Date(new Date(end_date).setHours(23, 59, 59, 999));
+        }
+
         const rewards = await prisma.reward.findMany({
+          where: whereClause,
           include: { member: true, team: true, platform: true },
           orderBy: { create_time: 'desc' }
         });
