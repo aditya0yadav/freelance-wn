@@ -10,10 +10,20 @@ export const adminFetch = async (endpoint, method = 'GET', body = null, token = 
   const config = { method, headers };
   if (body) config.body = JSON.stringify(body);
   const res = await fetch(`${BASE_URL}${endpoint}`, config);
-  const data = await res.json();
+
+  // Safely parse — server may return HTML on 413/500 etc.
+  const text = await res.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Server error (${res.status}): Response was not valid JSON. Check server logs.`);
+  }
+
   if (!res.ok) throw new Error(data.msg || `Error ${res.status}`);
   return data;
 };
+
 
 export const getAdminToken = () => localStorage.getItem('admin_token') || null;
 export const getAdminUser = () => {

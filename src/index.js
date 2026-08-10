@@ -10,8 +10,9 @@ const PORT = process.env.PORT || 8000;
 
 // Apply standard middlewares
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
 
 // Serve optional static files (cookiepolicy, styles, logo, index views if needed)
 app.use(express.static('public'));

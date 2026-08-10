@@ -157,22 +157,28 @@ class InventoryPullService {
 
   /**
    * Pull TMDPanel surveys
-   * The API returns all surveys in a single call. Each survey already includes
-   * quota (nRequired) and qualifications text, so no secondary requests are needed.
-   * The surveyLink ends with ?rid= — we store it as-is and append our uuid at click time.
+   * Auth: X-API-Key header (confirmed working).
+   * The API returns all surveys in a single call — quota and qualifications included.
+   * The surveyLink ends with ?rid= — uuid is appended at click time.
    */
   static async pullTMDPanel(platform, params, currency) {
-    const apiKey = params['app_key'] || '';
-    const headers = { 'Accept': 'application/json' };
+    // API key: prefer platform params, fall back to env var
+    const apiKey = params['app_key'] || process.env.TMDPANEL_API_KEY || '';
+    // URL: prefer platform_url field, fall back to env var
+    const apiUrl = (platform.platform_url && platform.platform_url.trim())
+      ? platform.platform_url.trim()
+      : (process.env.TMDPANEL_API_URL || '');
 
-    // Support both Bearer token and X-API-Key styles (configure via platform params)
-    if (params['auth_type'] === 'header') {
-      headers['X-API-Key'] = apiKey;
-    } else {
-      headers['Authorization'] = `Bearer ${apiKey}`;
-    }
+    if (!apiKey) throw new Error('[TMDPanel] No API key configured (set params.app_key or TMDPANEL_API_KEY env).');
+    if (!apiUrl) throw new Error('[TMDPanel] No API URL configured (set platform_url or TMDPANEL_API_URL env).');
 
-    const res = await axios.get(platform.platform_url, { headers, timeout: 30000 });
+    const res = await axios.get(apiUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'X-API-Key': apiKey
+      },
+      timeout: 30000
+    });
 
     if (!res.data || !res.data.success || !Array.isArray(res.data.data)) {
       console.warn('[TMDPanel] Unexpected response format:', JSON.stringify(res.data).substring(0, 200));
@@ -180,7 +186,7 @@ class InventoryPullService {
     }
 
     const liveSurveys = res.data.data.filter(s => s.status === 'live');
-    console.log(`[TMDPanel] Fetched ${res.data.total} surveys, ${liveSurveys.length} live.`);
+    console.log(`[TMDPanel] Fetched ${res.data.total} total, ${liveSurveys.length} live.`);
 
     await this.saveOffers(platform.platform_id, currency.currency_id, liveSurveys.map(survey => ({
       project_no: String(survey.id),
