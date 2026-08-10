@@ -11,7 +11,7 @@ class InventoryPullService {
       where: {
         delete_time: null,
         is_disable: 0,
-        platform_sign: { in: ['Gowebsurveys', 'Zamplia'] }
+        platform_sign: { in: ['Gowebsurveys', 'Zamplia', 'TMDPanel'] }
       }
     });
 
@@ -28,7 +28,8 @@ class InventoryPullService {
    * Sync single platform based on its unique signing strategy
    */
   static async pullPlatform(platform) {
-    if (platform.platform_sign !== 'Gowebsurveys' && platform.platform_sign !== 'Zamplia') {
+    const supported = ['Gowebsurveys', 'Zamplia', 'TMDPanel'];
+    if (!supported.includes(platform.platform_sign)) {
       console.log(`Platform ${platform.platform_name} does not support automated inventory pull.`);
       return;
     }
@@ -50,6 +51,9 @@ class InventoryPullService {
         break;
       case 'Zamplia':
         await this.pullZamplia(platform, paramsMap, currency);
+        break;
+      case 'TMDPanel':
+        await this.pullTMDPanel(platform, paramsMap, currency);
         break;
     }
   }
@@ -149,6 +153,51 @@ class InventoryPullService {
         signature: `${platform.platform_id}_${survey.SurveyId}_${survey.LanguageCode || ''}`
       })));
     }
+  }
+
+  /**
+   * Pull TMDPanel surveys
+   * The API returns all surveys in a single call. Each survey already includes
+   * quota (nRequired) and qualifications text, so no secondary requests are needed.
+   * The surveyLink ends with ?rid= — we store it as-is and append our uuid at click time.
+   */
+  static async pullTMDPanel(platform, params, currency) {
+    const apiKey = params['app_key'] || '';
+    const headers = { 'Accept': 'application/json' };
+
+    // Support both Bearer token and X-API-Key styles (configure via platform params)
+    if (params['auth_type'] === 'header') {
+      headers['X-API-Key'] = apiKey;
+    } else {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const res = await axios.get(platform.platform_url, { headers, timeout: 30000 });
+
+    if (!res.data || !res.data.success || !Array.isArray(res.data.data)) {
+      console.warn('[TMDPanel] Unexpected response format:', JSON.stringify(res.data).substring(0, 200));
+      return;
+    }
+
+    const liveSurveys = res.data.data.filter(s => s.status === 'live');
+    console.log(`[TMDPanel] Fetched ${res.data.total} surveys, ${liveSurveys.length} live.`);
+
+    await this.saveOffers(platform.platform_id, currency.currency_id, liveSurveys.map(survey => ({
+      project_no: String(survey.id),
+      project_name: survey.countryName
+        ? `[${survey.countryName}] ${survey.id}`
+        : String(survey.id),
+      project_code: survey.countryName || '',
+      project_cpi: Number(survey.cpi) || 0,
+      project_loi: Number(survey.loi) || 0,
+      project_ir: Number(survey.expectedIr) || 0,
+      project_quota: Number(survey.nRequired) || 0,
+      // surveyLink already ends with ?rid= — uuid is appended at click time
+      project_click_url: survey.surveyLink || '',
+      // Store qualifications text for display in quota view
+      project_content: survey.qualifications || '',
+      signature: `${platform.platform_id}_${survey.id}_${survey.buyer_id || ''}`
+    })));
   }
 
   /**

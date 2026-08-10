@@ -28,6 +28,7 @@ router.post('/edit', verifyAdminToken, AdminPlatformController.edit);
 router.post('/dele', verifyAdminToken, AdminPlatformController.dele);
 router.post('/disable', verifyAdminToken, AdminPlatformController.disable);
 
+
 // Currency mappings
 router.get('/currency/list', verifyAdminToken, AdminPlatformController.currencyList);
 router.post('/currency/add', verifyAdminToken, AdminPlatformController.currencyAdd);

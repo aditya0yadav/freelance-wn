@@ -615,10 +615,19 @@ class PlatformController {
           return res.status(500).send(`API click error: ${response.data?.apiMessages || 'Unknown API issue'}`);
         }
 
+
+        case 'TMDPanel': {
+          // project_click_url = surveyLink from TMDPanel (ends with ?rid=)
+          // Appending uuid makes it: ...?rid=<uuid>  which TMDPanel echoes in callback
+          const tmdClickUrl = project.project_click_url || '';
+          return res.send(`<script>window.location.href="${tmdClickUrl}${uuid}";</script>`);
+        }
+
         default: {
           const clickUrl = project.project_click_url || '';
           return res.send(`<script>window.location.href="${clickUrl}${uuid}";</script>`);
         }
+
       }
     } catch (err) {
       console.error('Redirect processing error:', err);

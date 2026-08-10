@@ -82,7 +82,40 @@ class SurveyIntegrationService {
         }
       }
 
+      if (sign === 'TMDPanel') {
+        // Qualifications are fetched and stored at pull time — no extra API call needed.
+        const css = `<style>
+          .qs-panel{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+          .qs-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px 16px;}
+          .qs-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.06em;font-weight:500;margin-bottom:6px;}
+          .qs-value{font-size:22px;font-weight:700;color:inherit;}
+          .qs-value.ok{color:rgba(14,255,78,.85);}
+          .qs-section-title{font-size:12px;font-weight:600;color:#a9a9ca;text-transform:uppercase;letter-spacing:.05em;margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);}
+          .tmd-qual-block{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:16px 18px;font-size:13px;line-height:1.8;white-space:pre-wrap;color:#ccc;}
+        </style>`;
+
+        const remaining = Math.max(0, (project.project_quota || 0) - (project.project_complete || 0));
+        let content = css;
+        content += `<div class="qs-panel">
+          <div class="qs-card"><div class="qs-label">Target Quota</div><div class="qs-value">${project.project_quota || 0}</div></div>
+          <div class="qs-card"><div class="qs-label">Completed</div><div class="qs-value">${project.project_complete || 0}</div></div>
+          <div class="qs-card"><div class="qs-label">Remaining</div><div class="qs-value ok">${remaining}</div></div>
+        </div>`;
+
+        const qualText = project.project_content || '';
+        if (qualText.trim()) {
+          content += `<div class="qs-section-title">Qualifications</div>
+            <div class="tmd-qual-block">${this.escapeHtml(qualText)}</div>`;
+        } else {
+          content += `<div class="qs-section-title">Qualifications</div>
+            <div class="tmd-qual-block" style="color:#666;">No qualification requirements specified for this survey.</div>`;
+        }
+
+        return { type: 'content', content };
+      }
+
       if (sign === 'Zamplia') {
+
         const key = params['app_key'];
         const cleanUrl = platform.platform_quota_url.replace(/\s+/g, '');
         const quotaUrl = `${cleanUrl.replace(/\/$/, '')}?SurveyId=${project.project_no}`;
