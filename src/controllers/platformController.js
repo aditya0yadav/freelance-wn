@@ -531,7 +531,7 @@ class PlatformController {
 
       const uuid = crypto.randomUUID().replace(/-/g, '');
       const ip = PlatformController.getIpAddress(req);
-      const ua = req.headers['user-agent'] || 'unknown';
+      const ua = (req.headers['user-agent'] || 'unknown').substring(0, 190);
 
       // Log flowing click
       await prisma.flowing.create({
@@ -616,9 +616,13 @@ class PlatformController {
 
 
         case 'TMDPanel': {
-          // project_click_url = surveyLink from TMDPanel (ends with ?rid=)
-          // Appending uuid makes it: ...?rid=<uuid>  which TMDPanel echoes in callback
-          const tmdClickUrl = project.project_click_url || '';
+          let tmdClickUrl = project.project_click_url || '';
+          
+          // Fallback just in case TMDPanel didn't pre-append `?rid=` to the link
+          if (tmdClickUrl && !tmdClickUrl.endsWith('=')) {
+            tmdClickUrl += tmdClickUrl.includes('?') ? '&rid=' : '?rid=';
+          }
+          
           return res.send(`<script>window.location.href="${tmdClickUrl}${uuid}";</script>`);
         }
 
@@ -674,7 +678,7 @@ class PlatformController {
 
       const uuid = crypto.randomUUID().replace(/-/g, '');
       const ip = PlatformController.getIpAddress(req);
-      const ua = req.headers['user-agent'] || 'unknown';
+      const ua = (req.headers['user-agent'] || 'unknown').substring(0, 190);
 
       await prisma.flowing.create({
         data: {
