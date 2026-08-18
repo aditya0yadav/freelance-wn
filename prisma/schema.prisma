@@ -104,8 +104,8 @@ model Project {
   project_persona_template   Int            @default(0)
   project_persona_backend    Int            @default(0)
   is_api                     Int            @default(0)
-  project_click_url          String?
-  project_content            String?
+  project_click_url          String?        @db.Text
+  project_content            String?        @db.LongText
   is_disable                 Int            @default(0)
   is_recommend               Int            @default(0)
   sort                       Int            @default(0)

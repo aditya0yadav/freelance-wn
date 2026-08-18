@@ -136,10 +136,9 @@ class PlatformController {
       const platformAuths = await prisma.platformAuth.findMany({ where: { team_id: teamId } });
       const authIds = platformAuths.map(a => a.platform_id);
 
-      // Restrict active surveys display to GoWebSurveys and Zamplia
+      // Allow any active platforms, relying on team authorization (authIds) for restriction
       const allowedPlatforms = await prisma.platform.findMany({
         where: {
-          platform_sign: { in: ['Gowebsurveys', 'Zamplia'] },
           is_disable: 0,
           delete_time: null
         }

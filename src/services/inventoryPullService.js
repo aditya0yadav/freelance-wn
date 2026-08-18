@@ -200,8 +200,8 @@ class InventoryPullService {
       project_quota: Number(survey.nRequired) || 0,
       // surveyLink already ends with ?rid= — uuid is appended at click time
       project_click_url: survey.surveyLink || '',
-      // Store qualifications text for display in quota view
-      project_content: survey.qualifications || '',
+      // Store qualifications text for display in quota view (truncated to 190 to prevent db limits)
+      project_content: survey.qualifications ? String(survey.qualifications).substring(0, 190) : '',
       signature: `${platform.platform_id}_${survey.id}_${survey.buyer_id || ''}`
     })));
   }

@@ -42,6 +42,7 @@ function PlatformsTab({ token, theme, onSelectPlatform }) {
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [imageMode, setImageMode] = useState('url');
+  const [currencies, setCurrencies] = useState([]);
   const fileInputRef = useRef(null);
 
   const handleImageFile = (file) => {
@@ -79,7 +80,12 @@ function PlatformsTab({ token, theme, onSelectPlatform }) {
     finally { setLoading(false); }
   }, [token]);
 
-  useEffect(() => { fetchPlatforms(1, ''); }, []);
+  useEffect(() => { 
+    fetchPlatforms(1, ''); 
+    adminFetch('/currency/list', 'GET', null, token).then(res => {
+      if (res.code === 200) setCurrencies(res.data.list || []);
+    });
+  }, []);
 
   const handleSave = async (e) => {
     e.preventDefault(); setErrorMsg('');
@@ -310,6 +316,12 @@ function PlatformsTab({ token, theme, onSelectPlatform }) {
                   <Field label="Brand Color"><input type="color" className="form-input" value={formData.platform_color || '#7C3AED'} onChange={e => setFormData(f => ({ ...f, platform_color: e.target.value }))} style={{ height: 38 }} /></Field>
                   <Field label="Platform URL"><input className="form-input" value={formData.platform_url || ''} onChange={e => setFormData(f => ({ ...f, platform_url: e.target.value }))} /></Field>
                   <Field label="Quota Check URL"><input className="form-input" value={formData.platform_quota_url || ''} onChange={e => setFormData(f => ({ ...f, platform_quota_url: e.target.value }))} /></Field>
+                  <Field label="Platform Currency">
+                    <select className="form-select" value={formData.platform_currency} onChange={e => setFormData(f => ({ ...f, platform_currency: Number(e.target.value) }))}>
+                      <option value={0}>Not Set (0)</option>
+                      {currencies.map(c => <option key={c.currency_id} value={c.currency_id}>{c.currency_name} ({c.currency_code})</option>)}
+                    </select>
+                  </Field>
                   <Field label="Level"><input type="number" className="form-input" value={formData.platform_level} onChange={e => setFormData(f => ({ ...f, platform_level: Number(e.target.value) }))} /></Field>
                   <Field label="Sort Order"><input type="number" className="form-input" value={formData.sort} onChange={e => setFormData(f => ({ ...f, sort: Number(e.target.value) }))} /></Field>
                   <Field label="Click Callback URL"><input className="form-input" value={formData.platform_click_url || ''} onChange={e => setFormData(f => ({ ...f, platform_click_url: e.target.value }))} /></Field>
@@ -333,6 +345,7 @@ function PlatformDetailView({ platform, onClose, onSave, token, theme }) {
   const [activeSubTab, setActiveSubTab] = useState('settings');
   const [platformData, setPlatformData] = useState(platform);
   const [personas, setPersonas] = useState([]);
+  const [currencies, setCurrencies] = useState([]);
   const [saving, setSaving] = useState(false);
 
   // Authorized team states
@@ -352,6 +365,9 @@ function PlatformDetailView({ platform, onClose, onSave, token, theme }) {
   useEffect(() => {
     adminFetch('/persona/list?limit=100', 'GET', null, token).then(res => {
       if (res.code === 200) setPersonas(res.data.list || []);
+    });
+    adminFetch('/currency/list', 'GET', null, token).then(res => {
+      if (res.code === 200) setCurrencies(res.data.list || []);
     });
     fetchAuthorizations();
     fetchProjects();
@@ -677,15 +693,19 @@ function PlatformDetailView({ platform, onClose, onSave, token, theme }) {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>Callback Reward</label>
-                  <div style={{ display: 'flex', gap: 16 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>
-                      <input type="radio" name="platform_currency" checked={platformData.platform_currency === 0} onChange={() => updateField('platform_currency', 0)} style={{ accentColor: 'var(--primary-brand)' }} /> currency
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>
-                      <input type="radio" name="platform_currency" checked={platformData.platform_currency === 1} onChange={() => updateField('platform_currency', 1)} style={{ accentColor: 'var(--primary-brand)' }} /> gold
-                    </label>
-                  </div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>Callback Reward Currency</label>
+                  <select 
+                    className="form-select" 
+                    value={platformData.platform_currency} 
+                    onChange={e => updateField('platform_currency', Number(e.target.value))}
+                  >
+                    <option value={0}>Not Set (0)</option>
+                    {currencies.map(c => (
+                      <option key={c.currency_id} value={c.currency_id}>
+                        {c.currency_name} ({c.currency_code})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
