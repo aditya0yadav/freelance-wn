@@ -63,6 +63,7 @@ class FingerprintBrowserService {
     this.cloudApiBase = process.env.OCTO_CLOUD_API || 'https://dog.uomime.com/api/v2/automation/profiles';
     this.localClientPort = parseInt(process.env.OCTO_LOCAL_PORT, 10) || 46666;
     this.localClientBase = `http://127.0.0.1:${this.localClientPort}`;
+    this.defaultApiToken = process.env.OCTO_API_TOKEN || '';
   }
 
   getProviders() {
@@ -131,8 +132,9 @@ class FingerprintBrowserService {
     }
 
     const headers = { 'Content-Type': 'application/json' };
-    if (apiToken) {
-      headers['X-Octo-Api-Token'] = apiToken;
+    const effectiveToken = apiToken || this.defaultApiToken;
+    if (effectiveToken) {
+      headers['X-Octo-Api-Token'] = effectiveToken;
     }
 
     try {
@@ -267,7 +269,8 @@ class FingerprintBrowserService {
    */
   async deleteProfile(profileUuid, apiToken) {
     try {
-      const headers = apiToken ? { 'X-Octo-Api-Token': apiToken } : {};
+      const effectiveToken = apiToken || this.defaultApiToken;
+      const headers = effectiveToken ? { 'X-Octo-Api-Token': effectiveToken } : {};
       await axios.delete(`${this.cloudApiBase}/${profileUuid}`, { headers, timeout: 10000 });
       console.log(`[Fingerprint] Cleaned up temporary profile: ${profileUuid}`);
     } catch (e) {
