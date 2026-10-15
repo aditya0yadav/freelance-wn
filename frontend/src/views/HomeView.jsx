@@ -72,7 +72,7 @@ export default function HomeView({
               <div key={offer.project_pno} style={{ position: 'relative' }}>
                 <OfferCard
                   offer={offer}
-                  onStart={() => handleStartSurvey(offer.project_pno)}
+                  onStart={() => setFingerprintProject(offer)}
                   onSpecs={() => handleOpenModal(offer)}
                   onCopyLink={handleCopyLink}
                   onFingerprint={() => setFingerprintProject(offer)}

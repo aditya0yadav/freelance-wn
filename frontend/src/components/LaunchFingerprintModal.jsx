@@ -168,6 +168,12 @@ export default function LaunchFingerprintModal({
               <span>{t('loiLabel')}: <strong>{project.project_loi || 15}m</strong></span>
               <span>{t('irLabel')}: <strong>{project.project_ir || 50}%</strong></span>
             </div>
+            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border)', fontSize: '11.5px', color: 'var(--t3)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontWeight: 700, color: 'var(--blue)' }}>Start Page:</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '340px', opacity: 0.85 }}>
+                {project.project_click_url || `Auto-generated link [${project.project_pno}]`}
+              </span>
+            </div>
           </div>
 
           {/* Configuration Form */}

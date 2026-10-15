@@ -266,7 +266,7 @@ export default function OffersView({
                 <OfferCard
                   key={offer.project_pno}
                   offer={offer}
-                  onStart={() => handleStartSurvey(offer.project_pno)}
+                  onStart={() => setFingerprintProject(offer)}
                   onSpecs={() => handleOpenModal(offer)}
                   onCopyLink={handleCopyLink}
                   onFingerprint={() => setFingerprintProject(offer)}

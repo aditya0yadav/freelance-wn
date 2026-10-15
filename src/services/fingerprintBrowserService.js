@@ -109,7 +109,7 @@ class FingerprintBrowserService {
   /**
    * Creates a browser profile via the Octo automation API (cloud or local fallback)
    */
-  async createProfile({ title, proxy, country, apiToken }) {
+  async createProfile({ title, proxy, country, apiToken, startPages }) {
     const countryObj = SUPPORTED_COUNTRIES.find(c => c.code === (country || 'US').toUpperCase());
     const lang = countryObj ? countryObj.lang : 'en-US';
 
@@ -121,6 +121,11 @@ class FingerprintBrowserService {
         languages: [lang, 'en']
       }
     };
+
+    // Set target survey link as Octo profile start page
+    if (startPages && Array.isArray(startPages) && startPages.length > 0) {
+      payload.start_pages = startPages;
+    }
 
     if (proxy && proxy.host) {
       payload.proxy = {
@@ -300,6 +305,24 @@ class FingerprintBrowserService {
   }
 
   /**
+   * Updates an existing profile via Octo Cloud API (e.g. start_pages, bookmarks, extensions)
+   */
+  async updateProfile(profileUuid, data, apiToken) {
+    try {
+      const effectiveToken = apiToken || this.defaultApiToken;
+      const headers = { 'Content-Type': 'application/json' };
+      if (effectiveToken) {
+        headers['X-Octo-Api-Token'] = effectiveToken;
+      }
+      const res = await axios.patch(`${this.cloudApiBase}/${profileUuid}`, data, { headers, timeout: 15000 });
+      return res.data;
+    } catch (err) {
+      console.warn(`[Fingerprint] Profile update notice:`, err.response?.data?.message || err.message);
+      return null;
+    }
+  }
+
+  /**
    * High-Level Batch Orchestrator:
    * Opens N fingerprint browser windows for a chosen project, proxy provider, and country.
    */
@@ -363,14 +386,15 @@ class FingerprintBrowserService {
       // 4. Build proxy configuration
       const proxy = this.buildProxyConfig(providerKey, countryCode);
 
-      // 5. Create Profile and Start Window
+      // 5. Create Profile with survey URL as start_pages and Start Window
       const profileTitle = `${project.project_no || 'Surv'}_${countryCode}_W${i}_${sessionId}`;
       try {
         const profile = await this.createProfile({
           title: profileTitle,
           proxy,
           country: countryCode,
-          apiToken
+          apiToken,
+          startPages: targetUrl ? [targetUrl] : []
         });
 
         const startRes = await this.startProfile(profile.uuid, targetUrl);
