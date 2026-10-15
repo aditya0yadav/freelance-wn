@@ -60,9 +60,10 @@ const SUPPORTED_COUNTRIES = [
 
 class FingerprintBrowserService {
   constructor() {
-    this.cloudApiBase = process.env.OCTO_CLOUD_API || 'https://dog.uomime.com/api/v2/automation/profiles';
-    this.localClientPort = parseInt(process.env.OCTO_LOCAL_PORT, 10) || 46666;
+    this.cloudApiBase = process.env.OCTO_CLOUD_API || 'https://app.octobrowser.net/api/v2/automation/profiles';
+    this.localClientPort = parseInt(process.env.OCTO_LOCAL_PORT, 10) || 58888;
     this.localClientBase = `http://127.0.0.1:${this.localClientPort}`;
+    this.fallbackPorts = [58888, 46666].filter(p => p !== this.localClientPort);
     this.defaultApiToken = process.env.OCTO_API_TOKEN || '';
   }
 
@@ -115,7 +116,7 @@ class FingerprintBrowserService {
     const payload = {
       title: title || `Survey-${Date.now()}`,
       fingerprint: {
-        os: process.platform === 'darwin' ? 'mac' : 'win',
+        os: process.env.FINGERPRINT_OS || (process.platform === 'darwin' ? 'mac' : 'win'),
         screen: '1920x1080',
         languages: [lang, 'en']
       }
@@ -171,28 +172,48 @@ class FingerprintBrowserService {
   }
 
   /**
-   * Starts a profile window on local port 46666 and navigates to the target survey link
+   * Starts a profile window on local client port (58888 or fallback) and navigates to the target survey link
    */
   async startProfile(profileUuid, targetUrl) {
-    const startUrl = `${this.localClientBase}/api/profiles/start`;
-    console.log(`[Fingerprint] Starting profile ${profileUuid} on ${startUrl}...`);
-
     const flags = ['--start-maximized'];
     if (targetUrl) {
       flags.unshift(targetUrl);
     }
 
-    const res = await axios.post(startUrl, {
+    const payload = {
       uuid: profileUuid,
       headless: false,
+      debug_port: true,
+      timeout: 120,
       flags
-    }, {
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 30000
-    });
+    };
 
-    const data = res.data;
-    console.log(`[Fingerprint] Profile ${profileUuid} started. Response:`, data);
+    const portsToTry = [this.localClientPort, ...this.fallbackPorts];
+    let lastErr = null;
+    let data = null;
+
+    for (const port of portsToTry) {
+      const startUrl = `http://127.0.0.1:${port}/api/profiles/start`;
+      try {
+        console.log(`[Fingerprint] Attempting to start profile ${profileUuid} on ${startUrl}...`);
+        const res = await axios.post(startUrl, payload, {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 45000
+        });
+        data = res.data;
+        this.localClientPort = port;
+        this.localClientBase = `http://127.0.0.1:${port}`;
+        console.log(`[Fingerprint] Profile ${profileUuid} started on port ${port}. Response:`, data);
+        break;
+      } catch (err) {
+        lastErr = err;
+        console.warn(`[Fingerprint] Start failed on port ${port} (${err.message}). Trying next...`);
+      }
+    }
+
+    if (!data) {
+      throw new Error(`Failed to start profile on local ports ${portsToTry.join(', ')}: ${lastErr?.response?.data?.message || lastErr?.message || 'Connection refused'}`);
+    }
 
     const wsEndpoint = data.ws_endpoint || data.data?.ws_endpoint;
 
