@@ -25,6 +25,9 @@ app.use('/api/callback', callbackRoutes);
 // Boot cron pulling worker
 require('./jobs/cronPull');
 
+// Boot 24/7 Email Survey Ingestion Daemon
+require('./jobs/emailSurveyJob');
+
 // Start Express server
 const server = app.listen(PORT, () => {
   console.log(`[${new Date().toISOString()}] SurveyStream Express Server running on port ${PORT}`);

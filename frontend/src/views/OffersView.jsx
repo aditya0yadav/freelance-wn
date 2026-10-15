@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OfferCard from '../components/OfferCard';
 import { PlatformLogo } from '../components/PlatformCard';
 import { useLanguage } from '../context/LanguageContext';
+import LaunchFingerprintModal from '../components/LaunchFingerprintModal';
+import { Search } from 'lucide-react';
 
 export default function OffersView({
   selectedPlatform,
@@ -31,6 +33,7 @@ export default function OffersView({
 }) {
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const [fingerprintProject, setFingerprintProject] = useState(null);
 
   if (!selectedPlatform) return null;
 
@@ -246,13 +249,15 @@ export default function OffersView({
         {offersLoading ? (
           <div className="center-loader">
             <div className="loader-ring" />
-            <p>Fetching inventory...</p>
+            <p>{language === 'zh' ? '正在拉取调查库存...' : 'Fetching inventory...'}</p>
           </div>
         ) : processedOffers.length === 0 ? (
           <div className="empty-screen">
-            <div className="empty-icon">🔍</div>
-            <h3>No Surveys Found</h3>
-            <p>Try adjusting your search or check back later for new campaigns.</p>
+            <div className="empty-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+              <Search size={32} style={{ opacity: 0.5 }} />
+            </div>
+            <h3>{language === 'zh' ? '未找到匹配的调查' : 'No Surveys Found'}</h3>
+            <p>{language === 'zh' ? '请尝试调整搜索条件，或稍后再来查看新上线的项目。' : 'Try adjusting your search or check back later for new campaigns.'}</p>
           </div>
         ) : (
           <>
@@ -264,6 +269,7 @@ export default function OffersView({
                   onStart={() => handleStartSurvey(offer.project_pno)}
                   onSpecs={() => handleOpenModal(offer)}
                   onCopyLink={handleCopyLink}
+                  onFingerprint={() => setFingerprintProject(offer)}
                   showUSD={showUSD}
                 />
               ))}
@@ -278,7 +284,7 @@ export default function OffersView({
                   className="paginate-btn"
                   title="First Page"
                 >
-                  « First
+                  {language === 'zh' ? '« 首页' : '« First'}
                 </button>
                 <button
                   disabled={offersPage === 1}
@@ -286,11 +292,15 @@ export default function OffersView({
                   className="paginate-btn"
                   title="Previous Page"
                 >
-                  ‹ Prev
+                  {language === 'zh' ? '‹ 上一页' : '‹ Prev'}
                 </button>
                 
                 <span className="paginate-info">
-                  Page <strong className="paginate-active-page">{offersPage}</strong> of <strong>{offersPages}</strong>
+                  {language === 'zh' ? (
+                    <>第 <strong className="paginate-active-page">{offersPage}</strong> 页 / 共 <strong>{offersPages}</strong> 页</>
+                  ) : (
+                    <>Page <strong className="paginate-active-page">{offersPage}</strong> of <strong>{offersPages}</strong></>
+                  )}
                 </span>
 
                 <button
@@ -299,7 +309,7 @@ export default function OffersView({
                   className="paginate-btn"
                   title="Next Page"
                 >
-                  Next ›
+                  {language === 'zh' ? '下一页 ›' : 'Next ›'}
                 </button>
                 <button
                   disabled={offersPage === offersPages}
@@ -307,13 +317,20 @@ export default function OffersView({
                   className="paginate-btn"
                   title="Last Page"
                 >
-                  Last »
+                  {language === 'zh' ? '末页 »' : 'Last »'}
                 </button>
               </div>
             )}
           </>
         )}
       </main>
+
+      {/* Fingerprint Browser Automation Modal */}
+      <LaunchFingerprintModal
+        isOpen={!!fingerprintProject}
+        onClose={() => setFingerprintProject(null)}
+        project={fingerprintProject}
+      />
     </div>
   );
 }

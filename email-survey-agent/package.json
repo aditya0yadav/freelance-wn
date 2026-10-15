@@ -1,0 +1,20 @@
+{
+  "name": "email-survey-agent",
+  "version": "1.0.0",
+  "description": "On-device AI daemon that ingests emails from Zoho Mail, extracts survey details using local Ollama, and stores them in SQLite, CSV, and the main ya_project database.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "recent": "node index.js --recent 5",
+    "test:mock": "node test/mockEmailTest.js",
+    "status": "node index.js --status"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "better-sqlite3": "^11.8.1",
+    "dotenv": "^16.4.7",
+    "imapflow": "^1.0.171",
+    "mailparser": "^3.7.2"
+  }
+}

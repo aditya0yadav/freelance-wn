@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Power, ChevronLeft, ChevronRight, Search, Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Power, ChevronLeft, ChevronRight, Search, Plus, Edit2, Trash2, X, Shield } from 'lucide-react';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
 import { useAdminTheme } from '../context/AdminThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import LaunchFingerprintModal from '../../components/LaunchFingerprintModal';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All Surveys' },
@@ -12,6 +14,7 @@ const STATUS_OPTIONS = [
 
 export default function ProjectListView() {
   const { theme } = useAdminTheme();
+  const { t } = useLanguage();
   const [projects, setProjects] = useState([]);
   const [platforms, setPlatforms] = useState([]);
   const [currencies, setCurrencies] = useState([]);
@@ -22,6 +25,7 @@ export default function ProjectListView() {
   const [search, setSearch] = useState('');
   const [platformId, setPlatformId] = useState('');
   const [status, setStatus] = useState('all');
+  const [fingerprintProject, setFingerprintProject] = useState(null);
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -342,6 +346,14 @@ export default function ProjectListView() {
                       </button>
                       <button
                         className="btn btn-secondary"
+                        onClick={() => setFingerprintProject(project)}
+                        style={{ padding: '6px', color: 'var(--blue)', borderColor: 'var(--border)' }}
+                        title={t('launchFingerprint')}
+                      >
+                        <Shield size={14} />
+                      </button>
+                      <button
+                        className="btn btn-secondary"
                         onClick={() => handleOpenEditModal(project)}
                         style={{ padding: '6px' }}
                         title="Edit Project"
@@ -561,6 +573,15 @@ export default function ProjectListView() {
         </div>,
         document.body
       )}
+
+      {/* Fingerprint Browser Automation Modal */}
+      <LaunchFingerprintModal
+        isOpen={!!fingerprintProject}
+        onClose={() => setFingerprintProject(null)}
+        project={fingerprintProject}
+        isAdmin={true}
+        token={token}
+      />
     </div>
   );
 }

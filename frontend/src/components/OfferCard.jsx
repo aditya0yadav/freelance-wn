@@ -1,95 +1,96 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { Shield, Clock, Activity, Copy, Check, ArrowRight, Globe } from 'lucide-react';
 
 // Currency code → { flag, country }
 const CURRENCY_META = {
-  USD: { flag: '🇺🇸', country: 'United States' },
-  EUR: { flag: '🇪🇺', country: 'Europe' },
-  GBP: { flag: '🇬🇧', country: 'United Kingdom' },
-  CNY: { flag: '🇨🇳', country: 'China' },
-  JPY: { flag: '🇯🇵', country: 'Japan' },
-  AUD: { flag: '🇦🇺', country: 'Australia' },
-  CAD: { flag: '🇨🇦', country: 'Canada' },
-  INR: { flag: '🇮🇳', country: 'India' },
-  BRL: { flag: '🇧🇷', country: 'Brazil' },
-  MXN: { flag: '🇲🇽', country: 'Mexico' },
-  SGD: { flag: '🇸🇬', country: 'Singapore' },
-  HKD: { flag: '🇭🇰', country: 'Hong Kong' },
-  KRW: { flag: '🇰🇷', country: 'South Korea' },
-  TWD: { flag: '🇹🇼', country: 'Taiwan' },
-  THB: { flag: '🇹🇭', country: 'Thailand' },
-  MYR: { flag: '🇲🇾', country: 'Malaysia' },
-  IDR: { flag: '🇮🇩', country: 'Indonesia' },
-  PHP: { flag: '🇵🇭', country: 'Philippines' },
-  VND: { flag: '🇻🇳', country: 'Vietnam' },
-  ZAR: { flag: '🇿🇦', country: 'South Africa' },
-  RUB: { flag: '🇷🇺', country: 'Russia' },
-  TRY: { flag: '🇹🇷', country: 'Turkey' },
-  SAR: { flag: '🇸🇦', country: 'Saudi Arabia' },
-  AED: { flag: '🇦🇪', country: 'UAE' },
-  SEK: { flag: '🇸🇪', country: 'Sweden' },
-  NOK: { flag: '🇳🇴', country: 'Norway' },
-  DKK: { flag: '🇩🇰', country: 'Denmark' },
-  CHF: { flag: '🇨🇭', country: 'Switzerland' },
-  PLN: { flag: '🇵🇱', country: 'Poland' },
-  CZK: { flag: '🇨🇿', country: 'Czech Republic' },
-  NZD: { flag: '🇳🇿', country: 'New Zealand' },
-  HUF: { flag: '🇭🇺', country: 'Hungary' },
-  ILS: { flag: '🇮🇱', country: 'Israel' },
-  CLP: { flag: '🇨🇱', country: 'Chile' },
-  COP: { flag: '🇨🇴', country: 'Colombia' },
-  ARS: { flag: '🇦🇷', country: 'Argentina' },
-  PEN: { flag: '🇵🇪', country: 'Peru' },
+  USD: { country: 'United States' },
+  EUR: { country: 'Europe' },
+  GBP: { country: 'United Kingdom' },
+  CNY: { country: 'China' },
+  JPY: { country: 'Japan' },
+  AUD: { country: 'Australia' },
+  CAD: { country: 'Canada' },
+  INR: { country: 'India' },
+  BRL: { country: 'Brazil' },
+  MXN: { country: 'Mexico' },
+  SGD: { country: 'Singapore' },
+  HKD: { country: 'Hong Kong' },
+  KRW: { country: 'South Korea' },
+  TWD: { country: 'Taiwan' },
+  THB: { country: 'Thailand' },
+  MYR: { country: 'Malaysia' },
+  IDR: { country: 'Indonesia' },
+  PHP: { country: 'Philippines' },
+  VND: { country: 'Vietnam' },
+  ZAR: { country: 'South Africa' },
+  RUB: { country: 'Russia' },
+  TRY: { country: 'Turkey' },
+  SAR: { country: 'Saudi Arabia' },
+  AED: { country: 'UAE' },
+  SEK: { country: 'Sweden' },
+  NOK: { country: 'Norway' },
+  DKK: { country: 'Denmark' },
+  CHF: { country: 'Switzerland' },
+  PLN: { country: 'Poland' },
+  CZK: { country: 'Czech Republic' },
+  NZD: { country: 'New Zealand' },
+  HUF: { country: 'Hungary' },
+  ILS: { country: 'Israel' },
+  CLP: { country: 'Chile' },
+  COP: { country: 'Colombia' },
+  ARS: { country: 'Argentina' },
+  PEN: { country: 'Peru' },
 };
 
-// ISO 2-letter country code → { flag, country } (for project_code field from GoWebSurveys)
+// ISO 2-letter country code → { country } (for project_code field from GoWebSurveys)
 const ISO_COUNTRY_META = {
-  US: { flag: '🇺🇸', country: 'United States' },
-  GB: { flag: '🇬🇧', country: 'United Kingdom' },
-  CN: { flag: '🇨🇳', country: 'China' },
-  JP: { flag: '🇯🇵', country: 'Japan' },
-  AU: { flag: '🇦🇺', country: 'Australia' },
-  CA: { flag: '🇨🇦', country: 'Canada' },
-  IN: { flag: '🇮🇳', country: 'India' },
-  BR: { flag: '🇧🇷', country: 'Brazil' },
-  MX: { flag: '🇲🇽', country: 'Mexico' },
-  SG: { flag: '🇸🇬', country: 'Singapore' },
-  HK: { flag: '🇭🇰', country: 'Hong Kong' },
-  KR: { flag: '🇰🇷', country: 'South Korea' },
-  TW: { flag: '🇹🇼', country: 'Taiwan' },
-  TH: { flag: '🇹🇭', country: 'Thailand' },
-  MY: { flag: '🇲🇾', country: 'Malaysia' },
-  ID: { flag: '🇮🇩', country: 'Indonesia' },
-  PH: { flag: '🇵🇭', country: 'Philippines' },
-  VN: { flag: '🇻🇳', country: 'Vietnam' },
-  ZA: { flag: '🇿🇦', country: 'South Africa' },
-  RU: { flag: '🇷🇺', country: 'Russia' },
-  TR: { flag: '🇹🇷', country: 'Turkey' },
-  SA: { flag: '🇸🇦', country: 'Saudi Arabia' },
-  AE: { flag: '🇦🇪', country: 'UAE' },
-  SE: { flag: '🇸🇪', country: 'Sweden' },
-  NO: { flag: '🇳🇴', country: 'Norway' },
-  DK: { flag: '🇩🇰', country: 'Denmark' },
-  CH: { flag: '🇨🇭', country: 'Switzerland' },
-  PL: { flag: '🇵🇱', country: 'Poland' },
-  CZ: { flag: '🇨🇿', country: 'Czech Republic' },
-  NZ: { flag: '🇳🇿', country: 'New Zealand' },
-  HU: { flag: '🇭🇺', country: 'Hungary' },
-  IL: { flag: '🇮🇱', country: 'Israel' },
-  CL: { flag: '🇨🇱', country: 'Chile' },
-  CO: { flag: '🇨🇴', country: 'Colombia' },
-  AR: { flag: '🇦🇷', country: 'Argentina' },
-  PE: { flag: '🇵🇪', country: 'Peru' },
-  DE: { flag: '🇩🇪', country: 'Germany' },
-  FR: { flag: '🇫🇷', country: 'France' },
-  IT: { flag: '🇮🇹', country: 'Italy' },
-  ES: { flag: '🇪🇸', country: 'Spain' },
-  PT: { flag: '🇵🇹', country: 'Portugal' },
-  NL: { flag: '🇳🇱', country: 'Netherlands' },
-  BE: { flag: '🇧🇪', country: 'Belgium' },
-  AT: { flag: '🇦🇹', country: 'Austria' },
-  PK: { flag: '🇵🇰', country: 'Pakistan' },
-  BD: { flag: '🇧🇩', country: 'Bangladesh' },
+  US: { country: 'United States' },
+  GB: { country: 'United Kingdom' },
+  CN: { country: 'China' },
+  JP: { country: 'Japan' },
+  AU: { country: 'Australia' },
+  CA: { country: 'Canada' },
+  IN: { country: 'India' },
+  BR: { country: 'Brazil' },
+  MX: { country: 'Mexico' },
+  SG: { country: 'Singapore' },
+  HK: { country: 'Hong Kong' },
+  KR: { country: 'South Korea' },
+  TW: { country: 'Taiwan' },
+  TH: { country: 'Thailand' },
+  MY: { country: 'Malaysia' },
+  ID: { country: 'Indonesia' },
+  PH: { country: 'Philippines' },
+  VN: { country: 'Vietnam' },
+  ZA: { country: 'South Africa' },
+  RU: { country: 'Russia' },
+  TR: { country: 'Turkey' },
+  SA: { country: 'Saudi Arabia' },
+  AE: { country: 'UAE' },
+  SE: { country: 'Sweden' },
+  NO: { country: 'Norway' },
+  DK: { country: 'Denmark' },
+  CH: { country: 'Switzerland' },
+  PL: { country: 'Poland' },
+  CZ: { country: 'Czech Republic' },
+  NZ: { country: 'New Zealand' },
+  HU: { country: 'Hungary' },
+  IL: { country: 'Israel' },
+  CL: { country: 'Chile' },
+  CO: { country: 'Colombia' },
+  AR: { country: 'Argentina' },
+  PE: { country: 'Peru' },
+  DE: { country: 'Germany' },
+  FR: { country: 'France' },
+  IT: { country: 'Italy' },
+  ES: { country: 'Spain' },
+  PT: { country: 'Portugal' },
+  NL: { country: 'Netherlands' },
+  BE: { country: 'Belgium' },
+  AT: { country: 'Austria' },
+  PK: { country: 'Pakistan' },
+  BD: { country: 'Bangladesh' },
 };
 
 function getGeoInfo(offer) {
@@ -103,11 +104,11 @@ function getGeoInfo(offer) {
   if (CURRENCY_META[cc]) {
     return { ...CURRENCY_META[cc], code: cc };
   }
-  return { flag: '🌐', country: 'Global', code: cc };
+  return { country: 'Global', code: cc };
 }
 
-export default function OfferCard({ offer, onStart, onSpecs, onCopyLink, showUSD = false }) {
-  const { language } = useLanguage();
+export default function OfferCard({ offer, onStart, onSpecs, onCopyLink, onFingerprint, showUSD = false }) {
+  const { language, t } = useLanguage();
   const [copyState, setCopyState] = useState('idle'); // idle | loading | copied
 
   const loi = offer.project_loi ? `${offer.project_loi} min` : '—';
@@ -141,8 +142,8 @@ export default function OfferCard({ offer, onStart, onSpecs, onCopyLink, showUSD
     const diff = new Date() - new Date(timeStr);
     if (diff < 0) return new Date(timeStr).toLocaleDateString();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return language === 'en' ? 'Just now' : '刚刚';
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1) return t('justNow');
+    if (mins < 60) return t('minsAgo').replace('{mins}', mins);
     return new Date(timeStr).toLocaleDateString();
   };
 
@@ -178,16 +179,16 @@ export default function OfferCard({ offer, onStart, onSpecs, onCopyLink, showUSD
               textTransform: 'uppercase'
             }}>
               <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#10b981' }} />
-              NEW
+              {t('newBadge')}
             </span>
           )}
           {/* Country abbreviation badge with inline remaining quota */}
           <span
-            title={`${geo.country} | Remaining Quota: ${quotaVal}`}
+            title={`${geo.country} | ${t('quotaLabel')}: ${quotaVal}`}
             style={{
-              background: 'rgba(99, 102, 241, 0.08)',
+              background: 'var(--surface)',
               color: 'var(--t2)',
-              border: '1px solid rgba(99, 102, 241, 0.15)',
+              border: '1px solid var(--border)',
               padding: '2px 8px',
               borderRadius: '10px',
               fontSize: '12px',
@@ -197,20 +198,26 @@ export default function OfferCard({ offer, onStart, onSpecs, onCopyLink, showUSD
               gap: '6px',
               cursor: 'default',
             }}>
-            <span style={{ fontSize: '13px' }}>{geo.flag}</span>
+            <Globe size={12} style={{ opacity: 0.75 }} />
             <span>{abbr}</span>
             <span style={{ opacity: 0.4, margin: '0 2px' }}>|</span>
             <span style={{ color: '#ef4444', fontWeight: 900 }}>Q: {quotaVal}</span>
           </span>
         </div>
         <div className="offer-row-meta" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-          <span>⏱ {loi}</span>
-          <span>📊 {ir} IR</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <Clock size={12} style={{ opacity: 0.7 }} />
+            {loi}
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <Activity size={12} style={{ opacity: 0.7 }} />
+            {ir} {t('irLabel')}
+          </span>
           <span className="offer-pno">{offer.project_pno}</span>
           {(createdDisplay || updatedDisplay) && (
             <span style={{ opacity: 0.6, fontSize: '11.5px' }}>
-              {createdDisplay && `C: ${createdDisplay}`}
-              {updatedDisplay && ` | U: ${updatedDisplay}`}
+              {createdDisplay && `${t('createdLabel')}: ${createdDisplay}`}
+              {updatedDisplay && ` | ${t('updatedLabel')}: ${updatedDisplay}`}
             </span>
           )}
         </div>
@@ -225,40 +232,65 @@ export default function OfferCard({ offer, onStart, onSpecs, onCopyLink, showUSD
           ) : (
             <>
               <span className="offer-coins-num">+{Math.round(coins)}</span>
-              <span className="offer-coins-lbl">{language === 'en' ? 'coins' : '金币'}</span>
+              <span className="offer-coins-lbl">{t('coins')}</span>
             </>
           )}
         </div>
         <div className="offer-actions">
           <button className="btn-specs" onClick={onSpecs}>
-            {language === 'en' ? 'Specs' : '详情'}
+            {t('specs')}
           </button>
+          {onFingerprint && (
+            <button
+              className="btn-specs"
+              onClick={onFingerprint}
+              title={t('launchFingerprint')}
+              style={{
+                borderColor: 'var(--border-s)',
+                color: 'var(--blue)',
+                background: 'var(--surface)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontWeight: 600
+              }}
+            >
+              <Shield size={13} />
+              <span>{t('fingerprint')}</span>
+            </button>
+          )}
           {/* Copy Link button */}
           <button
             className="btn-specs"
             onClick={handleCopy}
-            title={language === 'en' ? 'Copy survey link' : '复制调查链接'}
+            title={t('copyLink')}
             style={{
               background: copyState === 'copied' ? 'rgba(16, 185, 129, 0.1)' : undefined,
               color: copyState === 'copied' ? '#10b981' : undefined,
               borderColor: copyState === 'copied' ? 'rgba(16, 185, 129, 0.3)' : undefined,
               minWidth: '36px',
               padding: '6px 10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
             disabled={copyState === 'loading'}
           >
-            {copyState === 'copied' ? '✓' : copyState === 'loading' ? '…' : (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
+            {copyState === 'copied' ? (
+              <Check size={13} />
+            ) : copyState === 'loading' ? (
+              '…'
+            ) : (
+              <Copy size={13} />
             )}
           </button>
-          <button className="btn-start" onClick={onStart}>
-            {language === 'en' ? 'Start →' : '开始 →'}
+          <button className="btn-start" onClick={onStart} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span>{t('startAction')}</span>
+            <ArrowRight size={13} />
           </button>
         </div>
       </div>
     </div>
   );
 }
+

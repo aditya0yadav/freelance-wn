@@ -116,4 +116,10 @@ router.post('/tag/dele', verifyAdminToken, TagController.dele);
 // Admin Log routes
 router.get('/admin-log/list', verifyAdminToken, AdminLogController.list);
 
+// Fingerprint Browser & Proxy Automation routes
+const FingerprintController = require('../controllers/fingerprintController');
+router.get('/fingerprint/options', verifyAdminToken, FingerprintController.getOptions);
+router.post('/fingerprint/launch', verifyAdminToken, FingerprintController.launch);
+router.post('/fingerprint/stop', verifyAdminToken, FingerprintController.stop);
+
 module.exports = router;

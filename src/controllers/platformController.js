@@ -56,9 +56,15 @@ class PlatformController {
       });
       const authIds = platformAuths.map(a => a.platform_id);
 
+      const customPlatforms = await prisma.platform.findMany({
+        where: { is_custom: 1, delete_time: null, is_disable: 0 },
+        select: { platform_id: true }
+      });
+      const effectiveAuthIds = Array.from(new Set([...authIds, ...customPlatforms.map(c => c.platform_id)]));
+
       const list = await prisma.platform.findMany({
         where: {
-          platform_id: { in: authIds },
+          platform_id: { in: effectiveAuthIds },
           delete_time: null,
           is_disable: 0
         },
@@ -105,6 +111,7 @@ class PlatformController {
           platform_sign: p.platform_sign,
           is_list: p.is_list,
           is_wall: p.is_wall,
+          is_custom: p.is_custom,
           survey_count: surveyCount,
           max_cpi: Math.round(maxCoins),
           create_time: p.create_time,
@@ -136,6 +143,12 @@ class PlatformController {
       const platformAuths = await prisma.platformAuth.findMany({ where: { team_id: teamId } });
       const authIds = platformAuths.map(a => a.platform_id);
 
+      const customPlatforms = await prisma.platform.findMany({
+        where: { is_custom: 1, delete_time: null, is_disable: 0 },
+        select: { platform_id: true }
+      });
+      const effectiveAuthIds = Array.from(new Set([...authIds, ...customPlatforms.map(c => c.platform_id)]));
+
       // Allow any active platforms, relying on team authorization (authIds) for restriction
       const allowedPlatforms = await prisma.platform.findMany({
         where: {
@@ -159,12 +172,12 @@ class PlatformController {
       };
 
       if (platformId) {
-        if (!authIds.includes(platformId) || !allowedPlatformIds.includes(platformId)) {
+        if (!effectiveAuthIds.includes(platformId) || !allowedPlatformIds.includes(platformId)) {
           return res.status(403).json({ code: 403, msg: 'Unauthorized platform' });
         }
         whereClause.platform_id = platformId;
       } else {
-        const filteredAuthIds = authIds.filter(id => allowedPlatformIds.includes(id));
+        const filteredAuthIds = effectiveAuthIds.filter(id => allowedPlatformIds.includes(id));
         whereClause.platform_id = { in: filteredAuthIds };
       }
 
@@ -174,7 +187,8 @@ class PlatformController {
         whereClause.OR = [
           { project_name: { contains: query } },
           { project_pno: { contains: query } },
-          { project_code: { contains: query } }
+          { project_code: { contains: query } },
+          { platform: { platform_name: { contains: query } } }
         ];
       }
 
@@ -618,17 +632,27 @@ class PlatformController {
         case 'TMDPanel': {
           let tmdClickUrl = project.project_click_url || '';
           
-          // Fallback just in case TMDPanel didn't pre-append `?rid=` to the link
-          if (tmdClickUrl && !tmdClickUrl.endsWith('=')) {
+          if (!tmdClickUrl) {
+            const CallbackController = require('./callbackController');
+            return res.status(400).send(CallbackController.renderErrorPage('The survey link is missing from our database. Please sync the inventory or try another survey.'));
+          }
+
+          if (!tmdClickUrl.endsWith('=')) {
             tmdClickUrl += tmdClickUrl.includes('?') ? '&rid=' : '?rid=';
           }
           
-          return res.send(`<script>window.location.href="${tmdClickUrl}${uuid}";</script>`);
+          const finalUrl = `${tmdClickUrl}${uuid}`;
+          return res.send(PlatformController.renderRedirectPage(finalUrl));
         }
 
         default: {
           const clickUrl = project.project_click_url || '';
-          return res.send(`<script>window.location.href="${clickUrl}${uuid}";</script>`);
+          if (!clickUrl) {
+            const CallbackController = require('./callbackController');
+            return res.status(400).send(CallbackController.renderErrorPage('The survey link is missing. Please try another survey.'));
+          }
+          const finalUrl = `${clickUrl}${uuid}`;
+          return res.send(PlatformController.renderRedirectPage(finalUrl));
         }
 
       }
@@ -801,6 +825,35 @@ class PlatformController {
     }
   }
 
+  /**
+   * Render a branded loading screen during redirects instead of a blank white page
+   */
+  static renderRedirectPage(targetUrl) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Transferring to survey...</title>
+  <style>
+    body { background: #0b0b0e; color: #ffffff; font-family: 'Outfit', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .loader { border: 4px solid rgba(255,255,255,0.1); border-left-color: #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .container { text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="loader"></div>
+    <p style="color: #8b8b9f;">Securely transferring you to the survey partner...</p>
+  </div>
+  <script>
+    setTimeout(function() {
+      window.location.href = "${targetUrl}";
+    }, 500);
+  </script>
+</body>
+</html>`;
+  }
 
   /**
    * POST /api/member/platform/seed-demo

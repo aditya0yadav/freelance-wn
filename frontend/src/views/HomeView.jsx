@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PlatformCard from '../components/PlatformCard';
 import OfferCard from '../components/OfferCard';
 import { useLanguage } from '../context/LanguageContext';
+import LaunchFingerprintModal from '../components/LaunchFingerprintModal';
+import { Search, Layers } from 'lucide-react';
 
 export default function HomeView({
   platformsLoading,
@@ -21,6 +23,7 @@ export default function HomeView({
   setShowUSD
 }) {
   const { t } = useLanguage();
+  const [fingerprintProject, setFingerprintProject] = useState(null);
 
   return (
     <main className="home-main">
@@ -55,7 +58,9 @@ export default function HomeView({
 
         {!globalSearchLoading && globalSearchQuery.trim() && globalSearchResults.length === 0 && (
           <div className="empty-screen" style={{ padding: '32px 0', background: 'transparent', border: 'none' }}>
-            <div className="empty-icon">🔍</div>
+            <div className="empty-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+              <Search size={32} style={{ opacity: 0.5 }} />
+            </div>
             <h3 style={{ fontSize: '15px' }}>{t('noSurveysFound')} "{globalSearchQuery}"</h3>
             <p style={{ fontSize: '12px' }}>{t('tryAnotherKeyword')}</p>
           </div>
@@ -70,6 +75,7 @@ export default function HomeView({
                   onStart={() => handleStartSurvey(offer.project_pno)}
                   onSpecs={() => handleOpenModal(offer)}
                   onCopyLink={handleCopyLink}
+                  onFingerprint={() => setFingerprintProject(offer)}
                   showUSD={showUSD}
                 />
                 <span className="global-platform-badge">
@@ -114,13 +120,22 @@ export default function HomeView({
 
           {platforms.length === 0 && (
             <div className="empty-screen">
-              <div className="empty-icon">🔌</div>
+              <div className="empty-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                <Layers size={32} style={{ opacity: 0.5 }} />
+              </div>
               <h3>{t('noPlatformsConfigured')}</h3>
               <p>{t('noPlatformsConfiguredDesc')}</p>
             </div>
           )}
         </>
       )}
+
+      {/* Fingerprint Browser Automation Modal */}
+      <LaunchFingerprintModal
+        isOpen={!!fingerprintProject}
+        onClose={() => setFingerprintProject(null)}
+        project={fingerprintProject}
+      />
     </main>
   );
 }

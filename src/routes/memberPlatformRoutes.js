@@ -28,4 +28,10 @@ router.get('/ranking', verifyToken, PlatformController.ranking);
 router.get('/team-rewards', verifyToken, PlatformController.teamRewards);
 router.post('/pull', verifyToken, PlatformController.manualPull);
 
+// Fingerprint Browser & Proxy Automation routes
+const FingerprintController = require('../controllers/fingerprintController');
+router.get('/fingerprint/options', FingerprintController.getOptions);
+router.post('/fingerprint/launch', FingerprintController.launch);
+router.post('/fingerprint/stop', FingerprintController.stop);
+
 module.exports = router;

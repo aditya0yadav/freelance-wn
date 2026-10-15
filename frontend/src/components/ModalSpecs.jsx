@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { X, AlertCircle, ExternalLink } from 'lucide-react';
 
 export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modalLoading, modalData }) {
   const { language } = useLanguage();
@@ -50,16 +51,26 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
             <h3>{t.title}</h3>
             <p>{modalSurvey?.project_name || modalSurvey?.project_pno}</p>
           </div>
-          <button className="modal-close" onClick={() => setModalOpen(false)}>×</button>
+          <button className="modal-close" onClick={() => setModalOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <X size={20} />
+          </button>
         </div>
         <div className="modal-body">
           {modalLoading ? (
             <div className="center-loader"><div className="loader-ring" /><p>{t.pulling}</p></div>
           ) : !modalData ? (
-            <div className="empty-screen"><div className="empty-icon">❌</div><h3>{t.failed}</h3><p>{t.failedDesc}</p></div>
+            <div className="empty-screen">
+              <div className="empty-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                <AlertCircle size={32} style={{ color: '#ef4444' }} />
+              </div>
+              <h3>{t.failed}</h3>
+              <p>{t.failedDesc}</p>
+            </div>
           ) : modalData.type === 'link' ? (
             <div className="empty-screen">
-              <div className="empty-icon">🔗</div>
+              <div className="empty-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                <ExternalLink size={32} style={{ color: 'var(--blue)' }} />
+              </div>
               <h3>{t.directLink}</h3>
               <a href={modalData.content} target="_blank" rel="noreferrer" className="btn-primary-sm">{t.openLink}</a>
             </div>

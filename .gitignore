@@ -1,6 +1,8 @@
 # Dependencies
 node_modules/
 dist/
+release/
+dist-electron/
 
 # Env & secrets
 .env
@@ -22,3 +24,12 @@ Thumbs.db
 # Source/operational reference directories to exclude from Git
 源代码/
 源代码.rar
+
+# Large dumps & SQLite runtime databases
+realsays.sql
+*.db
+*.db-shm
+*.db-wal
+email-survey-agent/data/
+email-survey-agent/exports/
+
