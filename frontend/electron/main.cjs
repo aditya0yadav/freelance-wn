@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, protocol, net, Menu } = require('electron');
+const { app, BrowserWindow, shell, protocol, net, Menu, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
@@ -186,4 +186,67 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// =========================================================================
+// Octo / Doge Local Client IPC Handlers (for Windows Laptop Desktop App)
+// Allows Desktop App to launch profiles on localhost even when backend is hosted remotely!
+// =========================================================================
+const OCTO_PORTS = [46666, 58888, 50888, 59999];
+
+ipcMain.handle('octo:checkClient', async () => {
+  for (const port of OCTO_PORTS) {
+    try {
+      const res = await net.fetch(`http://127.0.0.1:${port}/api/profiles`, { method: 'GET' });
+      if (res.ok || res.status === 401 || res.status === 403) {
+        return { active: true, port };
+      }
+    } catch (e) {}
+  }
+  return { active: false };
+});
+
+ipcMain.handle('octo:startProfile', async (event, { uuid, targetUrl }) => {
+  const flags = ['--start-maximized', '--no-default-browser-check'];
+  if (targetUrl) {
+    flags.unshift(targetUrl);
+  }
+  const payload = {
+    uuid,
+    headless: false,
+    debug_port: true,
+    timeout: 120,
+    flags
+  };
+
+  let lastErr = null;
+  for (const port of OCTO_PORTS) {
+    try {
+      const res = await net.fetch(`http://127.0.0.1:${port}/api/profiles/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      return { success: true, port, data };
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  return { success: false, error: lastErr?.message || 'Local Octo / Doge browser client not responding' };
+});
+
+ipcMain.handle('octo:stopProfile', async (event, { uuid }) => {
+  for (const port of OCTO_PORTS) {
+    try {
+      const res = await net.fetch(`http://127.0.0.1:${port}/api/profiles/force_stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uuid })
+      });
+      const data = await res.json();
+      return { success: true, data };
+    } catch (e) {}
+  }
+  return { success: false };
 });

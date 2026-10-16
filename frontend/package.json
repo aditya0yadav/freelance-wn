@@ -15,9 +15,9 @@
     "electron": "electron .",
     "electron:dev": "concurrently -k -s first \"npm run dev\" \"wait-on -d 500 tcp:5173 && cross-env ELECTRON_DEV=1 electron .\"",
     "electron:preview": "npm run build && electron .",
-    "electron:build": "npm run build && electron-packager . \"Wanhong Survey\" --out=release --overwrite --prune=true --ignore=\"^/(src|release)\"",
-    "electron:build:mac": "npm run build && electron-packager . \"Wanhong Survey\" --platform=darwin --arch=arm64 --out=release --overwrite --prune=true --ignore=\"^/(src|release)\"",
-    "electron:build:win": "npm run build && electron-packager . \"Wanhong Survey\" --platform=win32 --arch=x64 --out=release --overwrite --prune=true --ignore=\"^/(src|release)\""
+    "electron:build": "npm run build && electron-packager . \"Wanhong Survey\" --asar --out=release --overwrite --prune=true --ignore=\"^/(src|release)\"",
+    "electron:build:mac": "npm run build && electron-packager . \"Wanhong Survey\" --platform=darwin --arch=arm64 --asar --out=release --overwrite --prune=true --ignore=\"^/(src|release)\"",
+    "electron:build:win": "npm run build && electron-packager . \"Wanhong Survey\" --platform=win32 --arch=x64 --asar --out=release --overwrite --prune=true --ignore=\"^/(src|release)\""
   },
   "dependencies": {
     "i18next": "^26.3.6",

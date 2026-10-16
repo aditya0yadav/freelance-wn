@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
+import { getApiBaseUrl } from '../../utils/api';
 import { useAdminTheme } from '../context/AdminThemeContext';
 import { History, Search, Loader2, Database, ExternalLink, X, CheckCircle2, XCircle, Clock, AlertTriangle, Download, Upload, FileText } from 'lucide-react';
 
@@ -64,7 +65,7 @@ export default function CompletionsLogView() {
         setExportModalOpen(false);
         setExportRemark('');
         // Trigger auto-download
-        const fileUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${res.data.file_path}`;
+        const fileUrl = `${getApiBaseUrl()}${res.data.file_path}`;
         window.open(fileUrl, '_blank');
       } else {
         alert(res.msg || 'Export failed');
@@ -83,7 +84,7 @@ export default function CompletionsLogView() {
   const [importReport, setImportReport] = useState(null);
 
   const handleDownloadTemplate = () => {
-    const url = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/admin/import/template?type=rewards`;
+    const url = `${getApiBaseUrl()}/api/admin/import/template?type=rewards`;
     window.open(url, '_blank');
   };
 
@@ -97,7 +98,7 @@ export default function CompletionsLogView() {
       const formData = new FormData();
       formData.append('import_file', importFile);
 
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const baseUrl = getApiBaseUrl();
       const response = await fetch(`${baseUrl}/api/admin/import/rewards`, {
         method: 'POST',
         headers: {

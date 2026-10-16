@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
+import { getApiBaseUrl } from '../../utils/api';
 import { useAdminTheme } from '../context/AdminThemeContext';
 import { Download, Trash2, Database, Search, Loader2, Edit2, RotateCcw, Plus, X } from 'lucide-react';
 
@@ -102,7 +103,7 @@ export default function ExportRecordsView() {
   };
 
   const handleDownload = (record) => {
-    const fileUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${record.file_path}`;
+    const fileUrl = `${getApiBaseUrl()}${record.file_path}`;
     window.open(fileUrl, '_blank');
   };
 

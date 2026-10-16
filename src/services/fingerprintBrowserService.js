@@ -114,7 +114,7 @@ class FingerprintBrowserService {
     const payload = {
       title: title || `Survey-${Date.now()}`,
       fingerprint: {
-        os: process.env.FINGERPRINT_OS || (process.platform === 'darwin' ? 'mac' : 'win'),
+        os: process.env.FINGERPRINT_OS || 'win',
         screen: '1920x1080',
         languages: [lang, 'en']
       }
@@ -178,7 +178,7 @@ class FingerprintBrowserService {
    * Starts a profile window on local client port (58888 or fallback) and navigates to the target survey link
    */
   async startProfile(profileUuid, targetUrl) {
-    const flags = ['--start-maximized'];
+    const flags = ['--start-maximized', '--no-default-browser-check'];
     if (targetUrl) {
       flags.unshift(targetUrl);
     }
@@ -201,7 +201,7 @@ class FingerprintBrowserService {
         console.log(`[Fingerprint] Attempting to start profile ${profileUuid} on ${startUrl}...`);
         const res = await axios.post(startUrl, payload, {
           headers: { 'Content-Type': 'application/json' },
-          timeout: 45000
+          timeout: 4000
         });
         data = res.data;
         this.localClientPort = port;
@@ -450,7 +450,14 @@ class FingerprintBrowserService {
           startPages: targetUrl ? [targetUrl] : []
         });
 
-        const startRes = await this.startProfile(profile.uuid, targetUrl);
+        // Try starting the profile on the backend machine (works when backend is local)
+        let startedByBackend = false;
+        try {
+          await this.startProfile(profile.uuid, targetUrl);
+          startedByBackend = true;
+        } catch (startErr) {
+          console.log(`[Batch Launch Window #${i}] Backend cannot reach local Octo client (${startErr.message}). Delegating launch to Desktop/Web client.`);
+        }
 
         results.push({
           index: i,
@@ -458,7 +465,9 @@ class FingerprintBrowserService {
           profileUuid: profile.uuid,
           targetUrl,
           proxy: proxy ? `${proxy.host}:${proxy.port} (${countryCode})` : 'Direct',
-          title: profileTitle
+          title: profileTitle,
+          startedByBackend,
+          needClientStart: !startedByBackend
         });
       } catch (launchErr) {
         console.error(`[Batch Launch Error Window #${i}]`, launchErr.message);

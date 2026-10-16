@@ -5,6 +5,7 @@ import {
   CheckCircle2, AlertCircle, Loader2, Settings, Layers
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { getApiBaseUrl } from '../utils/api';
 
 const COUNTRIES = [
   { code: 'US', en: 'United States', zh: '美国' },
@@ -59,7 +60,7 @@ export default function LaunchFingerprintModal({
     setLaunchResult(null);
 
     const activeToken = token || (isAdmin ? localStorage.getItem('admin_token') : (localStorage.getItem('rs_token') || localStorage.getItem('token')));
-    const apiBase = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.protocol === 'app:') ? 'http://localhost:8000' : '');
+    const apiBase = getApiBaseUrl();
     const baseUrl = isAdmin ? '/api/admin/platform' : '/api/member/platform';
     const endpoint = `${apiBase}${baseUrl}/fingerprint/launch`;
 
@@ -85,6 +86,40 @@ export default function LaunchFingerprintModal({
       const res = await response.json();
       if (res.code === 200 && res.data) {
         setLaunchResult(res.data);
+
+        // Client-side start fallback (essential when backend is hosted remotely on VPS)
+        const pendingWindows = res.data.windows?.filter(w => w.needClientStart) || [];
+        for (const w of pendingWindows) {
+          try {
+            if (typeof window !== 'undefined' && window.desktopApp?.startOctoProfile) {
+              await window.desktopApp.startOctoProfile({
+                uuid: w.profileUuid,
+                targetUrl: w.targetUrl
+              });
+            } else {
+              // Direct local client start fallback (port 46666 / 58888)
+              const ports = [46666, 58888, 50888];
+              for (const port of ports) {
+                try {
+                  await fetch(`http://127.0.0.1:${port}/api/profiles/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      uuid: w.profileUuid,
+                      headless: false,
+                      debug_port: true,
+                      timeout: 120,
+                      flags: w.targetUrl ? [w.targetUrl, '--start-maximized'] : ['--start-maximized']
+                    })
+                  });
+                  break;
+                } catch (e) {}
+              }
+            }
+          } catch (clientErr) {
+            console.warn('[Desktop Client Launch Notice]', clientErr);
+          }
+        }
       } else {
         setErrorMsg(res.msg || t('failedLaunch'));
       }
@@ -96,8 +131,13 @@ export default function LaunchFingerprintModal({
   };
 
   const handleStopProfile = async (profileUuid) => {
+    // 1. If in desktop app, also trigger local force_stop
+    if (typeof window !== 'undefined' && window.desktopApp?.stopOctoProfile) {
+      window.desktopApp.stopOctoProfile({ uuid: profileUuid }).catch(() => {});
+    }
+
     const activeToken = token || (isAdmin ? localStorage.getItem('admin_token') : (localStorage.getItem('rs_token') || localStorage.getItem('token')));
-    const apiBase = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.protocol === 'app:') ? 'http://localhost:8000' : '');
+    const apiBase = getApiBaseUrl();
     const baseUrl = isAdmin ? '/api/admin/platform' : '/api/member/platform';
     try {
       await fetch(`${apiBase}${baseUrl}/fingerprint/stop`, {

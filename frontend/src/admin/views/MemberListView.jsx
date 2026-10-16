@@ -7,6 +7,7 @@ import {
   Users, Globe, Upload, FileText
 } from 'lucide-react';
 import { adminFetch, getAdminToken } from '../utils/adminApi';
+import { getApiBaseUrl } from '../../utils/api';
 import { useAdminTheme } from '../context/AdminThemeContext';
 import './MemberManagement.css';
 
@@ -73,7 +74,7 @@ function AllMembersTab({ token, theme }) {
   const [importReport, setImportReport] = useState(null);
 
   const handleDownloadMemberTemplate = () => {
-    const url = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/admin/import/template?type=members`;
+    const url = `${getApiBaseUrl()}/api/admin/import/template?type=members`;
     window.open(url, '_blank');
   };
 
@@ -87,7 +88,7 @@ function AllMembersTab({ token, theme }) {
       const formData = new FormData();
       formData.append('import_file', importFile);
 
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const baseUrl = getApiBaseUrl();
       const response = await fetch(`${baseUrl}/api/admin/import/members`, {
         method: 'POST',
         headers: {
