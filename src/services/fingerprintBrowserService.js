@@ -60,7 +60,7 @@ const SUPPORTED_COUNTRIES = [
 
 class FingerprintBrowserService {
   constructor() {
-    this.cloudApiBase = process.env.OCTO_CLOUD_API || 'https://app.octobrowser.net/api/v2/automation/profiles';
+    this.cloudApiBase = process.env.OCTO_CLOUD_API || 'https://dog.uomime.com/api/v2/automation/profiles';
     this.localClientPort = parseInt(process.env.OCTO_LOCAL_PORT, 10) || 58888;
     this.localClientBase = `http://127.0.0.1:${this.localClientPort}`;
     this.fallbackPorts = [58888, 46666].filter(p => p !== this.localClientPort);
@@ -276,18 +276,73 @@ class FingerprintBrowserService {
   }
 
   /**
-   * Stops an active profile window
+   * Stops an active profile window (with automatic force_stop fallback)
    */
   async stopProfile(profileUuid) {
-    try {
-      const res = await axios.post(`${this.localClientBase}/api/profiles/stop`, {
-        uuid: profileUuid
-      }, { timeout: 10000 });
-      return res.data;
-    } catch (err) {
-      console.error(`[Fingerprint] Failed to stop profile ${profileUuid}:`, err.message);
-      return { success: false, error: err.message };
+    const portsToTry = [this.localClientPort, ...this.fallbackPorts];
+    let lastErr = null;
+
+    for (const port of portsToTry) {
+      try {
+        const res = await axios.post(`http://127.0.0.1:${port}/api/profiles/stop`, {
+          uuid: profileUuid
+        }, { timeout: 10000 });
+        console.log(`[Fingerprint] Profile ${profileUuid} stopped successfully on port ${port}`);
+        return res.data;
+      } catch (err) {
+        lastErr = err;
+        // Fallback to /api/profiles/force_stop if regular stop failed
+        try {
+          const forceRes = await axios.post(`http://127.0.0.1:${port}/api/profiles/force_stop`, {
+            uuid: profileUuid
+          }, { timeout: 10000 });
+          console.log(`[Fingerprint] Profile ${profileUuid} force-stopped on port ${port}`);
+          return forceRes.data;
+        } catch (forceErr) {
+          lastErr = forceErr;
+        }
+      }
     }
+    console.error(`[Fingerprint] Failed to stop profile ${profileUuid}:`, lastErr?.message);
+    return { success: false, error: lastErr?.message || 'Failed to stop profile' };
+  }
+
+  /**
+   * Force stops an active profile window
+   */
+  async forceStopProfile(profileUuid) {
+    const portsToTry = [this.localClientPort, ...this.fallbackPorts];
+    for (const port of portsToTry) {
+      try {
+        const res = await axios.post(`http://127.0.0.1:${port}/api/profiles/force_stop`, {
+          uuid: profileUuid
+        }, { timeout: 10000 });
+        return res.data;
+      } catch (err) {}
+    }
+    return { success: false, error: 'Failed to force stop profile' };
+  }
+
+  /**
+   * Logs into local Octo client via /api/auth/login
+   */
+  async loginLocalClient({ email, password, apiToken }) {
+    const payload = {};
+    if (email) payload.email = email;
+    if (password) payload.password = password;
+    if (apiToken || this.defaultApiToken) payload.api_token = apiToken || this.defaultApiToken;
+
+    const portsToTry = [this.localClientPort, ...this.fallbackPorts];
+    for (const port of portsToTry) {
+      try {
+        const res = await axios.post(`http://127.0.0.1:${port}/api/auth/login`, payload, {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000
+        });
+        return res.data;
+      } catch (err) {}
+    }
+    return { success: false, error: 'Could not connect to local client auth endpoint' };
   }
 
   /**
