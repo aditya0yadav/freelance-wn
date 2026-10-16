@@ -13,12 +13,8 @@ const PROXY_PROVIDERS = [
     port: parseInt(process.env.SMART_PROXY_PORT, 10) || 1000,
     user: process.env.SMART_PROXY_USER || 'storm-fengchuiguo',
     password: process.env.SMART_PROXY_PASS || 'fcg123456',
-    // ipipbright uses underscore "_" delimiter for parameters
-    formatLogin: (baseUser, country, sessionId) => {
-      const c = (country || 'US').toUpperCase();
-      const s = sessionId || crypto.randomBytes(4).toString('hex');
-      return `${baseUser}_country-${c}_session-${s}`;
-    }
+    // Standard clean username directly (most compatible with browser profile checkers)
+    formatLogin: (baseUser) => baseUser
   },
   {
     key: 'koo',
@@ -27,11 +23,7 @@ const PROXY_PROVIDERS = [
     port: parseInt(process.env.KOO_PROXY_PORT, 10) || 1000,
     user: process.env.KOO_PROXY_USER || '8162185-995261',
     password: process.env.KOO_PROXY_PASS || 'zzz123456',
-    // Kookeey uses "-country-XX"
-    formatLogin: (baseUser, country) => {
-      const c = (country || 'US').toUpperCase();
-      return `${baseUser}-country-${c}`;
-    }
+    formatLogin: (baseUser) => baseUser
   }
 ];
 

@@ -12,11 +12,9 @@ const PROXY_PROVIDERS = {
     port: parseInt(process.env.SMART_PROXY_PORT, 10) || 1000,
     user: process.env.SMART_PROXY_USER || 'storm-fengchuiguo',
     password: process.env.SMART_PROXY_PASS || 'fcg123456',
-    formatLogin: (baseUser, country, sessionId) => {
-      const c = (country || 'US').toUpperCase();
-      const s = sessionId || crypto.randomBytes(4).toString('hex');
-      // ipipbright requires underscore "_" delimiters for country and session
-      return `${baseUser}_country-${c}_session-${s}`;
+    formatLogin: (baseUser) => {
+      // Use clean username directly to ensure reliable connection in Octo Browser
+      return baseUser;
     }
   },
   koo: {
@@ -26,10 +24,9 @@ const PROXY_PROVIDERS = {
     port: parseInt(process.env.KOO_PROXY_PORT, 10) || 1000,
     user: process.env.KOO_PROXY_USER || '8162185-995261',
     password: process.env.KOO_PROXY_PASS || 'zzz123456',
-    // kookeey format is baseUser-country-XX (session param triggers 407 error)
-    formatLogin: (baseUser, country) => {
-      const c = (country || 'US').toUpperCase();
-      return `${baseUser}-country-${c}`;
+    formatLogin: (baseUser) => {
+      // Use clean username directly
+      return baseUser;
     }
   },
   direct: {
