@@ -11,14 +11,22 @@ class FingerprintController {
       const providers = fingerprintBrowserService.getProviders();
       const countries = fingerprintBrowserService.getCountries();
 
-      // Check if local fingerprint client (port 46666) is active
+      // Check if local fingerprint client (port 58888 / 46666) is active
       let localClientActive = false;
-      try {
-        await axios.get(`http://127.0.0.1:${fingerprintBrowserService.localClientPort}/api/profiles`, { timeout: 1500 });
-        localClientActive = true;
-      } catch (e) {
-        // May return 404 or 401 on root or error if not launched yet
-        localClientActive = e.response ? true : false;
+      const portsToCheck = [fingerprintBrowserService.localClientPort, ...fingerprintBrowserService.fallbackPorts];
+      for (const p of portsToCheck) {
+        try {
+          await axios.get(`http://127.0.0.1:${p}/api/profiles`, { timeout: 1500 });
+          localClientActive = true;
+          fingerprintBrowserService.localClientPort = p;
+          break;
+        } catch (e) {
+          if (e.response) {
+            localClientActive = true;
+            fingerprintBrowserService.localClientPort = p;
+            break;
+          }
+        }
       }
 
       return res.json({
@@ -84,7 +92,11 @@ class FingerprintController {
       });
     } catch (err) {
       console.error('[Fingerprint Launch Controller Error]', err.message);
-      return res.status(500).json({ code: 500, msg: err.message });
+      let userMsg = err.message;
+      if (err.message && (err.message.includes('ECONNREFUSED') || err.message.includes('Connection refused'))) {
+        userMsg = 'Octo / Doge Browser is not running on your computer! Please open the Octo/Doge Browser desktop application and log in first.';
+      }
+      return res.status(500).json({ code: 500, msg: userMsg });
     }
   }
 

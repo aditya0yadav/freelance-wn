@@ -15,7 +15,8 @@ const PROXY_PROVIDERS = {
     formatLogin: (baseUser, country, sessionId) => {
       const c = (country || 'US').toUpperCase();
       const s = sessionId || crypto.randomBytes(4).toString('hex');
-      return `${baseUser}-country-${c}-session-${s}`;
+      // ipipbright requires underscore "_" delimiters for country and session
+      return `${baseUser}_country-${c}_session-${s}`;
     }
   },
   koo: {
@@ -25,10 +26,10 @@ const PROXY_PROVIDERS = {
     port: parseInt(process.env.KOO_PROXY_PORT, 10) || 1000,
     user: process.env.KOO_PROXY_USER || '8162185-995261',
     password: process.env.KOO_PROXY_PASS || 'zzz123456',
-    formatLogin: (baseUser, country, sessionId) => {
+    // kookeey format is baseUser-country-XX (session param triggers 407 error)
+    formatLogin: (baseUser, country) => {
       const c = (country || 'US').toUpperCase();
-      const s = sessionId || crypto.randomBytes(4).toString('hex');
-      return `${baseUser}-country-${c}-session-${s}`;
+      return `${baseUser}-country-${c}`;
     }
   },
   direct: {
