@@ -58,12 +58,14 @@ export default function LaunchFingerprintModal({
     setErrorMsg('');
     setLaunchResult(null);
 
+    const activeToken = token || (isAdmin ? localStorage.getItem('admin_token') : (localStorage.getItem('rs_token') || localStorage.getItem('token')));
+    const apiBase = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.protocol === 'app:') ? 'http://localhost:8000' : '');
     const baseUrl = isAdmin ? '/api/admin/platform' : '/api/member/platform';
-    const endpoint = `${baseUrl}/fingerprint/launch`;
+    const endpoint = `${apiBase}${baseUrl}/fingerprint/launch`;
 
     const headers = { 'Content-Type': 'application/json' };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    if (activeToken) {
+      headers['Authorization'] = `Bearer ${activeToken}`;
     }
 
     try {
@@ -94,13 +96,15 @@ export default function LaunchFingerprintModal({
   };
 
   const handleStopProfile = async (profileUuid) => {
+    const activeToken = token || (isAdmin ? localStorage.getItem('admin_token') : (localStorage.getItem('rs_token') || localStorage.getItem('token')));
+    const apiBase = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.protocol === 'app:') ? 'http://localhost:8000' : '');
     const baseUrl = isAdmin ? '/api/admin/platform' : '/api/member/platform';
     try {
-      await fetch(`${baseUrl}/fingerprint/stop`, {
+      await fetch(`${apiBase}${baseUrl}/fingerprint/stop`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
+          ...(activeToken && { 'Authorization': `Bearer ${activeToken}` })
         },
         body: JSON.stringify({ profile_uuid: profileUuid })
       });
