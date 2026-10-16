@@ -59,7 +59,8 @@ class FingerprintController {
         country = 'US',
         window_count = 1,
         api_token = '',
-        apiToken: bodyApiToken = ''
+        apiToken: bodyApiToken = '',
+        is_desktop = false
       } = req.body;
 
       if (!project_pno && !project_id) {
@@ -74,6 +75,7 @@ class FingerprintController {
       const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || '127.0.0.1';
       const memberId = req.user?.member_id || 1;
       const effectiveApiToken = api_token || bodyApiToken || '';
+      const isDesktopClient = Boolean(is_desktop) || req.headers['x-client-platform'] === 'desktop';
 
       const result = await fingerprintBrowserService.launchBatch({
         projectPno: project_pno,
@@ -84,7 +86,8 @@ class FingerprintController {
         apiToken: effectiveApiToken,
         memberId,
         clientIp,
-        reqRootUrl
+        reqRootUrl,
+        isDesktop: isDesktopClient
       });
 
       return res.json({

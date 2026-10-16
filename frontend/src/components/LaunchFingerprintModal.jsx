@@ -37,11 +37,13 @@ export default function LaunchFingerprintModal({
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [launchStatusText, setLaunchStatusText] = useState('');
   const [launchResult, setLaunchResult] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
       setErrorMsg('');
+      setLaunchStatusText('');
       setLaunchResult(null);
     }
   }, [isOpen]);
@@ -69,6 +71,13 @@ export default function LaunchFingerprintModal({
       headers['Authorization'] = `Bearer ${activeToken}`;
     }
 
+    const isDesktopApp = typeof window !== 'undefined' && Boolean(window.desktopApp?.isDesktop);
+    if (isDesktopApp) {
+      headers['X-Client-Platform'] = 'desktop';
+    }
+
+    setLaunchStatusText(language === 'zh' ? '正在生成指纹环境与住宅代理...' : 'Creating fingerprint profile & proxy on server...');
+
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -79,7 +88,8 @@ export default function LaunchFingerprintModal({
           provider,
           country,
           window_count: Number(windowCount) || 1,
-          api_token: apiToken
+          api_token: apiToken,
+          is_desktop: isDesktopApp
         })
       });
 
@@ -89,6 +99,10 @@ export default function LaunchFingerprintModal({
 
         // Client-side start fallback (essential when backend is hosted remotely on VPS)
         const pendingWindows = res.data.windows?.filter(w => w.needClientStart) || [];
+        if (pendingWindows.length > 0) {
+          setLaunchStatusText(language === 'zh' ? '正在本地 Octo 客户端启动浏览器窗口...' : 'Launching window in local Octo browser...');
+        }
+
         for (const w of pendingWindows) {
           try {
             if (typeof window !== 'undefined' && window.desktopApp?.startOctoProfile) {
@@ -97,8 +111,8 @@ export default function LaunchFingerprintModal({
                 targetUrl: w.targetUrl
               });
             } else {
-              // Direct local client start fallback (port 46666 / 58888)
-              const ports = [46666, 58888, 50888];
+              // Direct local client start fallback (port 4666 / 46666 / 58888)
+              const ports = [4666, 46666, 58888, 50888];
               for (const port of ports) {
                 try {
                   await fetch(`http://127.0.0.1:${port}/api/profiles/start`, {
@@ -120,6 +134,7 @@ export default function LaunchFingerprintModal({
             console.warn('[Desktop Client Launch Notice]', clientErr);
           }
         }
+        setLaunchStatusText('');
       } else {
         setErrorMsg(res.msg || t('failedLaunch'));
       }
@@ -393,6 +408,24 @@ export default function LaunchFingerprintModal({
                 </>
               )}
             </button>
+
+            {loading && launchStatusText && (
+              <div style={{
+                marginTop: '10px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                background: 'rgba(59, 130, 246, 0.1)',
+                border: '1px solid rgba(59, 130, 246, 0.25)',
+                color: '#60a5fa',
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <Loader2 size={14} className="animate-spin" />
+                <span>{launchStatusText}</span>
+              </div>
+            )}
           </form>
 
           {/* Launch Output / Active Windows List */}

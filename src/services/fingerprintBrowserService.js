@@ -59,9 +59,9 @@ const SUPPORTED_COUNTRIES = [
 class FingerprintBrowserService {
   constructor() {
     this.cloudApiBase = process.env.OCTO_CLOUD_API || 'https://dog.uomime.com/api/v2/automation/profiles';
-    this.localClientPort = parseInt(process.env.OCTO_LOCAL_PORT, 10) || 58888;
+    this.localClientPort = parseInt(process.env.OCTO_LOCAL_PORT, 10) || 4666;
     this.localClientBase = `http://127.0.0.1:${this.localClientPort}`;
-    this.fallbackPorts = [58888, 46666].filter(p => p !== this.localClientPort);
+    this.fallbackPorts = [4666, 46666, 58888, 50888].filter(p => p !== this.localClientPort);
     this.defaultApiToken = process.env.OCTO_API_TOKEN || '';
   }
 
@@ -379,7 +379,7 @@ class FingerprintBrowserService {
    * High-Level Batch Orchestrator:
    * Opens N fingerprint browser windows for a chosen project, proxy provider, and country.
    */
-  async launchBatch({ projectPno, projectId, providerKey, country, windowCount, apiToken, memberId, clientIp, reqRootUrl }) {
+  async launchBatch({ projectPno, projectId, providerKey, country, windowCount, apiToken, memberId, clientIp, reqRootUrl, isDesktop = false }) {
     const count = Math.min(Math.max(parseInt(windowCount, 10) || 1, 1), 20); // 1 to 20 windows limit
     const countryCode = (country || 'US').toUpperCase();
 
@@ -396,7 +396,7 @@ class FingerprintBrowserService {
 
     console.log(`\n======================================================`);
     console.log(`[Batch Launch] Survey: "${project.project_name}" [${project.project_pno}]`);
-    console.log(`[Batch Launch] Provider: ${providerKey} | Country: ${countryCode} | Windows: ${count}`);
+    console.log(`[Batch Launch] Provider: ${providerKey} | Country: ${countryCode} | Windows: ${count} | Client: ${isDesktop ? 'Desktop App' : 'Web/Direct'}`);
 
     const results = [];
 
@@ -450,13 +450,20 @@ class FingerprintBrowserService {
           startPages: targetUrl ? [targetUrl] : []
         });
 
-        // Try starting the profile on the backend machine (works when backend is local)
+        // If client is Desktop App or backend is running remotely on VPS, delegate start to user's machine directly
+        const isRemoteServer = reqRootUrl && !reqRootUrl.includes('localhost') && !reqRootUrl.includes('127.0.0.1');
+        const shouldDelegateToClient = isDesktop || isRemoteServer;
+
         let startedByBackend = false;
-        try {
-          await this.startProfile(profile.uuid, targetUrl);
-          startedByBackend = true;
-        } catch (startErr) {
-          console.log(`[Batch Launch Window #${i}] Backend cannot reach local Octo client (${startErr.message}). Delegating launch to Desktop/Web client.`);
+        if (!shouldDelegateToClient) {
+          try {
+            await this.startProfile(profile.uuid, targetUrl);
+            startedByBackend = true;
+          } catch (startErr) {
+            console.log(`[Batch Launch Window #${i}] Backend cannot reach local Octo client (${startErr.message}). Delegating launch to Desktop/Web client.`);
+          }
+        } else {
+          console.log(`[Batch Launch Window #${i}] Client is on local machine (${isDesktop ? 'Desktop App' : 'Remote Client'}). Skipping server local start, delegating directly to user localhost.`);
         }
 
         results.push({

@@ -192,16 +192,43 @@ app.on('window-all-closed', () => {
 // Octo / Doge Local Client IPC Handlers (for Windows Laptop Desktop App)
 // Allows Desktop App to launch profiles on localhost even when backend is hosted remotely!
 // =========================================================================
-const OCTO_PORTS = [46666, 58888, 50888, 59999];
+const OCTO_PORTS = [4666, 46666, 58888, 50888, 59999];
+let cachedOctoPort = null;
 
-ipcMain.handle('octo:checkClient', async () => {
+async function findActiveOctoPort() {
+  if (cachedOctoPort) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 800);
+      const res = await net.fetch(`http://127.0.0.1:${cachedOctoPort}/api/profiles`, { method: 'GET', signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok || res.status === 401 || res.status === 403) {
+        return cachedOctoPort;
+      }
+    } catch (e) {
+      cachedOctoPort = null;
+    }
+  }
+
   for (const port of OCTO_PORTS) {
     try {
-      const res = await net.fetch(`http://127.0.0.1:${port}/api/profiles`, { method: 'GET' });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 600);
+      const res = await net.fetch(`http://127.0.0.1:${port}/api/profiles`, { method: 'GET', signal: controller.signal });
+      clearTimeout(timeoutId);
       if (res.ok || res.status === 401 || res.status === 403) {
-        return { active: true, port };
+        cachedOctoPort = port;
+        return port;
       }
     } catch (e) {}
+  }
+  return null;
+}
+
+ipcMain.handle('octo:checkClient', async () => {
+  const activePort = await findActiveOctoPort();
+  if (activePort) {
+    return { active: true, port: activePort };
   }
   return { active: false };
 });
@@ -219,8 +246,12 @@ ipcMain.handle('octo:startProfile', async (event, { uuid, targetUrl }) => {
     flags
   };
 
+  // 1. Try active / cached port first
+  const activePort = await findActiveOctoPort();
+  const portsToTry = activePort ? [activePort, ...OCTO_PORTS.filter(p => p !== activePort)] : OCTO_PORTS;
+
   let lastErr = null;
-  for (const port of OCTO_PORTS) {
+  for (const port of portsToTry) {
     try {
       const res = await net.fetch(`http://127.0.0.1:${port}/api/profiles/start`, {
         method: 'POST',
@@ -228,6 +259,7 @@ ipcMain.handle('octo:startProfile', async (event, { uuid, targetUrl }) => {
         body: JSON.stringify(payload)
       });
       const data = await res.json();
+      cachedOctoPort = port;
       return { success: true, port, data };
     } catch (err) {
       lastErr = err;
