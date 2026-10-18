@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { apiFetch } from '../utils/api';
 
 const NAV_ITEMS = [
   {
@@ -74,6 +75,64 @@ export default function Topbar({
   const navigate = useNavigate();
   const path = location.pathname;
   const { language, toggleLanguage, t } = useLanguage();
+
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const notifRef = useRef(null);
+
+  const formatTimeAgo = (dateStr) => {
+    if (!dateStr) return '';
+    const diffSec = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    if (diffSec < 60) return language === 'en' ? 'Just now' : '刚刚';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return language === 'en' ? `${diffMin}m ago` : `${diffMin}分钟前`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return language === 'en' ? `${diffHr}h ago` : `${diffHr}小时前`;
+    const diffDay = Math.floor(diffHr / 24);
+    return language === 'en' ? `${diffDay}d ago` : `${diffDay}天前`;
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const token = localStorage.getItem('rs_token');
+      if (!token) return;
+      const res = await apiFetch('/api/member/platform/notifications', 'GET', null, token);
+      if (res && res.code === 200 && res.data?.list) {
+        setNotifications(res.data.list);
+        const lastRead = Number(localStorage.getItem('last_read_notif_time') || 0);
+        const unread = res.data.list.filter(n => new Date(n.time).getTime() > lastRead).length;
+        setUnreadCount(unread);
+      }
+    } catch {
+      // silent
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 45000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleToggleNotif = () => {
+    const nextState = !notifOpen;
+    setNotifOpen(nextState);
+    if (nextState) {
+      localStorage.setItem('last_read_notif_time', String(Date.now()));
+      setUnreadCount(0);
+    }
+  };
 
   const handleNavClick = (item) => {
     navigate(item.path);
@@ -181,13 +240,109 @@ export default function Topbar({
           </span>
         </div>
 
-        {/* Notification bell */}
-        <button className="topbar-icon-btn notif-btn" title="Notifications">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-          <span className="notif-dot" />
-        </button>
+        {/* Project Update Notifications */}
+        <div className="notif-wrap" ref={notifRef}>
+          <button
+            className={`topbar-icon-btn notif-btn ${notifOpen ? 'active' : ''}`}
+            title={language === 'en' ? 'Project Updates' : '项目更新提醒'}
+            onClick={handleToggleNotif}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            {unreadCount > 0 ? (
+              <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+            ) : (
+              notifications.length > 0 && <span className="notif-dot" />
+            )}
+          </button>
+
+          {notifOpen && (
+            <div className="notif-dropdown">
+              <div className="notif-dropdown-header">
+                <div className="notif-header-title">
+                  <span style={{ fontWeight: 700, fontSize: '13px' }}>
+                    {language === 'en' ? 'Project Updates' : '项目更新提醒'}
+                  </span>
+                  {notifications.length > 0 && (
+                    <span className="notif-pill">{notifications.length}</span>
+                  )}
+                </div>
+                {unreadCount > 0 && (
+                  <button
+                    className="notif-mark-read"
+                    onClick={() => {
+                      localStorage.setItem('last_read_notif_time', String(Date.now()));
+                      setUnreadCount(0);
+                    }}
+                  >
+                    {language === 'en' ? 'Mark read' : '标为已读'}
+                  </button>
+                )}
+              </div>
+
+              <div className="notif-list">
+                {notifications.length === 0 ? (
+                  <div className="notif-empty">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <circle cx="12" cy="12" r="10"/><path d="M8 12h8"/>
+                    </svg>
+                    <p>{language === 'en' ? 'No recent project updates' : '暂无最新项目变动'}</p>
+                  </div>
+                ) : (
+                  notifications.map((item) => {
+                    const timeAgo = formatTimeAgo(item.time);
+                    return (
+                      <div
+                        key={item.id}
+                        className="notif-item"
+                        onClick={() => {
+                          setNotifOpen(false);
+                          navigate(`/platform/${item.platform_id}`);
+                        }}
+                      >
+                        <div className="notif-item-top">
+                          <span
+                            className="notif-platform-tag"
+                            style={{
+                              borderColor: item.platform_color || 'var(--accent)',
+                              color: item.platform_color || 'var(--accent)'
+                            }}
+                          >
+                            {item.platform_name}
+                          </span>
+                          <span className={`notif-type-tag ${item.type === 'NEW_PROJECT' ? 'tag-new' : 'tag-update'}`}>
+                            {item.type === 'NEW_PROJECT'
+                              ? (language === 'en' ? 'New Survey' : '新上线')
+                              : (language === 'en' ? 'Updated' : '已更新')}
+                          </span>
+                          <span className="notif-time">{timeAgo}</span>
+                        </div>
+                        <div className="notif-project-name" title={item.project_name}>
+                          {item.project_name}
+                        </div>
+                        <div className="notif-item-meta">
+                          <span className="notif-coins">
+                            +{showUSD ? `$${(item.coins / 100).toFixed(2)}` : `${item.coins} Coins`}
+                          </span>
+                          {item.project_loi > 0 && (
+                            <span className="notif-loi">{item.project_loi} min</span>
+                          )}
+                          {item.project_ir > 0 && (
+                            <span className="notif-ir">IR {item.project_ir}%</span>
+                          )}
+                          <span className="notif-action-hint">
+                            {language === 'en' ? 'Start →' : '进入项目 →'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Profile */}
         <div className="profile-wrap" ref={profileRef}>

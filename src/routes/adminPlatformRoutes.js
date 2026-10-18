@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const AdminPlatformController = require('../controllers/adminPlatformController');
+const PlatformController = require('../controllers/platformController');
 const PersonaController = require('../controllers/personaController');
 const PersonaDataController = require('../controllers/personaDataController');
 const AdminLogController = require('../controllers/adminLogController');
@@ -19,6 +20,7 @@ try {
 
 // Public Auth routes
 router.post('/login', AdminPlatformController.login);
+router.post('/generate-link', PlatformController.generateLink);
 
 // Platform CRUD routes
 router.get('/list', verifyAdminToken, AdminPlatformController.list);

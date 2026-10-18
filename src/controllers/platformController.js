@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const axios = require('axios');
 const bcrypt = require('bcryptjs');
 const SurveyIntegrationService = require('../services/surveyIntegrationService');
+const RedirectLinkService = require('../services/redirectLinkService');
 
 class PlatformController {
   /**
@@ -359,12 +360,41 @@ class PlatformController {
         return res.status(404).json({ code: 404, msg: 'Platform not found' });
       }
 
-      // If content is already rendered HTML and it's not a live endpoint or is cached
+      // If content is already rendered HTML or chronological timeline and it's not a live endpoint or is cached
       if (project.project_content && platform.platform_sign !== 'Gowebsurveys' && platform.platform_sign !== 'Zamplia') {
         if (project.project_content.startsWith('http://') || project.project_content.startsWith('https://')) {
           return res.json({ code: 200, msg: 'success', data: { type: 'link', content: project.project_content } });
         }
-        return res.json({ code: 200, msg: 'success', data: { type: 'content', content: project.project_content } });
+
+        try {
+          const parsed = JSON.parse(project.project_content);
+          if (parsed && (parsed.is_timeline || parsed.base_requirements)) {
+            return res.json({
+              code: 200,
+              msg: 'success',
+              data: {
+                type: 'timeline',
+                timeline: parsed,
+                project: {
+                  project_id: project.project_id,
+                  project_pno: project.project_pno,
+                  project_name: project.project_name,
+                  project_quota: project.project_quota,
+                  project_complete: project.project_complete,
+                  project_cpi: project.project_cpi,
+                  project_loi: project.project_loi,
+                  project_ir: project.project_ir,
+                  platform_name: platform.platform_name,
+                  platform_color: platform.platform_color
+                }
+              }
+            });
+          }
+        } catch {
+          // Plain text fallback
+        }
+
+        return res.json({ code: 200, msg: 'success', data: { type: 'content', content: project.project_content, project } });
       }
 
       // Fetch live quota
@@ -562,100 +592,29 @@ class PlatformController {
 
       const params = SurveyIntegrationService.getParamsMap(platform.params);
 
-      // Perform redirection according to platform credentials mapping
-      // Perform redirection according to platform credentials mapping
-      switch (platform.platform_sign) {
-        case 'Zamplia': {
-          if (project.is_api === 1) {
-            const queryParams = new URLSearchParams({
-              SurveyId: project.project_no,
-              IpAddress: ip,
-              TransactionId: uuid,
-              uid: uuid
-            }).toString();
-            const response = await axios.get(`${platform.platform_click_url}?${queryParams}`, {
-              headers: { 'Accept': 'application/json', 'ZAMP-KEY': params['app_key'] },
-              timeout: 30000
-            });
-            if (response.data && response.data.result && response.data.result.data && response.data.result.data[0]) {
-              const liveLink = response.data.result.data[0].LiveLink;
-              return res.send(`<script>window.location.href="${liveLink}";</script>`);
-            }
-            return res.status(500).send('Zamplia dynamic API redirect failed.');
-          }
-          return res.send(`<script>window.location.href="${project.project_click_url}${uuid}";</script>`);
-        }
-
-        case 'Gowebsurveys': {
-          const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
-          let protocol = isSecure ? 'https' : 'http';
-          let host = req.get('host') || '';
-          if (host.includes(':443')) {
-            protocol = 'https';
-            host = host.replace(':443', '');
-          } else if (host.includes(':80')) {
-            host = host.replace(':80', '');
-          }
-          const rootUrl = `${protocol}://${host}`;
-          const postData = {
-            surveyID: Number(project.project_no) || project.project_no,
-            SuccessLink: `${rootUrl}/api/callback?platform=${platform.platform_sign}&uid={{panellist_id}}&status=C`,
-            disQualifiedLink: `${rootUrl}/api/callback?platform=${platform.platform_sign}&uid={{panellist_id}}&status=S`,
-            TermLink: `${rootUrl}/api/callback?platform=${platform.platform_sign}&uid={{panellist_id}}&status=T`,
-            OverQuotaLink: `${rootUrl}/api/callback?platform=${platform.platform_sign}&uid={{panellist_id}}&status=Q`,
-            useStaticLink: 0
-          };
-
-          const response = await axios.post(platform.platform_click_url, postData, {
-            headers: {
-              'Accept': 'application/json',
-              'Authorization': params['app_key'],
-              'payload': params['app_id'],
-              'Content-Type': 'application/json'
-            },
-            timeout: 30000
-          });
-
-          // Log transaction for debug
-          console.log(`[${new Date().toISOString()}] Click API log for ${platform.platform_sign}:`, response.data);
-
-          if (response.data && response.data.apiStatus === 1 && response.data.surveyInfo && response.data.surveyInfo[0]) {
-            const rawUrl = response.data.surveyInfo[0].SurveyEntryUrl;
-            const pos = rawUrl.indexOf('&pid=');
-            const projectClickUrl = pos !== -1 ? rawUrl.substring(0, pos) + '&pid=' + uuid : rawUrl + '&pid=' + uuid;
-            return res.send(`<script>window.location.href="${projectClickUrl}";</script>`);
-          }
-          return res.status(500).send(`API click error: ${response.data?.apiMessages || 'Unknown API issue'}`);
-        }
-
-
-        case 'TMDPanel': {
-          let tmdClickUrl = project.project_click_url || '';
-          
-          if (!tmdClickUrl) {
-            const CallbackController = require('./callbackController');
-            return res.status(400).send(CallbackController.renderErrorPage('The survey link is missing from our database. Please sync the inventory or try another survey.'));
-          }
-
-          if (!tmdClickUrl.endsWith('=')) {
-            tmdClickUrl += tmdClickUrl.includes('?') ? '&rid=' : '?rid=';
-          }
-          
-          const finalUrl = `${tmdClickUrl}${uuid}`;
-          return res.send(PlatformController.renderRedirectPage(finalUrl));
-        }
-
-        default: {
-          const clickUrl = project.project_click_url || '';
-          if (!clickUrl) {
-            const CallbackController = require('./callbackController');
-            return res.status(400).send(CallbackController.renderErrorPage('The survey link is missing. Please try another survey.'));
-          }
-          const finalUrl = `${clickUrl}${uuid}`;
-          return res.send(PlatformController.renderRedirectPage(finalUrl));
-        }
-
+      const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+      let protocol = isSecure ? 'https' : 'http';
+      let host = req.get('host') || '';
+      if (host.includes(':443')) {
+        protocol = 'https';
+        host = host.replace(':443', '');
+      } else if (host.includes(':80')) {
+        host = host.replace(':80', '');
       }
+      const rootUrl = `${protocol}://${host}`;
+
+      const redirectResult = await RedirectLinkService.generateRedirectLink({
+        platformIdentifier: platform.platform_sign,
+        clickUrl: project.project_click_url || platform.platform_click_url,
+        uuid,
+        projectNo: project.project_no,
+        rootUrl,
+        ip,
+        platformParams: params,
+        isApi: project.is_api
+      });
+
+      return res.send(PlatformController.renderRedirectPage(redirectResult.redirectUrl));
     } catch (err) {
       console.error('Redirect processing error:', err);
       const CallbackController = require('./callbackController');
@@ -763,6 +722,47 @@ class PlatformController {
       return res.send(`<script>window.location.href="${redirectUrl}";</script>`);
     } catch (err) {
       return res.status(500).send(`Internal Offerwall Link Error: ${err.message}`);
+    }
+  }
+
+  /**
+   * POST /api/member/platform/generate-link
+   * Automatically generate dynamic live redirect links for any research company / platform identifier
+   */
+  static async generateLink(req, res) {
+    try {
+      const { platform_sign, platformIdentifier, click_url, clickUrl, uuid, project_no, projectNo, is_api, isApi, params } = req.body;
+      const targetPlatform = platform_sign || platformIdentifier || '';
+      const targetClickUrl = click_url || clickUrl || '';
+      
+      const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+      let protocol = isSecure ? 'https' : 'http';
+      let host = req.get('host') || '';
+      if (host.includes(':443')) host = host.replace(':443', '');
+      else if (host.includes(':80')) host = host.replace(':80', '');
+      const rootUrl = `${protocol}://${host}`;
+
+      const trackingUuid = uuid || crypto.randomUUID().replace(/-/g, '');
+
+      const result = await RedirectLinkService.generateRedirectLink({
+        platformIdentifier: targetPlatform,
+        clickUrl: targetClickUrl,
+        uuid: trackingUuid,
+        projectNo: project_no || projectNo || '',
+        rootUrl,
+        ip: PlatformController.getIpAddress(req),
+        platformParams: params || {},
+        isApi: Number(is_api ?? isApi) || 0
+      });
+
+      return res.json({
+        code: 200,
+        msg: 'success',
+        data: result
+      });
+    } catch (err) {
+      console.error('generateLink API error:', err);
+      return res.status(500).json({ code: 500, msg: err.message });
     }
   }
 

@@ -17,6 +17,7 @@ router.get('/notifications', verifyToken, PlatformController.notifications);
 // Link redirection endpoints (token validated inside controller via 'key' query param)
 router.get('/link', PlatformController.link);
 router.get('/wall_link', PlatformController.wall_link);
+router.post('/generate-link', PlatformController.generateLink);
 
 // Auth & seed routes (no JWT auth header required)
 router.post('/login', PlatformController.login);

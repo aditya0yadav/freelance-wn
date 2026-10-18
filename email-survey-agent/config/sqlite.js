@@ -144,6 +144,15 @@ class SQLiteManager {
       recent
     };
   }
+
+  static resetDatabase() {
+    db.exec(`
+      DELETE FROM extracted_surveys;
+      DELETE FROM processed_emails;
+      VACUUM;
+    `);
+    return true;
+  }
 }
 
 module.exports = { db, SQLiteManager };

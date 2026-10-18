@@ -21,6 +21,7 @@ app.use(express.static('public'));
 app.use('/api/member/platform', memberPlatformRoutes);
 app.use('/api/admin/platform', adminPlatformRoutes);
 app.use('/api/callback', callbackRoutes);
+app.use('/api/index/callback', callbackRoutes); // Legacy PHP callback compatibility
 
 // Boot cron pulling worker
 require('./jobs/cronPull');

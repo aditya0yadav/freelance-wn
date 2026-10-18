@@ -312,6 +312,108 @@ class ImapService {
   }
 
   /**
+   * Reprocess emails from Zoho Mailbox to regenerate quotas and chronological timeline
+   * @param {Object} options
+   * @param {number|'all'} options.countPerFolder - number of messages per folder or 'all'
+   * @param {boolean} options.resetCache - whether to clear SQLite processed history
+   */
+  async reprocessMailbox({ countPerFolder = 'all', resetCache = true } = {}) {
+    if (!this.isConfigured()) return;
+
+    if (resetCache) {
+      console.log('[Reprocess] Clearing local processed email audit cache...');
+      SQLiteManager.resetDatabase();
+      console.log('[Reprocess] Local cache cleared. Ready to re-ingest.');
+    }
+
+    const client = this.createClient();
+
+    try {
+      await client.connect();
+      const targetMailboxes = await this.getTargetMailboxes(client);
+      console.log(`[Reprocess] Connected to Zoho. Scanning ${targetMailboxes.length} company folders: ${targetMailboxes.map(m => m.name).join(', ')}...`);
+
+      for (const mb of targetMailboxes) {
+        try {
+          const lock = await client.getMailboxLock(mb.path);
+          try {
+            const status = await client.status(mb.path, { messages: true });
+            const total = status.messages || 0;
+            if (total === 0) continue;
+
+            let seqRange = '1:*';
+            if (countPerFolder !== 'all' && Number(countPerFolder) > 0) {
+              const startSeq = Math.max(1, total - Number(countPerFolder) + 1);
+              seqRange = `${startSeq}:*`;
+            }
+
+            console.log(`[Reprocess] Folder [${mb.name}]: fetching messages in chronological order (${seqRange}, total: ${total})...`);
+
+            for await (const message of client.fetch(seqRange, { envelope: true, source: true, uid: true })) {
+              const parsed = await simpleParser(message.source);
+              const messageId = parsed.messageId || `msg_${mb.name}_${message.uid}_${Date.now()}`;
+              const from = parsed.from ? parsed.from.text : '';
+              const subject = parsed.subject || '(No Subject)';
+              const date = parsed.date ? parsed.date.toISOString() : new Date().toISOString();
+
+              await this.processEmail({
+                messageId,
+                uid: String(message.uid),
+                from,
+                subject,
+                date,
+                text: parsed.text,
+                html: parsed.html,
+                folderName: mb.name
+              });
+            }
+          } finally {
+            lock.release();
+          }
+        } catch (folderErr) {
+          console.error(`[Reprocess Folder Error] Folder "${mb.name}":`, folderErr.message);
+        }
+      }
+    } catch (err) {
+      console.error('[Reprocess Error]', err.message);
+    } finally {
+      await client.logout().catch(() => {});
+    }
+  }
+
+  /**
+   * Reset the \\Seen flag on Zoho emails so background daemon sees them as unseen
+   */
+  async markAllUnseen() {
+    if (!this.isConfigured()) return;
+    const client = this.createClient();
+    try {
+      await client.connect();
+      const targetMailboxes = await this.getTargetMailboxes(client);
+      for (const mb of targetMailboxes) {
+        try {
+          const lock = await client.getMailboxLock(mb.path);
+          try {
+            const status = await client.status(mb.path, { messages: true });
+            if ((status.messages || 0) > 0) {
+              await client.messageFlagsRemove('1:*', ['\\Seen']);
+              console.log(`[IMAP] Removed \\Seen flag from all messages in [${mb.name}].`);
+            }
+          } finally {
+            lock.release();
+          }
+        } catch (err) {
+          console.warn(`[IMAP] Could not unmark seen in ${mb.name}:`, err.message);
+        }
+      }
+    } catch (err) {
+      console.error('[IMAP markAllUnseen Error]', err.message);
+    } finally {
+      await client.logout().catch(() => {});
+    }
+  }
+
+  /**
    * Start IDLE listener daemon
    */
   async startDaemon() {

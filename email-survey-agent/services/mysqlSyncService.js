@@ -126,30 +126,106 @@ class MySQLSyncService {
       });
 
       if (existing) {
-        console.log(`[Sync] Survey already exists in ya_project: PNO ${existing.project_pno}`);
+        console.log(`[Sync] Updating existing project in ya_project: PNO ${existing.project_pno}`);
+
+        // Parse existing timeline or upgrade legacy plain text
+        let timeline = null;
+        try {
+          const parsed = JSON.parse(existing.project_content);
+          if (parsed && (parsed.is_timeline || parsed.base_requirements)) {
+            timeline = parsed;
+          }
+        } catch {
+          // Legacy plain text
+        }
+
+        if (!timeline) {
+          // Initialize timeline preserving initial content as base requirements
+          timeline = {
+            is_timeline: true,
+            base_requirements: {
+              created_at: existing.create_time || new Date().toISOString(),
+              target_country: survey.target_country || 'General',
+              age_range: survey.age_range || '18-65',
+              occupation: survey.occupation || 'General / All Industries',
+              initial_quota: existing.project_quota || 100,
+              initial_cpi: existing.project_cpi || 1.0,
+              initial_loi: existing.project_loi || 15,
+              initial_ir: existing.project_ir || 50,
+              summary: existing.project_content || 'Initial live project dispatch specifications.'
+            },
+            update_logs: []
+          };
+        }
+
+        // Add this email as a new chronological update log entry
+        const updateEntry = {
+          date: survey.date || new Date().toISOString(),
+          subject: survey.project_name || 'Project Update Dispatch',
+          summary: survey.project_content || 'Subsequent quota/constraint update.',
+          excluded_groups: Array.isArray(survey.excluded_groups) ? survey.excluded_groups : [],
+          age_range: survey.age_range || null,
+          occupation: survey.occupation || null,
+          updated_quota: Number(survey.project_quota) || null,
+          updated_cpi: Number(survey.project_cpi) || null
+        };
+
+        timeline.update_logs = timeline.update_logs || [];
+        timeline.update_logs.push(updateEntry);
+
+        // Update existing project in ya_project without altering base specifications
+        await prisma.project.update({
+          where: { project_id: existing.project_id },
+          data: {
+            project_content: JSON.stringify(timeline),
+            update_time: new Date(),
+            ...(Number(survey.project_cpi) > 0 ? { project_cpi: Number(survey.project_cpi) } : {}),
+            ...(Number(survey.project_quota) > 0 ? { project_quota: Number(survey.project_quota) } : {}),
+            ...(survey.project_click_url ? { project_click_url: survey.project_click_url } : {})
+          }
+        });
+
+        console.log(`[Sync] Appended chronological update log to ya_project for PNO ${existing.project_pno}`);
         return existing.project_id;
       }
 
       // 4. Generate unique Project PNO
       const projectPno = `M_${platform.platform_id}_${survey.project_no}_${Date.now().toString().slice(-6)}`;
 
-      // 5. Insert into ya_project with clear Email Survey tag
+      // 5. Build Initial Base Requirements with Chronological Timeline
+      const initialTimeline = {
+        is_timeline: true,
+        base_requirements: {
+          created_at: new Date().toISOString(),
+          target_country: survey.target_country || 'General',
+          age_range: survey.age_range || '18-65',
+          occupation: survey.occupation || 'General / All Industries',
+          initial_quota: Number(survey.project_quota) || 100,
+          initial_cpi: Number(survey.project_cpi) || 1.0,
+          initial_loi: Number(survey.project_loi) || 15,
+          initial_ir: Number(survey.project_ir) || 50,
+          summary: survey.project_content || 'Initial live project dispatch specifications.'
+        },
+        update_logs: []
+      };
+
+      // 6. Insert into ya_project
       const project = await prisma.project.create({
         data: {
           project_pno: projectPno,
           project_no: String(survey.project_no),
           platform_id: platform.platform_id,
           project_name: survey.project_name || 'Email Survey Offer',
-          project_code: 'EMAIL_SURVEY', // Explicit platform tag
+          project_code: 'EMAIL_SURVEY',
           project_cpi: Number(survey.project_cpi) || 0.0,
           project_currency: currencyId,
           project_quota: Number(survey.project_quota) || 100,
           project_loi: Number(survey.project_loi) || 15,
           project_ir: Number(survey.project_ir) || 50,
           project_click_url: survey.project_click_url || '',
-          project_content: `[Tag: Email Survey] ${survey.project_content || ''} (Target: ${survey.target_country || 'General'})`,
+          project_content: JSON.stringify(initialTimeline),
           is_disable: 0,
-          is_api: 0, // Flagged explicitly as Manual/Custom Survey
+          is_api: 0,
           create_time: new Date()
         }
       });

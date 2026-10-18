@@ -321,7 +321,11 @@ class OllamaService {
       project_ir: Number(parseInt(parsed.project_ir, 10) || 50),
       target_country: String(parsed.target_country || 'US'),
       project_click_url: String(parsed.project_click_url || ''),
-      project_content: String(parsed.project_content || '')
+      project_content: String(parsed.project_content || ''),
+      age_range: String(parsed.age_range || '18-65'),
+      occupation: String(parsed.occupation || 'General / All Industries'),
+      is_update: Boolean(parsed.is_update),
+      excluded_groups: Array.isArray(parsed.excluded_groups) ? parsed.excluded_groups : []
     };
   }
 }

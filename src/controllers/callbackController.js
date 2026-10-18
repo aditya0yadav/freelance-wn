@@ -24,26 +24,50 @@ class CallbackController {
    */
   static async callback(req, res) {
     try {
-      const platformSign = req.query.platform || req.body.platform || '';
-      const uid = req.query.uid || req.body.uid || '';
+      const rawPlatformSign = String(req.query.platform || req.body.platform || '').trim();
+      const rawUid = String(req.query.uid || req.body.uid || '').trim();
       const status = req.query.status || req.body.status || '';
 
-      if (!platformSign || !uid) {
+      if (!rawPlatformSign || !rawUid) {
         return res.status(400).send(CallbackController.renderErrorPage('Missing callback parameters'));
       }
 
-      const platform = await prisma.platform.findUnique({
-        where: { platform_sign: platformSign }
-      });
-      const flowing = await prisma.flowing.findUnique({
-        where: { uuid: uid }
+      // Robust platform resolution (case-insensitive and alias-safe)
+      const platform = await prisma.platform.findFirst({
+        where: {
+          OR: [
+            { platform_sign: { equals: rawPlatformSign } },
+            { platform_name: { equals: rawPlatformSign } },
+            { platform_sign: { equals: rawPlatformSign.toLowerCase() } }
+          ],
+          delete_time: null
+        }
       });
 
-      if (!platform || !flowing) {
-        return res.status(404).send(CallbackController.renderErrorPage('Platform sign or flowing session not found.'));
+      // Robust UID resolution:
+      // Strip any template placeholder prefix (e.g. "[identifier30f0a3bc...", "[uid...", etc.)
+      let cleanUid = rawUid.replace(/^\[?(?:identifier|uid|id|subid|rid)\]?/i, '').replace(/[\[\]]/g, '').trim();
+
+      // Extract 32-char hex UUID if embedded inside prefix string
+      const hexMatch = cleanUid.match(/[a-f0-9]{32}/i) || rawUid.match(/[a-f0-9]{32}/i);
+      const targetUuid = hexMatch ? hexMatch[0] : cleanUid;
+
+      let flowing = await prisma.flowing.findUnique({
+        where: { uuid: targetUuid }
+      });
+
+      if (!flowing && targetUuid !== rawUid) {
+        flowing = await prisma.flowing.findUnique({
+          where: { uuid: rawUid }
+        });
       }
 
-      const txnId = crypto.createHash('md5').update(uid).digest('hex');
+      if (!platform || !flowing) {
+        return res.status(404).send(CallbackController.renderErrorPage(`Platform (${rawPlatformSign}) or flowing session (${targetUuid}) not found.`));
+      }
+
+      const uid = targetUuid;
+      const txnId = crypto.createHash('md5').update(targetUuid).digest('hex');
 
       // Map status
       let cstatus = 5; // Other

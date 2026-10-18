@@ -28,6 +28,40 @@ if (args.includes('--status')) {
 
 if (args.includes('--test')) {
   require('./test/mockEmailTest');
+} else if (args.includes('--reset')) {
+  console.log('======================================================');
+  console.log('      RESETTING LOCAL EMAIL SURVEY AUDIT CACHE        ');
+  console.log('======================================================');
+  SQLiteManager.resetDatabase();
+  console.log('[Done] Local processed emails history cleared.');
+  console.log('All emails in Zoho will now be ingested freshly.');
+  process.exit(0);
+} else if (args.includes('--mark-unseen')) {
+  console.log('======================================================');
+  console.log('      RESETTING \\Seen FLAGS IN ZOHO MAILBOX           ');
+  console.log('======================================================');
+  imapService.markAllUnseen().then(() => {
+    console.log('[Done] All messages in partner folders marked unseen.');
+    process.exit(0);
+  }).catch(err => {
+    console.error('Mark unseen error:', err.message);
+    process.exit(1);
+  });
+} else if (args.includes('--reprocess')) {
+  const reprocessIdx = args.indexOf('--reprocess');
+  const countArg = args[reprocessIdx + 1];
+  const count = (countArg && !isNaN(parseInt(countArg, 10))) ? parseInt(countArg, 10) : 'all';
+
+  console.log('======================================================');
+  console.log(`  REPROCESSING EMAILS (${count} per folder) TO REGENERATE QUOTAS `);
+  console.log('======================================================');
+  imapService.reprocessMailbox({ countPerFolder: count, resetCache: true }).then(() => {
+    console.log('\n[Done] All surveys reprocessed with new baseline + chronological update logs!');
+    process.exit(0);
+  }).catch(err => {
+    console.error('Reprocess error:', err.message);
+    process.exit(1);
+  });
 } else if (args.includes('--recent')) {
   const recentIdx = args.indexOf('--recent');
   const count = parseInt(args[recentIdx + 1], 10) || 5;
