@@ -9,6 +9,7 @@ class ImapService {
   constructor() {
     this.client = null;
     this.isRunning = false;
+    this.isScanning = false;
     this.pollTimer = null;
   }
 
@@ -203,6 +204,12 @@ class ImapService {
       return;
     }
 
+    if (this.isScanning) {
+      console.log('[IMAP] Previous mailbox scan still in progress. Skipping overlapping cycle.');
+      return;
+    }
+    this.isScanning = true;
+
     const client = this.createClient();
 
     try {
@@ -243,6 +250,7 @@ class ImapService {
     } catch (err) {
       console.error('[IMAP Check Error]', err.message);
     } finally {
+      this.isScanning = false;
       await client.logout().catch(() => {});
     }
   }

@@ -28,6 +28,15 @@ require('./jobs/cronPull');
 // Boot 24/7 Email Survey Ingestion Daemon
 require('./jobs/emailSurveyJob');
 
+// Prevent server shutdown on transient errors or background task exceptions
+process.on('uncaughtException', (err) => {
+  console.error(`[${new Date().toISOString()}] [UNCAUGHT EXCEPTION CAUGHT - SERVER PROTECTED]`, err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error(`[${new Date().toISOString()}] [UNHANDLED REJECTION CAUGHT - SERVER PROTECTED]`, reason);
+});
+
 // Start Express server
 const server = app.listen(PORT, () => {
   console.log(`[${new Date().toISOString()}] SurveyStream Express Server running on port ${PORT}`);

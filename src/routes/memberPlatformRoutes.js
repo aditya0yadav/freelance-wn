@@ -12,6 +12,7 @@ router.get('/copy', verifyToken, PlatformController.copy);
 router.get('/wall_copy', verifyToken, PlatformController.wall_copy);
 router.get('/profile', verifyToken, PlatformController.profile);
 router.get('/conversions', verifyToken, PlatformController.conversions);
+router.get('/notifications', verifyToken, PlatformController.notifications);
 
 // Link redirection endpoints (token validated inside controller via 'key' query param)
 router.get('/link', PlatformController.link);

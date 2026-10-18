@@ -3,13 +3,20 @@ const { buildSurveyExtractionPrompt } = require('../prompts/surveyExtractionProm
 
 class OllamaService {
   constructor() {
+    // Primary Model: Qwen3.8-Flash (OpenAI-compatible protocol)
+    this.qwenApiKey = process.env.QWEN_API_KEY || '';
+    this.qwenBaseUrl = (process.env.QWEN_BASE_URL || 'https://maas.qianwenaiapi.com/compatible-mode/v1').replace(/\/+$/, '');
+    this.qwenModel = process.env.QWEN_MODEL || 'qwen3.8-flash';
+
+    // Secondary Model: Gemini Cloud API
     this.geminiApiKey = process.env.GEMINI_API_KEY || '';
-    this.geminiModel = process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
-    this.geminiFallbackModels = (process.env.GEMINI_FALLBACK_MODELS || 'gemini-flash-latest,gemini-3.5-flash-lite,gemini-pro-latest')
+    this.geminiModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+    this.geminiFallbackModels = (process.env.GEMINI_FALLBACK_MODELS || 'gemini-3-flash-preview,gemini-flash-latest,gemini-pro-latest')
       .split(',')
       .map(m => m.trim())
       .filter(Boolean);
 
+    // Fallback: Local Ollama
     this.baseUrl = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
     this.model = process.env.OLLAMA_MODEL || 'llama3:latest';
   }
@@ -66,6 +73,74 @@ class OllamaService {
   }
 
   /**
+   * Primary Extraction via Qwen3.8-Flash (OpenAI-compatible protocol)
+   */
+  async extractViaQwen(prompt) {
+    if (!this.qwenApiKey) {
+      throw new Error('Qwen API key is not configured');
+    }
+
+    // Candidate base URLs (handles official qianwenaiapi.com and user input)
+    const candidateUrls = [
+      `${this.qwenBaseUrl}/chat/completions`,
+      'https://maas.qianwenaiapi.com/compatible-mode/v1/chat/completions'
+    ];
+
+    const uniqueUrls = Array.from(new Set(candidateUrls));
+    let lastErr = null;
+
+    for (const url of uniqueUrls) {
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          console.log(`[AI Engine] Attempting extraction via Qwen3.8-Flash (${this.qwenModel}, attempt ${attempt})...`);
+          const res = await axios.post(url, {
+            model: this.qwenModel,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert automated data extraction agent. Analyze the survey invitation email and output ONLY valid JSON matching the requested schema.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.1
+          }, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.qwenApiKey}`
+            },
+            timeout: 30000
+          });
+
+          const choice = res.data?.choices?.[0]?.message;
+          const rawText = choice?.content;
+          if (!rawText) throw new Error('Empty response from Qwen API');
+
+          const parsed = this.parseJsonSafe(rawText);
+          console.log(`[AI Engine] Successfully parsed survey email via Qwen3.8-Flash (${this.qwenModel})`);
+          return parsed;
+        } catch (err) {
+          lastErr = err;
+          const status = err.response?.status;
+          const isBusy = status === 503 || status === 429 || err.code === 'ECONNABORTED';
+
+          if (isBusy && attempt < 2) {
+            console.warn(`[AI Engine] Qwen3.8-Flash is busy/rate-limited (status: ${status || err.message}). Waiting 2s before retry...`);
+            await this.sleep(2000);
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
+    throw new Error(`Qwen3.8-Flash extraction failed: ${lastErr?.response?.data?.error?.message || lastErr?.message}`);
+  }
+
+  /**
    * Attempts extraction via Gemini API with retry and model fallbacks on busy/503/429
    */
   async extractViaGemini(prompt) {
@@ -111,7 +186,6 @@ class OllamaService {
             console.warn(`[AI Engine] Gemini (${model}) is currently busy / high demand (status: ${status || err.message}). Waiting 2.5s before retry...`);
             await this.sleep(2500);
           } else {
-            // Not a temporary busy error (e.g. 404 model not found) -> try next model candidate immediately
             break;
           }
         }
@@ -166,9 +240,9 @@ class OllamaService {
 
   /**
    * Main entry point:
-   * 1. Try Gemini first (with retry/backoff on busy)
-   * 2. If Gemini fails or is busy, check if Ollama exists
-   * 3. Use Ollama to get the answer
+   * 1. Try Qwen3.8-Flash first (fast, multi-modal, official production choice)
+   * 2. If Qwen fails or key missing, fallback to Gemini Cloud
+   * 3. If Gemini fails, check and fallback to local Ollama
    */
   async extractSurvey({ from, subject, date, bodyText, folderName }) {
     const cleanedBody = this.cleanEmailBody(bodyText);
@@ -181,10 +255,21 @@ class OllamaService {
     });
 
     let parsed = null;
+    let qwenErr = null;
     let geminiErr = null;
 
-    // Step 1: Try Gemini first
-    if (this.geminiApiKey) {
+    // Step 1: Try Qwen3.8-Flash first
+    if (this.qwenApiKey) {
+      try {
+        parsed = await this.extractViaQwen(prompt);
+      } catch (err) {
+        qwenErr = err;
+        console.warn(`[AI Engine] Qwen3.8-Flash request could not complete (${err.message}). Trying Gemini cloud fallback...`);
+      }
+    }
+
+    // Step 2: Try Gemini if Qwen failed or key not configured
+    if (!parsed && this.geminiApiKey) {
       try {
         parsed = await this.extractViaGemini(prompt);
       } catch (err) {
@@ -193,7 +278,7 @@ class OllamaService {
       }
     }
 
-    // Step 2: Fallback to local Ollama if Gemini failed or key missing
+    // Step 3: Fallback to local Ollama if cloud APIs failed
     if (!parsed) {
       const ollamaRunning = await this.checkOllamaExists();
       if (ollamaRunning) {
@@ -201,13 +286,15 @@ class OllamaService {
           parsed = await this.extractViaOllama(prompt);
         } catch (ollamaErr) {
           console.error('[AI Engine] Local Ollama fallback also failed:', ollamaErr.message);
-          throw new Error(`AI extraction failed on both Gemini (${geminiErr?.message}) and Ollama (${ollamaErr.message})`);
+          throw new Error(`AI extraction failed on Qwen (${qwenErr?.message}), Gemini (${geminiErr?.message}) and Ollama (${ollamaErr.message})`);
         }
       } else {
-        if (geminiErr) {
-          throw new Error(`Gemini failed (${geminiErr.message}) and local Ollama is not running on ${this.baseUrl}. Please check your connection or start Ollama.`);
-        }
-        throw new Error(`Neither Gemini API key is configured nor local Ollama is running on ${this.baseUrl}.`);
+        const errorDetails = [
+          qwenErr ? `Qwen: ${qwenErr.message}` : null,
+          geminiErr ? `Gemini: ${geminiErr.message}` : null,
+          `Local Ollama is not running on ${this.baseUrl}`
+        ].filter(Boolean).join(' | ');
+        throw new Error(`All AI models failed: ${errorDetails}`);
       }
     }
 

@@ -1249,6 +1249,96 @@ class PlatformController {
   }
 
   /**
+   * GET /api/member/platform/notifications
+   * Returns recent project updates (new projects and updated projects)
+   * to alert employees of fresh survey opportunities and rate/quota changes.
+   */
+  static async notifications(req, res) {
+    try {
+      const teamId = req.user?.team_id || req.member?.team_id || 1;
+      const memberId = req.user?.member_id || req.member?.member_id || 1;
+
+      const member = await prisma.member.findUnique({ where: { member_id: memberId } });
+      const team = await prisma.team.findUnique({ where: { team_id: teamId } });
+
+      const platformAuths = await prisma.platformAuth.findMany({
+        where: { team_id: teamId }
+      });
+      const authIds = platformAuths.map(a => a.platform_id);
+
+      const customPlatforms = await prisma.platform.findMany({
+        where: { is_custom: 1, delete_time: null, is_disable: 0 },
+        select: { platform_id: true }
+      });
+      const effectiveAuthIds = Array.from(new Set([...authIds, ...customPlatforms.map(c => c.platform_id)]));
+
+      // Fetch top 25 recent project creations or updates
+      const projects = await prisma.project.findMany({
+        where: {
+          platform_id: { in: effectiveAuthIds },
+          delete_time: null,
+          is_disable: 0
+        },
+        include: {
+          platform: true,
+          currency: true
+        },
+        orderBy: [
+          { update_time: 'desc' },
+          { create_time: 'desc' }
+        ],
+        take: 20
+      });
+
+      const memberRate = (100 - (member?.rate || 0.00)) / 100;
+      const teamCommissionRatio = team ? team.commission_ratio : 0.00;
+
+      const list = projects.map(p => {
+        const platformAuth = platformAuths.find(auth => auth.platform_id === p.platform_id);
+        const authRateVal = platformAuth ? platformAuth.auth_rate : 0;
+        const rawCoins = p.project_cpi * (p.currency?.currency_coins || 100.00);
+        const teamPayout = rawCoins * ((100 - teamCommissionRatio) / 100) * ((100 - authRateVal) / 100);
+        const memberPayout = Math.round(teamPayout * memberRate);
+
+        const createMs = p.create_time ? new Date(p.create_time).getTime() : 0;
+        const updateMs = p.update_time ? new Date(p.update_time).getTime() : createMs;
+        const isNew = Math.abs(updateMs - createMs) < 180000;
+
+        return {
+          id: p.project_id,
+          project_pno: p.project_pno,
+          project_no: p.project_no,
+          project_name: p.project_name,
+          platform_id: p.platform_id,
+          platform_name: p.platform?.platform_name || 'General',
+          platform_color: p.platform?.platform_color || '#3b82f6',
+          project_cpi: p.project_cpi,
+          coins: memberPayout,
+          project_loi: p.project_loi,
+          project_ir: p.project_ir,
+          project_quota: p.project_quota,
+          type: isNew ? 'NEW_PROJECT' : 'PROJECT_UPDATED',
+          time: p.update_time || p.create_time,
+          message: isNew 
+            ? `New project "${p.project_name}" available on ${p.platform?.platform_name || 'Platform'}`
+            : `Project "${p.project_name}" on ${p.platform?.platform_name || 'Platform'} updated`
+        };
+      });
+
+      return res.json({
+        code: 200,
+        msg: 'success',
+        data: {
+          total: list.length,
+          list
+        }
+      });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
+
+  /**
    * GET /api/member/platform/statistics
    * Returns conversion statistics for the current member
    */
