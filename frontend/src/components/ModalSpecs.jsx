@@ -220,89 +220,106 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
                 : null;
 
               return (
-                <div className="timeline-container">
+                <div className="timeline-container" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                   {/* Top Quota Metrics Bar */}
-                  <div className="quota-stats">
-                    <div className="quota-stat">
-                      <span>{t.totalQuota}</span>
-                      <strong>{totalQuotaVal}</strong>
+                  <div className="quota-stats" style={{ display: 'grid', gridTemplateColumns: remainingVal !== null ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '12px', margin: '0 0 6px 0' }}>
+                    <div className="quota-stat" style={{ background: 'var(--bg-3, #f1f5f9)', padding: '14px 16px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--border, #e2e8f0)' }}>
+                      <span style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--t3, #64748b)', marginBottom: '4px' }}>{t.totalQuota}</span>
+                      <strong style={{ fontSize: '20px', fontWeight: 700, color: 'var(--t1, #0f172a)' }}>{totalQuotaVal}</strong>
                     </div>
-                    <div className="quota-stat">
-                      <span>{t.completes}</span>
-                      <strong className="stat-green">{completedVal}</strong>
+                    <div className="quota-stat" style={{ background: 'var(--bg-3, #f1f5f9)', padding: '14px 16px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--border, #e2e8f0)' }}>
+                      <span style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--t3, #64748b)', marginBottom: '4px' }}>{t.completes}</span>
+                      <strong className="stat-green" style={{ fontSize: '20px', fontWeight: 700, color: '#10b981' }}>{completedVal}</strong>
                     </div>
                     {remainingVal !== null && (
-                      <div className="quota-stat">
-                        <span>{t.remaining}</span>
-                        <strong className="stat-blue">{remainingVal}</strong>
+                      <div className="quota-stat" style={{ background: 'var(--bg-3, #f1f5f9)', padding: '14px 16px', borderRadius: '10px', textAlign: 'center', border: '1px solid var(--border, #e2e8f0)' }}>
+                        <span style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', color: 'var(--t3, #64748b)', marginBottom: '4px' }}>{t.remaining}</span>
+                        <strong className="stat-blue" style={{ fontSize: '20px', fontWeight: 700, color: '#3b82f6' }}>{remainingVal}</strong>
                       </div>
                     )}
                   </div>
 
                   {/* 1. Permanent Initial Base Requirements */}
-                  <div className="timeline-base-card">
-                    <div className="timeline-base-header">
-                      <span className="timeline-badge-base">
-                        <ShieldCheck size={16} /> {t.baseRequirements}
-                      </span>
-                      <span className="timeline-base-sub">{t.baseRequirementsDesc}</span>
+                  <div className="timeline-base-card" style={{ background: 'var(--surface, #ffffff)', border: '1px solid var(--border, #e2e8f0)', borderLeft: '4px solid #10b981', borderRadius: '12px', padding: '16px 18px', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
+                    <div className="timeline-base-header" style={{ marginBottom: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 700, color: '#10b981' }}>
+                        <ShieldCheck size={18} />
+                        <span>{t.baseRequirements}</span>
+                      </div>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--t2, #64748b)', lineHeight: '1.4' }}>
+                        {t.baseRequirementsDesc}
+                      </p>
                     </div>
 
-                    <div className="timeline-base-grid">
-                      <div className="base-pill">
-                        <Globe size={16} className="pill-icon" />
-                        <div className="pill-content">
-                          <label>{t.targetCountry}</label>
-                          <strong>{baseReq.country || timelineData.target_country || 'Global'}</strong>
+                    <div className="timeline-base-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                      {/* Country */}
+                      <div className="base-pill" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'var(--bg-3, #f8fafc)', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#10b981' }}>
+                          <Globe size={16} />
+                        </div>
+                        <div className="pill-content" style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '10.5px', textTransform: 'uppercase', fontWeight: 600, color: 'var(--t3, #64748b)', letterSpacing: '0.04em' }}>{t.targetCountry}</span>
+                          <strong style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t1, #0f172a)' }}>{baseReq.country || timelineData.target_country || 'Global'}</strong>
                         </div>
                       </div>
 
-                      <div className="base-pill">
-                        <Users size={16} className="pill-icon" />
-                        <div className="pill-content">
-                          <label>{t.ageRange}</label>
-                          <strong className="text-highlight">{baseReq.age_range || 'All ages'}</strong>
+                      {/* Age Range */}
+                      <div className="base-pill" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'var(--bg-3, #f8fafc)', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#3b82f6' }}>
+                          <Users size={16} />
+                        </div>
+                        <div className="pill-content" style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '10.5px', textTransform: 'uppercase', fontWeight: 600, color: 'var(--t3, #64748b)', letterSpacing: '0.04em' }}>{t.ageRange}</span>
+                          <strong style={{ fontSize: '13px', fontWeight: 700, color: '#10b981' }}>{baseReq.age_range || 'All ages'}</strong>
                         </div>
                       </div>
 
-                      <div className="base-pill">
-                        <Briefcase size={16} className="pill-icon" />
-                        <div className="pill-content">
-                          <label>{t.occupation}</label>
-                          <strong>{baseReq.occupation || 'Open / General'}</strong>
+                      {/* Occupation / Industry */}
+                      <div className="base-pill" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'var(--bg-3, #f8fafc)', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#f59e0b' }}>
+                          <Briefcase size={16} />
+                        </div>
+                        <div className="pill-content" style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '10.5px', textTransform: 'uppercase', fontWeight: 600, color: 'var(--t3, #64748b)', letterSpacing: '0.04em' }}>{t.occupation}</span>
+                          <strong style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t1, #0f172a)' }}>{baseReq.occupation || 'Open / General'}</strong>
                         </div>
                       </div>
 
-                      <div className="base-pill">
-                        <Tag size={16} className="pill-icon" />
-                        <div className="pill-content">
-                          <label>{t.targetDemographics}</label>
-                          <span>{baseReq.target_demographics || 'General Audience'}</span>
+                      {/* Target Demographics */}
+                      <div className="base-pill" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'var(--bg-3, #f8fafc)', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(139, 92, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#8b5cf6' }}>
+                          <Tag size={16} />
+                        </div>
+                        <div className="pill-content" style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '10.5px', textTransform: 'uppercase', fontWeight: 600, color: 'var(--t3, #64748b)', letterSpacing: '0.04em' }}>{t.targetDemographics}</span>
+                          <strong style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t1, #0f172a)' }}>{baseReq.target_demographics || 'General Audience'}</strong>
                         </div>
                       </div>
                     </div>
 
                     {baseReq.description && (
-                      <div className="base-description-box">
+                      <div className="base-description-box" style={{ marginTop: '12px', padding: '10px 14px', background: 'var(--bg-3, #f8fafc)', border: '1px dashed var(--border, #cbd5e1)', borderRadius: '8px', fontSize: '12.5px', color: 'var(--t2, #475569)', lineHeight: 1.5 }}>
                         {baseReq.description}
                       </div>
                     )}
                   </div>
 
                   {/* 2. Chronological Update Timeline */}
-                  <div className="timeline-updates-section">
-                    <div className="timeline-section-title">
-                      <Clock size={16} />
+                  <div className="timeline-updates-section" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div className="timeline-section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', fontWeight: 700, color: 'var(--t1, #0f172a)' }}>
+                      <Clock size={16} style={{ color: '#10b981' }} />
                       <span>{t.updateHistory}</span>
-                      <span className="update-count-pill">{updateLogs.length}</span>
+                      <span className="update-count-pill" style={{ background: '#10b981', color: '#fff', fontSize: '11px', fontWeight: 700, borderRadius: '20px', padding: '1px 8px', marginLeft: '4px' }}>
+                        {updateLogs.length}
+                      </span>
                     </div>
 
                     {updateLogs.length === 0 ? (
-                      <div className="timeline-no-updates">
-                        <p>{t.noUpdates}</p>
+                      <div className="timeline-no-updates" style={{ padding: '14px 16px', background: 'var(--bg-3, #f8fafc)', border: '1px dashed var(--border, #cbd5e1)', borderRadius: '8px', color: 'var(--t2, #64748b)', fontSize: '12.5px', textAlign: 'center' }}>
+                        <p style={{ margin: 0 }}>{t.noUpdates}</p>
                       </div>
                     ) : (
-                      <div className="timeline-feed">
+                      <div className="timeline-feed" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {updateLogs.map((log, idx) => {
                           const logDate = log.date
                             ? new Date(log.date).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US', {
@@ -319,26 +336,26 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
                             : (typeof log.excluded_groups === 'string' && log.excluded_groups ? [log.excluded_groups] : []);
 
                           return (
-                            <div key={log.update_id || idx} className="timeline-item">
-                              <div className="timeline-marker">
-                                <span className="timeline-dot" />
-                                {idx < updateLogs.length - 1 && <span className="timeline-line" />}
+                            <div key={log.update_id || idx} className="timeline-item" style={{ display: 'flex', gap: '12px' }}>
+                              <div className="timeline-marker" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0, paddingTop: '6px' }}>
+                                <span className="timeline-dot" style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.2)' }} />
+                                {idx < updateLogs.length - 1 && <span className="timeline-line" style={{ width: '2px', flexGrow: 1, background: 'var(--border, #e2e8f0)', marginTop: '4px' }} />}
                               </div>
 
-                              <div className="timeline-content-card">
-                                <div className="timeline-item-header">
-                                  <div className="timeline-date">
+                              <div className="timeline-content-card" style={{ flexGrow: 1, background: 'var(--surface, #ffffff)', border: '1px solid var(--border, #e2e8f0)', borderRadius: '10px', padding: '12px 16px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+                                <div className="timeline-item-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                  <div className="timeline-date" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: 'var(--t2, #64748b)' }}>
                                     <Calendar size={13} />
                                     <span>{logDate}</span>
                                   </div>
                                   <div style={{ display: 'flex', gap: '6px' }}>
                                     {log.quota !== undefined && log.quota !== null && (
-                                      <span className="badge-quota-change">
+                                      <span className="badge-quota-change" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px' }}>
                                         Quota: {log.quota}
                                       </span>
                                     )}
                                     {log.cpi !== undefined && log.cpi !== null && (
-                                      <span className="badge-cpi-change">
+                                      <span className="badge-cpi-change" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#059669', fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px' }}>
                                         CPI: ${log.cpi}
                                       </span>
                                     )}
@@ -346,19 +363,21 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
                                 </div>
 
                                 {log.email_subject && (
-                                  <div className="timeline-subject">{log.email_subject}</div>
+                                  <div className="timeline-subject" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t1, #0f172a)', marginBottom: '6px' }}>
+                                    {log.email_subject}
+                                  </div>
                                 )}
 
                                 {/* Excluded Demographic & Occupation Tags */}
                                 {exclusions.length > 0 && (
-                                  <div className="timeline-exclusions">
-                                    <div className="exclusion-title">
+                                  <div className="timeline-exclusions" style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '8px' }}>
+                                    <div className="exclusion-title" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', marginBottom: '6px' }}>
                                       <UserX size={13} />
                                       <span>{t.excludedGroups}</span>
                                     </div>
-                                    <div className="exclusion-tags">
+                                    <div className="exclusion-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                       {exclusions.map((ex, exIdx) => (
-                                        <span key={exIdx} className="exclusion-tag">
+                                        <span key={exIdx} className="exclusion-tag" style={{ background: '#fee2e2', color: '#b91c1c', fontSize: '11.5px', fontWeight: 600, padding: '3px 9px', borderRadius: '6px' }}>
                                           ⛔ {ex}
                                         </span>
                                       ))}
@@ -367,7 +386,7 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
                                 )}
 
                                 {log.notes && (
-                                  <div className="timeline-notes">
+                                  <div className="timeline-notes" style={{ marginTop: '8px', fontSize: '12px', color: 'var(--t2, #475569)', lineHeight: 1.5, background: 'var(--bg-3, #f8fafc)', padding: '8px 12px', borderRadius: '6px' }}>
                                     {log.notes}
                                   </div>
                                 )}
