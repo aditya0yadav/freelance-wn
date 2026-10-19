@@ -7,6 +7,9 @@
     "start": "node index.js",
     "dev": "node index.js",
     "recent": "node index.js --recent 5",
+    "reprocess": "node index.js --reprocess",
+    "reset": "node index.js --reset",
+    "mark-unseen": "node index.js --mark-unseen",
     "test:mock": "node test/mockEmailTest.js",
     "status": "node index.js --status"
   },

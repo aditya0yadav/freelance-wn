@@ -10,6 +10,7 @@
     "desktop:preview": "npm --prefix frontend run electron:preview",
     "desktop:build": "npm --prefix frontend run electron:build",
     "desktop:build:win": "npm --prefix frontend run electron:build:win",
+    "build:web": "npm --prefix frontend run build:web",
     "prod:start": "npx pm2 start ecosystem.config.js",
     "prod:stop": "npx pm2 stop wanhong-surveystream",
     "prod:restart": "npx pm2 restart wanhong-surveystream",
