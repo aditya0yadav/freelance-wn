@@ -1332,6 +1332,58 @@ class PlatformController {
         const updateMs = p.update_time ? new Date(p.update_time).getTime() : createMs;
         const isNew = Math.abs(updateMs - createMs) < 180000;
 
+        let changeType = isNew ? 'NEW_PROJECT' : 'PROJECT_UPDATED';
+        let changeSummary = '';
+        let exclusions = [];
+        let isEmailSurvey = p.project_code === 'EMAIL_SURVEY' || p.platform?.is_custom === 1;
+
+        if (p.project_content) {
+          try {
+            const parsed = JSON.parse(p.project_content);
+            if (parsed && (parsed.is_timeline || parsed.base_requirements)) {
+              isEmailSurvey = true;
+              const logs = Array.isArray(parsed.update_logs) ? parsed.update_logs : [];
+              if (logs.length > 0) {
+                const latestLog = logs[logs.length - 1];
+                const prevLog = logs.length > 1 ? logs[logs.length - 2] : null;
+                const baseQuota = Number(parsed.base_requirements?.initial_quota) || 0;
+                const prevQuota = prevLog ? (Number(prevLog.updated_quota) || Number(prevLog.quota) || baseQuota) : baseQuota;
+                const currQuota = Number(latestLog.updated_quota) || Number(latestLog.quota) || Number(p.project_quota) || 0;
+
+                exclusions = Array.isArray(latestLog.excluded_groups) ? latestLog.excluded_groups : [];
+
+                if (currQuota > 0 && prevQuota > 0 && currQuota > prevQuota) {
+                  changeType = 'QUOTA_INCREASE';
+                  changeSummary = `Quota increased: ${prevQuota} → ${currQuota} (+${currQuota - prevQuota} slots)`;
+                } else if (currQuota > 0 && prevQuota > 0 && currQuota < prevQuota) {
+                  changeType = 'QUOTA_DECREASE';
+                  changeSummary = `Quota adjusted: ${prevQuota} → ${currQuota}`;
+                } else if (exclusions.length > 0) {
+                  changeType = 'EXCLUSION_UPDATE';
+                  changeSummary = `New restrictions: ${exclusions.slice(0, 2).join(', ')}`;
+                } else if (latestLog.updated_cpi && Number(latestLog.updated_cpi) !== Number(p.project_cpi)) {
+                  changeType = 'CPI_CHANGED';
+                  changeSummary = `Reward adjusted to $${latestLog.updated_cpi}`;
+                } else if (currQuota > 0) {
+                  changeType = 'QUOTA_UPDATED';
+                  changeSummary = `Target Quota: ${currQuota}`;
+                } else if (latestLog.summary || latestLog.notes) {
+                  changeType = 'EMAIL_UPDATE';
+                  changeSummary = String(latestLog.summary || latestLog.notes).slice(0, 80);
+                }
+              }
+            }
+          } catch {}
+        }
+
+        let messageText = isNew 
+          ? `New project "${p.project_name}" available on ${p.platform?.platform_name || 'Platform'}`
+          : `Project "${p.project_name}" on ${p.platform?.platform_name || 'Platform'} updated`;
+
+        if (changeSummary) {
+          messageText = `${p.platform?.platform_name || 'Email'}: ${changeSummary} (${p.project_name})`;
+        }
+
         return {
           id: p.project_id,
           project_pno: p.project_pno,
@@ -1345,11 +1397,13 @@ class PlatformController {
           project_loi: p.project_loi,
           project_ir: p.project_ir,
           project_quota: p.project_quota,
-          type: isNew ? 'NEW_PROJECT' : 'PROJECT_UPDATED',
+          type: changeType,
+          change_type: changeType,
+          change_summary: changeSummary,
+          exclusions: exclusions,
+          is_email_survey: isEmailSurvey,
           time: p.update_time || p.create_time,
-          message: isNew 
-            ? `New project "${p.project_name}" available on ${p.platform?.platform_name || 'Platform'}`
-            : `Project "${p.project_name}" on ${p.platform?.platform_name || 'Platform'} updated`
+          message: messageText
         };
       });
 

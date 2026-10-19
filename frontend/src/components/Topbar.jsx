@@ -82,7 +82,9 @@ export default function Topbar({
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [liveToast, setLiveToast] = useState(null);
   const notifRef = useRef(null);
+  const lastNotifKeyRef = useRef(null);
 
   // App Update State
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -121,10 +123,37 @@ export default function Topbar({
       if (!token) return;
       const res = await apiFetch('/api/member/platform/notifications', 'GET', null, token);
       if (res && res.code === 200 && res.data?.list) {
-        setNotifications(res.data.list);
+        const list = res.data.list;
+        setNotifications(list);
         const lastRead = Number(localStorage.getItem('last_read_notif_time') || 0);
-        const unread = res.data.list.filter(n => new Date(n.time).getTime() > lastRead).length;
+        const unread = list.filter(n => new Date(n.time).getTime() > lastRead).length;
         setUnreadCount(unread);
+
+        // Detect newly arrived notification for live toast alert
+        if (list.length > 0) {
+          const newest = list[0];
+          const newKey = `${newest.id}_${newest.time}_${newest.type}`;
+          if (lastNotifKeyRef.current && newKey !== lastNotifKeyRef.current) {
+            const isFresh = (Date.now() - new Date(newest.time).getTime()) < 5 * 60 * 1000;
+            if (isFresh) {
+              setLiveToast(newest);
+              // Trigger browser desktop notification if permission granted
+              if (typeof window !== 'undefined' && 'Notification' in window) {
+                if (Notification.permission === 'granted') {
+                  try {
+                    new Notification(`[${newest.platform_name}] ${newest.change_summary || 'Survey Update'}`, {
+                      body: `${newest.project_name}\n${newest.message || ''}`,
+                      icon: '/images/logo.png'
+                    });
+                  } catch {}
+                } else if (Notification.permission === 'default') {
+                  Notification.requestPermission();
+                }
+              }
+            }
+          }
+          lastNotifKeyRef.current = newKey;
+        }
       }
     } catch {
       // silent
@@ -133,9 +162,18 @@ export default function Topbar({
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 45000);
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Auto-dismiss live toast after 8 seconds
+  useEffect(() => {
+    if (!liveToast) return;
+    const timer = setTimeout(() => {
+      setLiveToast(null);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [liveToast]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -327,6 +365,29 @@ export default function Topbar({
                 ) : (
                   notifications.map((item) => {
                     const timeAgo = formatTimeAgo(item.time);
+
+                    // Determine change badge
+                    let typeBadgeText = language === 'en' ? 'Updated' : '已更新';
+                    let typeBadgeClass = 'tag-update';
+                    let typeBadgeStyle = null;
+
+                    if (item.type === 'QUOTA_INCREASE') {
+                      typeBadgeText = language === 'en' ? '⚡ Quota Increased' : '⚡ 配额增加';
+                      typeBadgeStyle = { background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' };
+                    } else if (item.type === 'QUOTA_DECREASE' || item.type === 'QUOTA_UPDATED') {
+                      typeBadgeText = language === 'en' ? '🎯 Quota Adjusted' : '🎯 配额变更';
+                      typeBadgeStyle = { background: 'rgba(59, 130, 246, 0.12)', color: '#2563eb', borderColor: 'rgba(59, 130, 246, 0.3)' };
+                    } else if (item.type === 'EXCLUSION_UPDATE') {
+                      typeBadgeText = language === 'en' ? '⛔ Restrictions' : '⛔ 人群排除';
+                      typeBadgeStyle = { background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' };
+                    } else if (item.type === 'CPI_CHANGED') {
+                      typeBadgeText = language === 'en' ? '💰 CPI Changed' : '💰 单价调整';
+                      typeBadgeStyle = { background: 'rgba(245, 158, 11, 0.12)', color: '#d97706', borderColor: 'rgba(245, 158, 11, 0.3)' };
+                    } else if (item.type === 'NEW_PROJECT') {
+                      typeBadgeText = language === 'en' ? '✨ New Survey' : '✨ 新上线';
+                      typeBadgeClass = 'tag-new';
+                    }
+
                     return (
                       <div
                         key={item.id}
@@ -346,16 +407,47 @@ export default function Topbar({
                           >
                             {item.platform_name}
                           </span>
-                          <span className={`notif-type-tag ${item.type === 'NEW_PROJECT' ? 'tag-new' : 'tag-update'}`}>
-                            {item.type === 'NEW_PROJECT'
-                              ? (language === 'en' ? 'New Survey' : '新上线')
-                              : (language === 'en' ? 'Updated' : '已更新')}
+                          <span
+                            className={`notif-type-tag ${typeBadgeClass}`}
+                            style={typeBadgeStyle || {}}
+                          >
+                            {typeBadgeText}
                           </span>
                           <span className="notif-time">{timeAgo}</span>
                         </div>
                         <div className="notif-project-name" title={item.project_name}>
                           {item.project_name}
                         </div>
+
+                        {item.change_summary && (
+                          <div style={{
+                            fontSize: '11.5px',
+                            fontWeight: 600,
+                            color: item.type === 'QUOTA_INCREASE' ? '#10b981' : item.type === 'EXCLUSION_UPDATE' ? '#ef4444' : 'var(--blue, #3b82f6)',
+                            marginTop: '2px',
+                            marginBottom: '4px'
+                          }}>
+                            {item.change_summary}
+                          </div>
+                        )}
+
+                        {Array.isArray(item.exclusions) && item.exclusions.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '3px', marginBottom: '4px' }}>
+                            {item.exclusions.map((ex, exIdx) => (
+                              <span key={exIdx} style={{
+                                fontSize: '10.5px',
+                                fontWeight: 600,
+                                background: '#fee2e2',
+                                color: '#b91c1c',
+                                padding: '1px 6px',
+                                borderRadius: '4px'
+                              }}>
+                                ⛔ {ex}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
                         <div className="notif-item-meta">
                           <span className="notif-coins">
                             +{showUSD ? `$${(item.coins / 100).toFixed(2)}` : `${item.coins} Coins`}
@@ -465,6 +557,78 @@ export default function Topbar({
           )}
         </div>
       </div>
+
+      {/* Live In-App Notification Toast Alert */}
+      {liveToast && (
+        <div
+          className="live-toast-banner"
+          onClick={() => {
+            navigate(`/platform/${liveToast.platform_id}`);
+            setLiveToast(null);
+          }}
+          style={{
+            position: 'fixed',
+            top: '72px',
+            right: '24px',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '12px 18px',
+            background: 'var(--surface, #ffffff)',
+            border: '1px solid var(--border, #e2e8f0)',
+            borderLeft: `4px solid ${liveToast.type === 'QUOTA_INCREASE' ? '#10b981' : liveToast.type === 'EXCLUSION_UPDATE' ? '#ef4444' : '#3b82f6'}`,
+            borderRadius: '10px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
+            cursor: 'pointer',
+            maxWidth: '380px',
+            animation: 'fadeInSlide 0.3s ease-out'
+          }}
+        >
+          <div style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            background: liveToast.type === 'QUOTA_INCREASE' ? 'rgba(16,185,129,0.15)' : 'rgba(59,130,246,0.15)',
+            color: liveToast.type === 'QUOTA_INCREASE' ? '#10b981' : '#3b82f6',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '16px',
+            flexShrink: 0
+          }}>
+            {liveToast.type === 'QUOTA_INCREASE' ? '⚡' : liveToast.type === 'EXCLUSION_UPDATE' ? '⛔' : '📢'}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--t3, #64748b)' }}>
+              {liveToast.platform_name} • {liveToast.type === 'QUOTA_INCREASE' ? (language === 'en' ? 'Quota Increased' : '配额增加') : (language === 'en' ? 'Survey Updated' : '项目更新')}
+            </span>
+            <strong style={{ fontSize: '13px', color: 'var(--t1, #0f172a)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {liveToast.change_summary || liveToast.project_name}
+            </strong>
+            <span style={{ fontSize: '11.5px', color: 'var(--blue, #3b82f6)', fontWeight: 600 }}>
+              {language === 'en' ? 'Click to open project →' : '点击立即进入项目 →'}
+            </span>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setLiveToast(null);
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--t3, #94a3b8)',
+              fontSize: '16px',
+              cursor: 'pointer',
+              padding: '2px',
+              marginLeft: 'auto'
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* App Update Modal */}
       <ModalAppUpdate
