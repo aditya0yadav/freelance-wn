@@ -210,9 +210,19 @@ class InventoryPullService {
    * Helper to batch insert/update standard projects
    */
   static async saveOffers(platformId, currencyId, offers) {
-    // 1. Fetch all existing projects for this platform
+    // 1. Fetch existing projects with only essential comparison columns
     const existing = await prisma.project.findMany({
-      where: { platform_id: platformId }
+      where: { platform_id: platformId },
+      select: {
+        project_id: true,
+        project_sign: true,
+        project_cpi: true,
+        project_loi: true,
+        project_ir: true,
+        project_quota: true,
+        is_disable: true,
+        delete_time: true
+      }
     });
     const existingMap = new Map(existing.map(p => [p.project_sign, p]));
 
@@ -241,13 +251,24 @@ class InventoryPullService {
 
       const existingRecord = existingMap.get(projectSign);
       if (existingRecord) {
-        toUpdate.push({
-          project_id: existingRecord.project_id,
-          payload: {
-            ...payload,
-            update_time: new Date()
-          }
-        });
+        // Diff check: only update if fields changed or if it was previously disabled/deleted
+        const hasChanged =
+          Number(existingRecord.project_cpi) !== Number(item.project_cpi) ||
+          Number(existingRecord.project_loi) !== Number(item.project_loi || 0) ||
+          Number(existingRecord.project_ir) !== Number(item.project_ir || 0) ||
+          Number(existingRecord.project_quota) !== Number(item.project_quota || 0) ||
+          existingRecord.is_disable !== 0 ||
+          existingRecord.delete_time !== null;
+
+        if (hasChanged) {
+          toUpdate.push({
+            project_id: existingRecord.project_id,
+            payload: {
+              ...payload,
+              update_time: new Date()
+            }
+          });
+        }
       } else {
         const uniquePno = 'PNO' + crypto.randomBytes(8).toString('hex').toUpperCase();
         toCreate.push({
@@ -261,16 +282,16 @@ class InventoryPullService {
 
     // 2. Perform bulk create in chunks
     if (toCreate.length > 0) {
-      const chunkSize = 1000;
+      const chunkSize = 500;
       for (let i = 0; i < toCreate.length; i += chunkSize) {
         const chunk = toCreate.slice(i, i + chunkSize);
         await prisma.project.createMany({ data: chunk });
       }
     }
 
-    // 3. Perform bulk update via transaction chunks to keep it fast
+    // 3. Perform bulk update via small transaction chunks (only for records that actually changed)
     if (toUpdate.length > 0) {
-      const chunkSize = 200;
+      const chunkSize = 50;
       for (let i = 0; i < toUpdate.length; i += chunkSize) {
         const chunk = toUpdate.slice(i, i + chunkSize);
         await prisma.$transaction(
@@ -282,19 +303,28 @@ class InventoryPullService {
       }
     }
 
-    // 4. Cleanup stale surveys: disable any existing surveys that were not in this sync pull
-    const incomingSigns = offers.map(item => crypto.createHash('md5').update(item.signature).digest('hex'));
-    await prisma.project.updateMany({
-      where: {
-        platform_id: platformId,
-        is_api: 1,
-        project_sign: { notIn: incomingSigns }
-      },
-      data: {
-        delete_time: new Date(),
-        is_disable: 1
+    // 4. Cleanup stale surveys: identify missing surveys in memory and disable by primary key chunk
+    const incomingSigns = new Set(offers.map(item => crypto.createHash('md5').update(item.signature).digest('hex')));
+    const staleIds = [];
+    for (const rec of existing) {
+      if (!incomingSigns.has(rec.project_sign) && (rec.delete_time === null || rec.is_disable === 0)) {
+        staleIds.push(rec.project_id);
       }
-    });
+    }
+
+    if (staleIds.length > 0) {
+      const chunkSize = 200;
+      for (let i = 0; i < staleIds.length; i += chunkSize) {
+        const chunk = staleIds.slice(i, i + chunkSize);
+        await prisma.project.updateMany({
+          where: { project_id: { in: chunk } },
+          data: {
+            delete_time: new Date(),
+            is_disable: 1
+          }
+        });
+      }
+    }
   }
 }
 

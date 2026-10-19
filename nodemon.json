@@ -1,0 +1,12 @@
+{
+  "watch": ["src/"],
+  "ext": "js,json",
+  "ignore": [
+    "email-survey-agent/data/**",
+    "email-survey-agent/exports/**",
+    "logs/**",
+    "frontend/**",
+    "*.db*",
+    "*.csv"
+  ]
+}
