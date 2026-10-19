@@ -767,6 +767,34 @@ class PlatformController {
   }
 
   /**
+   * GET /api/member/platform/check-update
+   * Serves latest release information from version.json
+   */
+  static async checkUpdate(req, res) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const versionFile = path.join(__dirname, '../../version.json');
+      if (fs.existsSync(versionFile)) {
+        const raw = fs.readFileSync(versionFile, 'utf8');
+        return res.json({ code: 200, msg: 'success', data: JSON.parse(raw) });
+      }
+      return res.json({
+        code: 200,
+        msg: 'success',
+        data: {
+          version: '1.0.1',
+          releaseDate: '2026-10-19',
+          title: 'v1.0.1 - Real-time Quota Timeline & Partner Redirect Engine',
+          releaseUrl: 'https://github.com/aditya0yadav/freelance-wn/releases/latest'
+        }
+      });
+    } catch (err) {
+      return res.status(500).json({ code: 500, msg: err.message });
+    }
+  }
+
+  /**
    * POST /api/member/platform/login
    * Authenticates an existing member by nickname.
    * Members are created via the admin panel - this endpoint only verifies existing ones.

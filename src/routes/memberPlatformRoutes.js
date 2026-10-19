@@ -18,6 +18,7 @@ router.get('/notifications', verifyToken, PlatformController.notifications);
 router.get('/link', PlatformController.link);
 router.get('/wall_link', PlatformController.wall_link);
 router.post('/generate-link', PlatformController.generateLink);
+router.get('/check-update', PlatformController.checkUpdate);
 
 // Auth & seed routes (no JWT auth header required)
 router.post('/login', PlatformController.login);

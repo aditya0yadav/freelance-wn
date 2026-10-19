@@ -94,6 +94,75 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
     } catch {}
   }
 
+  // Fallback: If it's an email survey with plain text, synthesize the timeline view automatically
+  if (!timelineData && modalData?.type === 'content' && typeof modalData.content === 'string') {
+    const rawText = modalData.content.replace(/<[^>]+>/g, '').trim();
+    const isEmailProject =
+      rawText.includes('[Tag: Email Survey]') ||
+      modalData.project?.project_code === 'EMAIL_SURVEY' ||
+      modalSurvey?.project_code === 'EMAIL_SURVEY' ||
+      modalSurvey?.platform_name === 'WI' ||
+      modalSurvey?.platform_name === 'T' ||
+      modalSurvey?.platform_name === 'PF' ||
+      modalSurvey?.platform_name === 'GWS';
+
+    if (isEmailProject) {
+      let targetCountry = 'Global';
+      const cMatch = rawText.match(/\(Target:\s*([^)]+)\)/i) || rawText.match(/Market:\s*([^.\n]+)/i);
+      if (cMatch) targetCountry = cMatch[1].replace(/[()]/g, '').trim();
+
+      let ageRange = '18 - 65';
+      const aMatch =
+        rawText.match(/(?:age|ages|between)\s*(\d{1,2}\s*[-–to]\s*\d{1,2})/i) ||
+        rawText.match(/(\d{1,2}\s*[-–]\s*\d{1,2})\s*years?/i);
+      if (aMatch) ageRange = aMatch[1].trim();
+
+      let occupation = 'General / All Occupations';
+      const oMatch = rawText.match(/(?:Industry|Audience|Occupation):\s*([^.\n]+)/i);
+      if (oMatch) {
+        occupation = oMatch[1].replace(/[()]/g, '').trim();
+      } else {
+        const occKeywordMatch = rawText.match(/(?:People who influence|Decision-Makers|Workers|Owners|Managers|Directors)[^.\n]*/i);
+        if (occKeywordMatch) {
+          occupation = occKeywordMatch[0].replace(/[()]/g, '').trim();
+        }
+      }
+
+      const cleanedNote = rawText
+        .replace(/\[Tag:\s*Email Survey\]\s*/i, '')
+        .replace(/\(Target:\s*[^)]+\)/i, '')
+        .trim();
+
+      const exclusions = [];
+      const exMatch = cleanedNote.match(/(?:exclude|excluded|excluding|pause|closed|full)\s*[:\-]?\s*([^.\n]+)/i);
+      if (exMatch) {
+        exclusions.push(exMatch[0].trim());
+      }
+
+      timelineData = {
+        is_timeline: true,
+        target_country: targetCountry,
+        base_requirements: {
+          country: targetCountry,
+          age_range: ageRange,
+          occupation: occupation,
+          target_demographics: 'Target Demographic Audience',
+          initial_quota: modalData.project?.project_quota || modalSurvey?.project_quota || 100,
+          initial_cpi: modalData.project?.project_cpi || modalSurvey?.project_cpi || 1.0,
+          description: cleanedNote || 'Live project dispatch specifications.'
+        },
+        update_logs: [
+          {
+            date: modalData.project?.update_time || modalData.project?.create_time || modalSurvey?.create_time || new Date().toISOString(),
+            email_subject: modalData.project?.project_name || modalSurvey?.project_name || 'Email Survey Update',
+            notes: cleanedNote,
+            excluded_groups: exclusions
+          }
+        ]
+      };
+    }
+  }
+
   return (
     <div className="modal-overlay" onClick={() => setModalOpen(false)}>
       <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: '680px' }}>

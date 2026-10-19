@@ -1,0 +1,26 @@
+{
+  "version": "1.0.1",
+  "minRequiredVersion": "1.0.0",
+  "releaseDate": "2026-10-19",
+  "title": "v1.0.1 - Real-time Quota Timeline & Partner Redirect Engine",
+  "title_zh": "v1.0.1 - 实时配额时间线与自动跳转引擎更新",
+  "notes": [
+    "Retain original project base requirements (demographics, age, occupation) without being overwritten",
+    "Chronological quota & update log timeline in project details modal",
+    "Automated live redirect link generator for research partner platforms",
+    "In-app auto-update notifier powered by GitHub Releases"
+  ],
+  "notes_zh": [
+    "永久保留初始立项基准条件，不再被后续排期邮件覆盖",
+    "配额详情升级为实时时间线日志，清晰展示各日期更新与满额排除项",
+    "新增合作调研公司平台标识自动重定向链接生成引擎",
+    "新增基于 GitHub 的应用内一键版本检测与更新推送"
+  ],
+  "githubRepo": "aditya0yadav/freelance-wn",
+  "releaseUrl": "https://github.com/aditya0yadav/freelance-wn/releases/latest",
+  "downloadUrls": {
+    "windows": "https://github.com/aditya0yadav/freelance-wn/releases/latest/download/Wanhong-Survey-Windows.zip",
+    "mac": "https://github.com/aditya0yadav/freelance-wn/releases/latest/download/Wanhong-Survey-Mac.zip",
+    "web": "https://github.com/aditya0yadav/freelance-wn/releases/latest/download/wanhong-web.zip"
+  }
+}

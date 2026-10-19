@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { apiFetch } from '../utils/api';
+import { Sparkles } from 'lucide-react';
+import { checkForAppUpdate } from '../utils/updateChecker';
+import ModalAppUpdate from './ModalAppUpdate';
 
 const NAV_ITEMS = [
   {
@@ -80,6 +83,25 @@ export default function Topbar({
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const notifRef = useRef(null);
+
+  // App Update State
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+
+  useEffect(() => {
+    checkForAppUpdate().then((info) => {
+      setUpdateInfo(info);
+    });
+
+    const updateTimer = setInterval(() => {
+      checkForAppUpdate().then((info) => {
+        setUpdateInfo(info);
+      });
+    }, 15 * 60 * 1000);
+
+    return () => clearInterval(updateTimer);
+  }, []);
 
   const formatTimeAgo = (dateStr) => {
     if (!dateStr) return '';
@@ -223,6 +245,19 @@ export default function Topbar({
             </svg>
           )}
         </button>
+
+        {/* In-app update notification button */}
+        {updateInfo?.hasUpdate && (
+          <button
+            className="update-btn-topbar"
+            onClick={() => setUpdateModalOpen(true)}
+            title={language === 'en' ? 'New version available! Click to view update' : '发现新版本！点击查看并更新'}
+          >
+            <span className="update-pulse-dot" />
+            <Sparkles size={13} />
+            <span>{language === 'en' ? `v${updateInfo.latestVersion}` : `新版本 v${updateInfo.latestVersion}`}</span>
+          </button>
+        )}
 
         {/* Coin balance */}
         <div className="coin-badge" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -390,6 +425,31 @@ export default function Topbar({
 
               <div className="dropdown-divider" />
 
+              {/* In-app check for updates */}
+              <div className="dropdown-section">
+                <button
+                  className="dropdown-item"
+                  onClick={async () => {
+                    setProfileOpen(false);
+                    setCheckingUpdate(true);
+                    setUpdateModalOpen(true);
+                    const res = await checkForAppUpdate(true);
+                    setUpdateInfo(res);
+                    setCheckingUpdate(false);
+                  }}
+                >
+                  <span className="dropdown-item-icon">
+                    <Sparkles size={14} style={{ color: updateInfo?.hasUpdate ? '#10b981' : 'var(--blue)' }} />
+                  </span>
+                  <span>{language === 'en' ? 'Check for Updates' : '检查版本更新'}</span>
+                  {updateInfo?.hasUpdate && (
+                    <span className="update-pulse-dot" style={{ marginLeft: 'auto' }} />
+                  )}
+                </button>
+              </div>
+
+              <div className="dropdown-divider" />
+
               {/* Logout */}
               <div className="dropdown-section">
                 <button onClick={handleLogout} className="dropdown-item logout-item">
@@ -405,6 +465,20 @@ export default function Topbar({
           )}
         </div>
       </div>
+
+      {/* App Update Modal */}
+      <ModalAppUpdate
+        isOpen={updateModalOpen}
+        onClose={() => setUpdateModalOpen(false)}
+        updateInfo={updateInfo}
+        onCheckAgain={async () => {
+          setCheckingUpdate(true);
+          const res = await checkForAppUpdate(true);
+          setUpdateInfo(res);
+          setCheckingUpdate(false);
+        }}
+        checking={checkingUpdate}
+      />
     </header>
   );
 }
