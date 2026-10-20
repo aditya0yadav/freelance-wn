@@ -177,14 +177,18 @@ class MySQLSyncService {
         const updateEntry = {
           date: survey.date || new Date().toISOString(),
           subject: survey.project_name || 'Project Update Dispatch',
+          email_subject: survey.project_name || 'Project Update Dispatch',
           action: survey.action || 'update',
           status: statusLabel,
           action_reason: survey.action_reason || '',
           summary: survey.action_reason || survey.project_content || `Project state updated to ${statusLabel}.`,
+          notes: survey.action_reason || survey.project_content || `Project state updated to ${statusLabel}.`,
           excluded_groups: Array.isArray(survey.excluded_groups) ? survey.excluded_groups : [],
           age_range: survey.age_range || null,
           occupation: survey.occupation || null,
+          quota: Number(survey.project_quota) || null,
           updated_quota: Number(survey.project_quota) || null,
+          cpi: Number(survey.project_cpi) || null,
           updated_cpi: Number(survey.project_cpi) || null
         };
 

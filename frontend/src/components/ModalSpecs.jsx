@@ -139,6 +139,28 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
         exclusions.push(exMatch[0].trim());
       }
 
+      const hasSubsequentUpdate =
+        modalData.project?.update_time &&
+        modalData.project?.create_time &&
+        new Date(modalData.project.update_time).getTime() > new Date(modalData.project.create_time).getTime() + 1000;
+
+      const fallbackLogs = [];
+      if (hasSubsequentUpdate) {
+        fallbackLogs.push({
+          date: modalData.project.update_time,
+          email_subject: modalData.project?.project_name || modalSurvey?.project_name || 'Project Update Dispatch',
+          subject: modalData.project?.project_name || modalSurvey?.project_name || 'Project Update Dispatch',
+          notes: cleanedNote || 'Fieldwork update recorded.',
+          summary: cleanedNote || 'Fieldwork update recorded.',
+          excluded_groups: exclusions,
+          quota: modalData.project?.project_quota || null,
+          updated_quota: modalData.project?.project_quota || null,
+          cpi: modalData.project?.project_cpi || null,
+          updated_cpi: modalData.project?.project_cpi || null,
+          status: modalData.project?.is_disable === 1 ? 'PAUSED' : 'ACTIVE'
+        });
+      }
+
       timelineData = {
         is_timeline: true,
         target_country: targetCountry,
@@ -151,14 +173,7 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
           initial_cpi: modalData.project?.project_cpi || modalSurvey?.project_cpi || 1.0,
           description: cleanedNote || 'Live project dispatch specifications.'
         },
-        update_logs: [
-          {
-            date: modalData.project?.update_time || modalData.project?.create_time || modalSurvey?.create_time || new Date().toISOString(),
-            email_subject: modalData.project?.project_name || modalSurvey?.project_name || 'Email Survey Update',
-            notes: cleanedNote,
-            excluded_groups: exclusions
-          }
-        ]
+        update_logs: fallbackLogs
       };
     }
   }
@@ -335,36 +350,103 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
                             ? log.excluded_groups
                             : (typeof log.excluded_groups === 'string' && log.excluded_groups ? [log.excluded_groups] : []);
 
+                          const subject = log.email_subject || log.subject;
+                          const quotaVal = (log.quota !== undefined && log.quota !== null)
+                            ? log.quota
+                            : (log.updated_quota !== undefined && log.updated_quota !== null ? log.updated_quota : null);
+                          const cpiVal = (log.cpi !== undefined && log.cpi !== null)
+                            ? log.cpi
+                            : (log.updated_cpi !== undefined && log.updated_cpi !== null ? log.updated_cpi : null);
+
+                          const rawStatus = String(log.status || (log.action === 'pause' ? 'PAUSED' : log.action === 'resume' ? 'ACTIVE' : log.action === 'close' ? 'CLOSED' : '')).toUpperCase();
+                          const isPaused = rawStatus === 'PAUSED' || log.action === 'pause';
+                          const isClosed = rawStatus === 'CLOSED' || log.action === 'close';
+                          const isActive = rawStatus === 'ACTIVE' || log.action === 'resume';
+
+                          const dotColor = isPaused ? '#ef4444' : isClosed ? '#64748b' : '#10b981';
+                          const dotGlow = isPaused ? 'rgba(239, 68, 68, 0.2)' : isClosed ? 'rgba(100, 116, 139, 0.2)' : 'rgba(16, 185, 129, 0.2)';
+
+                          // Build a clean, informative description so the card is NEVER an empty blank box
+                          const noteContent = log.notes || log.summary || log.action_reason || log.description || (
+                            isPaused
+                              ? (language === 'zh' ? '客户通知已暂停该调研项目的样本投放。' : 'Client requested temporary pause on study fieldwork.')
+                              : isClosed
+                              ? (language === 'zh' ? '该项目调研已圆满结束并关闭。' : 'Fieldwork concluded and study closed.')
+                              : isActive && quotaVal
+                              ? (language === 'zh' ? `项目已恢复正常投放，目标配额更新为 ${quotaVal} 份。` : `Study resumed, target quota updated to ${quotaVal} completes.`)
+                              : quotaVal
+                              ? (language === 'zh' ? `目标配额已更新为 ${quotaVal} 份。` : `Target quota updated to ${quotaVal} completes.`)
+                              : (language === 'zh' ? '收到合作调研方最新排期更新通知。' : 'Update notification received from research partner.')
+                          );
+
                           return (
                             <div key={log.update_id || idx} className="timeline-item" style={{ display: 'flex', gap: '12px' }}>
                               <div className="timeline-marker" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0, paddingTop: '6px' }}>
-                                <span className="timeline-dot" style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.2)' }} />
+                                <span className="timeline-dot" style={{ width: '10px', height: '10px', borderRadius: '50%', background: dotColor, boxShadow: `0 0 0 3px ${dotGlow}` }} />
                                 {idx < updateLogs.length - 1 && <span className="timeline-line" style={{ width: '2px', flexGrow: 1, background: 'var(--border, #e2e8f0)', marginTop: '4px' }} />}
                               </div>
 
                               <div className="timeline-content-card" style={{ flexGrow: 1, background: 'var(--surface, #ffffff)', border: '1px solid var(--border, #e2e8f0)', borderRadius: '10px', padding: '12px 16px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
-                                <div className="timeline-item-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                <div className="timeline-item-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
                                   <div className="timeline-date" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: 'var(--t2, #64748b)' }}>
                                     <Calendar size={13} />
                                     <span>{logDate}</span>
                                   </div>
-                                  <div style={{ display: 'flex', gap: '6px' }}>
-                                    {log.quota !== undefined && log.quota !== null && (
-                                      <span className="badge-quota-change" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px' }}>
-                                        Quota: {log.quota}
+
+                                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    {/* Status Badge */}
+                                    {isPaused && (
+                                      <span style={{ background: '#fee2e2', color: '#b91c1c', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>
+                                        ⏸️ {language === 'zh' ? '已暂停' : 'Paused'}
                                       </span>
                                     )}
-                                    {log.cpi !== undefined && log.cpi !== null && (
+                                    {isActive && (
+                                      <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>
+                                        ▶️ {language === 'zh' ? '进行中' : 'Active'}
+                                      </span>
+                                    )}
+                                    {isClosed && (
+                                      <span style={{ background: '#f1f5f9', color: '#64748b', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>
+                                        🛑 {language === 'zh' ? '已结束' : 'Closed'}
+                                      </span>
+                                    )}
+
+                                    {/* Quota Badge */}
+                                    {quotaVal !== null && (
+                                      <span className="badge-quota-change" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px' }}>
+                                        Quota: {quotaVal}
+                                      </span>
+                                    )}
+
+                                    {/* CPI Badge */}
+                                    {cpiVal !== null && (
                                       <span className="badge-cpi-change" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#059669', fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px' }}>
-                                        CPI: ${log.cpi}
+                                        CPI: ${cpiVal}
                                       </span>
                                     )}
                                   </div>
                                 </div>
 
-                                {log.email_subject && (
-                                  <div className="timeline-subject" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t1, #0f172a)', marginBottom: '6px' }}>
-                                    {log.email_subject}
+                                {/* Subject Header */}
+                                {subject && (
+                                  <div className="timeline-subject" style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--t1, #0f172a)', marginBottom: '6px' }}>
+                                    {subject}
+                                  </div>
+                                )}
+
+                                {/* Updated Demographics (if any) */}
+                                {(log.age_range || log.occupation) && (
+                                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '4px 0 8px 0', fontSize: '11.5px' }}>
+                                    {log.age_range && (
+                                      <span style={{ background: 'rgba(139, 92, 246, 0.08)', color: '#7c3aed', padding: '2px 7px', borderRadius: '4px', fontWeight: 500 }}>
+                                        {language === 'zh' ? '年龄' : 'Age'}: {log.age_range}
+                                      </span>
+                                    )}
+                                    {log.occupation && (
+                                      <span style={{ background: 'rgba(245, 158, 11, 0.08)', color: '#d97706', padding: '2px 7px', borderRadius: '4px', fontWeight: 500 }}>
+                                        {language === 'zh' ? '职业' : 'Occupation'}: {log.occupation}
+                                      </span>
+                                    )}
                                   </div>
                                 )}
 
@@ -385,9 +467,10 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
                                   </div>
                                 )}
 
-                                {log.notes && (
-                                  <div className="timeline-notes" style={{ marginTop: '8px', fontSize: '12px', color: 'var(--t2, #475569)', lineHeight: 1.5, background: 'var(--bg-3, #f8fafc)', padding: '8px 12px', borderRadius: '6px' }}>
-                                    {log.notes}
+                                {/* Update Note / Summary Content */}
+                                {noteContent && (
+                                  <div className="timeline-notes" style={{ marginTop: '8px', fontSize: '12.5px', color: 'var(--t2, #334155)', lineHeight: 1.5, background: 'var(--bg-3, #f8fafc)', padding: '10px 14px', borderRadius: '8px', borderLeft: isPaused ? '3px solid #ef4444' : isClosed ? '3px solid #64748b' : '3px solid #10b981' }}>
+                                    {noteContent}
                                   </div>
                                 )}
                               </div>
