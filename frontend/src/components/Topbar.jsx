@@ -371,7 +371,16 @@ export default function Topbar({
                     let typeBadgeClass = 'tag-update';
                     let typeBadgeStyle = null;
 
-                    if (item.type === 'QUOTA_INCREASE') {
+                    if (item.type === 'SURVEY_PAUSED') {
+                      typeBadgeText = language === 'en' ? '⏸️ Paused' : '⏸️ 已暂停';
+                      typeBadgeStyle = { background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' };
+                    } else if (item.type === 'SURVEY_RESUMED') {
+                      typeBadgeText = language === 'en' ? '▶️ Resumed' : '▶️ 已恢复';
+                      typeBadgeStyle = { background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' };
+                    } else if (item.type === 'SURVEY_CLOSED') {
+                      typeBadgeText = language === 'en' ? '🛑 Closed' : '🛑 已结束';
+                      typeBadgeStyle = { background: 'rgba(100, 116, 139, 0.12)', color: '#64748b', borderColor: 'rgba(100, 116, 139, 0.3)' };
+                    } else if (item.type === 'QUOTA_INCREASE') {
                       typeBadgeText = language === 'en' ? '⚡ Quota Increased' : '⚡ 配额增加';
                       typeBadgeStyle = { background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' };
                     } else if (item.type === 'QUOTA_DECREASE' || item.type === 'QUOTA_UPDATED') {

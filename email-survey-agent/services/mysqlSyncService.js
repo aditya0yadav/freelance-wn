@@ -158,11 +158,29 @@ class MySQLSyncService {
           };
         }
 
+        // Determine lifecycle status transition (Pause vs. Resume vs. Close vs. Active)
+        let newIsDisable = existing.is_disable;
+        let statusLabel = existing.is_disable === 1 ? 'PAUSED' : 'ACTIVE';
+
+        if (survey.action === 'pause' || survey.status === 'paused') {
+          newIsDisable = 1;
+          statusLabel = 'PAUSED';
+        } else if (survey.action === 'close' || survey.status === 'closed') {
+          newIsDisable = 1;
+          statusLabel = 'CLOSED';
+        } else if (survey.action === 'resume' || survey.status === 'active') {
+          newIsDisable = 0;
+          statusLabel = 'ACTIVE';
+        }
+
         // Add this email as a new chronological update log entry
         const updateEntry = {
           date: survey.date || new Date().toISOString(),
           subject: survey.project_name || 'Project Update Dispatch',
-          summary: survey.project_content || 'Subsequent quota/constraint update.',
+          action: survey.action || 'update',
+          status: statusLabel,
+          action_reason: survey.action_reason || '',
+          summary: survey.action_reason || survey.project_content || `Project state updated to ${statusLabel}.`,
           excluded_groups: Array.isArray(survey.excluded_groups) ? survey.excluded_groups : [],
           age_range: survey.age_range || null,
           occupation: survey.occupation || null,
@@ -177,6 +195,7 @@ class MySQLSyncService {
         await prisma.project.update({
           where: { project_id: existing.project_id },
           data: {
+            is_disable: newIsDisable,
             project_content: JSON.stringify(timeline),
             update_time: new Date(),
             ...(Number(survey.project_cpi) > 0 ? { project_cpi: Number(survey.project_cpi) } : {}),
@@ -185,7 +204,7 @@ class MySQLSyncService {
           }
         });
 
-        console.log(`[Sync] Appended chronological update log to ya_project for PNO ${existing.project_pno}`);
+        console.log(`[Sync] Appended chronological update log (Status: ${statusLabel}) to ya_project for PNO ${existing.project_pno}`);
         return existing.project_id;
       }
 

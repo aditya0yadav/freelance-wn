@@ -325,6 +325,9 @@ class OllamaService {
       age_range: String(parsed.age_range || '18-65'),
       occupation: String(parsed.occupation || 'General / All Industries'),
       is_update: Boolean(parsed.is_update),
+      action: String(parsed.action || (parsed.is_update ? 'quota_update' : 'launch')).toLowerCase().trim(),
+      status: String(parsed.status || 'active').toLowerCase().trim(),
+      action_reason: String(parsed.action_reason || '').trim(),
       excluded_groups: Array.isArray(parsed.excluded_groups) ? parsed.excluded_groups : []
     };
   }

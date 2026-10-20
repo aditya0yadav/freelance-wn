@@ -25,7 +25,15 @@ Your task is to analyze an incoming email and determine if it contains an online
    ### KEY DEMOGRAPHIC & CONSTRAINT EXTRACTION:
    - "age_range": Base target age constraint (e.g. "18-65", "21-55", "30-49"). Default "18-65" if general population.
    - "occupation": Target industry, profession, or job titles (e.g. "IT Decision Makers", "Healthcare Professionals", "General Employed", "Open").
-   - "is_update": true if this email is an update, quota change, or reminder for an ongoing survey; false if it is a brand new project launch.
+   - "is_update": true if this email is an update, quota change, pause/resume notice, or reminder for an ongoing survey; false if it is a brand new project launch.
+   - "action": Lifecycle action detected in the email:
+       - "launch": New project dispatch or initial invitation.
+       - "pause": Email asks to pause, hold, stop sends, or halt traffic.
+       - "resume": Email asks to restart, resume, reopen, or go live again.
+       - "close": Email states project is fully completed, expired, or permanently closed.
+       - "quota_update": Quota increased, decreased, or refreshed.
+   - "status": Resulting survey status: "active", "paused", or "closed".
+   - "action_reason": Brief 1-sentence explanation of the action or update (e.g. "Client requested temporary pause", "Reopened with quota 150").
    - "excluded_groups": Specific age groups, professions, regions, or quotas mentioned as CLOSED, EXCLUDED, or FULL (e.g. "Ages 18-24 closed", "Exclude Retail", "Females quota full"). If none, empty array [].
    - "project_content": Concise 1-2 sentence overview of the audience requirements or update notes.
 
@@ -56,6 +64,9 @@ You MUST respond ONLY with a valid JSON object matching this schema. Do NOT incl
   "age_range": "18-65",
   "occupation": "string",
   "is_update": false,
+  "action": "launch",
+  "status": "active",
+  "action_reason": "string",
   "excluded_groups": ["string"],
   "project_content": "string"
 }`;

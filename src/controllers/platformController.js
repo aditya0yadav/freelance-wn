@@ -1350,9 +1350,16 @@ class PlatformController {
                 const prevQuota = prevLog ? (Number(prevLog.updated_quota) || Number(prevLog.quota) || baseQuota) : baseQuota;
                 const currQuota = Number(latestLog.updated_quota) || Number(latestLog.quota) || Number(p.project_quota) || 0;
 
-                exclusions = Array.isArray(latestLog.excluded_groups) ? latestLog.excluded_groups : [];
-
-                if (currQuota > 0 && prevQuota > 0 && currQuota > prevQuota) {
+                if (latestLog.status === 'PAUSED' || latestLog.action === 'pause') {
+                  changeType = 'SURVEY_PAUSED';
+                  changeSummary = `⏸️ Project Paused: ${latestLog.action_reason || 'Client requested pause'}`;
+                } else if (latestLog.action === 'resume') {
+                  changeType = 'SURVEY_RESUMED';
+                  changeSummary = `▶️ Project Resumed: ${latestLog.action_reason || (currQuota > 0 ? `Open with ${currQuota} quota` : 'Traffic active')}`;
+                } else if (latestLog.status === 'CLOSED' || latestLog.action === 'close') {
+                  changeType = 'SURVEY_CLOSED';
+                  changeSummary = `🛑 Project Closed: ${latestLog.action_reason || 'Survey finished'}`;
+                } else if (currQuota > 0 && prevQuota > 0 && currQuota > prevQuota) {
                   changeType = 'QUOTA_INCREASE';
                   changeSummary = `Quota increased: ${prevQuota} → ${currQuota} (+${currQuota - prevQuota} slots)`;
                 } else if (currQuota > 0 && prevQuota > 0 && currQuota < prevQuota) {
