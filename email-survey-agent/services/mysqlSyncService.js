@@ -235,20 +235,40 @@ class MySQLSyncService {
         timeline.update_logs = timeline.update_logs || [];
         timeline.update_logs.push(updateEntry);
 
+        // Determine country code and country name
+        const countryInfo = MySQLSyncService.resolveCountryInfo(survey);
+
+        if (timeline.base_requirements) {
+          if (!timeline.base_requirements.country_code || timeline.base_requirements.country_code === 'EMAIL_SURVEY') {
+            timeline.base_requirements.country_code = countryInfo.code;
+          }
+          if (!timeline.base_requirements.target_country || timeline.base_requirements.target_country === 'Global' || (timeline.base_requirements.target_country === 'United States' && countryInfo.code !== 'US')) {
+            timeline.base_requirements.target_country = countryInfo.name;
+            timeline.base_requirements.country = countryInfo.name;
+          }
+        }
+
+        const updateData = {
+          is_disable: newIsDisable,
+          project_content: JSON.stringify(timeline),
+          update_time: emailDate,
+          ...(Number(survey.project_cpi) > 0 ? { project_cpi: Number(survey.project_cpi) } : {}),
+          ...(Number(survey.project_quota) > 0 ? { project_quota: Number(survey.project_quota) } : {}),
+          ...(survey.project_click_url ? { project_click_url: survey.project_click_url } : {})
+        };
+
+        // Update project_code to valid country ISO if it was EMAIL_SURVEY, missing, or defaulted to US
+        if (countryInfo.code && (existing.project_code === 'EMAIL_SURVEY' || !existing.project_code || (existing.project_code === 'US' && countryInfo.code !== 'US'))) {
+          updateData.project_code = countryInfo.code;
+        }
+
         // Update existing project in ya_project without altering base specifications
         await prisma.project.update({
           where: { project_id: existing.project_id },
-          data: {
-            is_disable: newIsDisable,
-            project_content: JSON.stringify(timeline),
-            update_time: emailDate,
-            ...(Number(survey.project_cpi) > 0 ? { project_cpi: Number(survey.project_cpi) } : {}),
-            ...(Number(survey.project_quota) > 0 ? { project_quota: Number(survey.project_quota) } : {}),
-            ...(survey.project_click_url ? { project_click_url: survey.project_click_url } : {})
-          }
+          data: updateData
         });
 
-        console.log(`[Sync] Appended chronological update log (Status: ${statusLabel}) to ya_project for PNO ${existing.project_pno}`);
+        console.log(`[Sync] Appended chronological update log (Status: ${statusLabel}, Country: ${countryInfo.code}) to ya_project for PNO ${existing.project_pno}`);
         return existing.project_id;
       }
 
@@ -262,15 +282,16 @@ class MySQLSyncService {
       }
 
       const rawSpecsText = survey.raw_specs || survey.project_content || '';
-      const countryVal = survey.target_country && survey.target_country !== 'Global' ? survey.target_country : 'United States';
+      const countryInfo = MySQLSyncService.resolveCountryInfo(survey);
 
       // 6. Build Initial Base Requirements with Chronological Timeline
       const initialTimeline = {
         is_timeline: true,
         base_requirements: {
           created_at: emailDate.toISOString(),
-          target_country: countryVal,
-          country: countryVal,
+          target_country: countryInfo.name,
+          country: countryInfo.name,
+          country_code: countryInfo.code,
           age_range: survey.age_range || '18-65',
           occupation: survey.occupation || 'General Audience',
           target_demographics: survey.target_demographics || survey.occupation || 'General Audience',
@@ -297,14 +318,14 @@ class MySQLSyncService {
         }] : []
       };
 
-      // 7. Insert into ya_project with actual email timestamp and correct is_disable state
+      // 7. Insert into ya_project with actual email timestamp, country code in project_code, and correct is_disable state
       const project = await prisma.project.create({
         data: {
           project_pno: projectPno,
           project_no: rawNo,
           platform_id: platform.platform_id,
           project_name: survey.project_name || 'Email Survey Offer',
-          project_code: 'EMAIL_SURVEY',
+          project_code: countryInfo.code || 'US',
           project_cpi: Number(survey.project_cpi) || 0.0,
           project_currency: currencyId,
           project_quota: Number(survey.project_quota) || 100,
@@ -319,12 +340,275 @@ class MySQLSyncService {
         }
       });
 
-      console.log(`[Sync] Successfully saved to ya_project: ${project.project_name} [${project.project_pno}] (is_disable: ${project.is_disable})`);
+      console.log(`[Sync] Successfully saved to ya_project: ${project.project_name} [${project.project_pno}] (Country: ${countryInfo.code}, is_disable: ${project.is_disable})`);
       return project.project_id;
     } catch (err) {
       console.error('[Sync] Failed to sync survey to MySQL ya_project:', err.message);
       return null;
     }
+  }
+
+  /**
+   * Resolves country ISO 2-letter code and full name from survey fields,
+   * title tags, specifications text, or currency.
+   */
+  static resolveCountryInfo(survey = {}) {
+    const COUNTRY_MAP = {
+      'US': { code: 'US', name: 'United States' },
+      'USA': { code: 'US', name: 'United States' },
+      'UNITED STATES': { code: 'US', name: 'United States' },
+      'AMERICA': { code: 'US', name: 'United States' },
+      'UK': { code: 'GB', name: 'United Kingdom' },
+      'GB': { code: 'GB', name: 'United Kingdom' },
+      'GBR': { code: 'GB', name: 'United Kingdom' },
+      'UNITED KINGDOM': { code: 'GB', name: 'United Kingdom' },
+      'GREAT BRITAIN': { code: 'GB', name: 'United Kingdom' },
+      'ENGLAND': { code: 'GB', name: 'United Kingdom' },
+      'SCOTLAND': { code: 'GB', name: 'United Kingdom' },
+      'WALES': { code: 'GB', name: 'United Kingdom' },
+      'CA': { code: 'CA', name: 'Canada' },
+      'CAN': { code: 'CA', name: 'Canada' },
+      'CANADA': { code: 'CA', name: 'Canada' },
+      'AU': { code: 'AU', name: 'Australia' },
+      'AUS': { code: 'AU', name: 'Australia' },
+      'AUSTRALIA': { code: 'AU', name: 'Australia' },
+      'NZ': { code: 'NZ', name: 'New Zealand' },
+      'NZL': { code: 'NZ', name: 'New Zealand' },
+      'NEW ZEALAND': { code: 'NZ', name: 'New Zealand' },
+      'ES': { code: 'ES', name: 'Spain' },
+      'ESP': { code: 'ES', name: 'Spain' },
+      'SPAIN': { code: 'ES', name: 'Spain' },
+      'ESPANA': { code: 'ES', name: 'Spain' },
+      'BR': { code: 'BR', name: 'Brazil' },
+      'BRA': { code: 'BR', name: 'Brazil' },
+      'BRAZIL': { code: 'BR', name: 'Brazil' },
+      'BRASIL': { code: 'BR', name: 'Brazil' },
+      'DE': { code: 'DE', name: 'Germany' },
+      'DEU': { code: 'DE', name: 'Germany' },
+      'GERMANY': { code: 'DE', name: 'Germany' },
+      'DEUTSCHLAND': { code: 'DE', name: 'Germany' },
+      'FR': { code: 'FR', name: 'France' },
+      'FRA': { code: 'FR', name: 'France' },
+      'FRANCE': { code: 'FR', name: 'France' },
+      'IT': { code: 'IT', name: 'Italy' },
+      'ITA': { code: 'IT', name: 'Italy' },
+      'ITALY': { code: 'IT', name: 'Italy' },
+      'ITALIA': { code: 'IT', name: 'Italy' },
+      'JP': { code: 'JP', name: 'Japan' },
+      'JPN': { code: 'JP', name: 'Japan' },
+      'JAPAN': { code: 'JP', name: 'Japan' },
+      'CN': { code: 'CN', name: 'China' },
+      'CHN': { code: 'CN', name: 'China' },
+      'CHINA': { code: 'CN', name: 'China' },
+      'IN': { code: 'IN', name: 'India' },
+      'IND': { code: 'IN', name: 'India' },
+      'INDIA': { code: 'IN', name: 'India' },
+      'MX': { code: 'MX', name: 'Mexico' },
+      'MEX': { code: 'MX', name: 'Mexico' },
+      'MEXICO': { code: 'MX', name: 'Mexico' },
+      'NL': { code: 'NL', name: 'Netherlands' },
+      'NLD': { code: 'NL', name: 'Netherlands' },
+      'NETHERLANDS': { code: 'NL', name: 'Netherlands' },
+      'HOLLAND': { code: 'NL', name: 'Netherlands' },
+      'SE': { code: 'SE', name: 'Sweden' },
+      'SWE': { code: 'SE', name: 'Sweden' },
+      'SWEDEN': { code: 'SE', name: 'Sweden' },
+      'NO': { code: 'NO', name: 'Norway' },
+      'NOR': { code: 'NO', name: 'Norway' },
+      'NORWAY': { code: 'NO', name: 'Norway' },
+      'DK': { code: 'DK', name: 'Denmark' },
+      'DNK': { code: 'DK', name: 'Denmark' },
+      'DENMARK': { code: 'DK', name: 'Denmark' },
+      'FI': { code: 'FI', name: 'Finland' },
+      'FIN': { code: 'FI', name: 'Finland' },
+      'FINLAND': { code: 'FI', name: 'Finland' },
+      'PL': { code: 'PL', name: 'Poland' },
+      'POL': { code: 'PL', name: 'Poland' },
+      'POLAND': { code: 'PL', name: 'Poland' },
+      'CH': { code: 'CH', name: 'Switzerland' },
+      'CHE': { code: 'CH', name: 'Switzerland' },
+      'SWITZERLAND': { code: 'CH', name: 'Switzerland' },
+      'AT': { code: 'AT', name: 'Austria' },
+      'AUT': { code: 'AT', name: 'Austria' },
+      'AUSTRIA': { code: 'AT', name: 'Austria' },
+      'BE': { code: 'BE', name: 'Belgium' },
+      'BEL': { code: 'BE', name: 'Belgium' },
+      'BELGIUM': { code: 'BE', name: 'Belgium' },
+      'PT': { code: 'PT', name: 'Portugal' },
+      'PRT': { code: 'PT', name: 'Portugal' },
+      'PORTUGAL': { code: 'PT', name: 'Portugal' },
+      'IE': { code: 'IE', name: 'Ireland' },
+      'IRL': { code: 'IE', name: 'Ireland' },
+      'IRELAND': { code: 'IE', name: 'Ireland' },
+      'SG': { code: 'SG', name: 'Singapore' },
+      'SGP': { code: 'SG', name: 'Singapore' },
+      'SINGAPORE': { code: 'SG', name: 'Singapore' },
+      'HK': { code: 'HK', name: 'Hong Kong' },
+      'HKG': { code: 'HK', name: 'Hong Kong' },
+      'HONG KONG': { code: 'HK', name: 'Hong Kong' },
+      'KR': { code: 'KR', name: 'South Korea' },
+      'KOR': { code: 'KR', name: 'South Korea' },
+      'SOUTH KOREA': { code: 'KR', name: 'South Korea' },
+      'KOREA': { code: 'KR', name: 'South Korea' },
+      'TW': { code: 'TW', name: 'Taiwan' },
+      'TWN': { code: 'TW', name: 'Taiwan' },
+      'TAIWAN': { code: 'TW', name: 'Taiwan' },
+      'TH': { code: 'TH', name: 'Thailand' },
+      'THA': { code: 'TH', name: 'Thailand' },
+      'THAILAND': { code: 'TH', name: 'Thailand' },
+      'MY': { code: 'MY', name: 'Malaysia' },
+      'MYS': { code: 'MY', name: 'Malaysia' },
+      'MALAYSIA': { code: 'MY', name: 'Malaysia' },
+      'ID': { code: 'ID', name: 'Indonesia' },
+      'IDN': { code: 'ID', name: 'Indonesia' },
+      'INDONESIA': { code: 'ID', name: 'Indonesia' },
+      'PH': { code: 'PH', name: 'Philippines' },
+      'PHL': { code: 'PH', name: 'Philippines' },
+      'PHILIPPINES': { code: 'PH', name: 'Philippines' },
+      'VN': { code: 'VN', name: 'Vietnam' },
+      'VNM': { code: 'VN', name: 'Vietnam' },
+      'VIETNAM': { code: 'VN', name: 'Vietnam' },
+      'ZA': { code: 'ZA', name: 'South Africa' },
+      'ZAF': { code: 'ZA', name: 'South Africa' },
+      'SOUTH AFRICA': { code: 'ZA', name: 'South Africa' },
+      'AR': { code: 'AR', name: 'Argentina' },
+      'ARG': { code: 'AR', name: 'Argentina' },
+      'ARGENTINA': { code: 'AR', name: 'Argentina' },
+      'CL': { code: 'CL', name: 'Chile' },
+      'CHL': { code: 'CL', name: 'Chile' },
+      'CHILE': { code: 'CL', name: 'Chile' },
+      'CO': { code: 'CO', name: 'Colombia' },
+      'COL': { code: 'CO', name: 'Colombia' },
+      'COLOMBIA': { code: 'CO', name: 'Colombia' },
+      'PE': { code: 'PE', name: 'Peru' },
+      'PER': { code: 'PE', name: 'Peru' },
+      'PERU': { code: 'PE', name: 'Peru' },
+      'TR': { code: 'TR', name: 'Turkey' },
+      'TUR': { code: 'TR', name: 'Turkey' },
+      'TURKEY': { code: 'TR', name: 'Turkey' },
+      'TURKIYE': { code: 'TR', name: 'Turkey' },
+      'SA': { code: 'SA', name: 'Saudi Arabia' },
+      'SAU': { code: 'SA', name: 'Saudi Arabia' },
+      'SAUDI ARABIA': { code: 'SA', name: 'Saudi Arabia' },
+      'KSA': { code: 'SA', name: 'Saudi Arabia' },
+      'AE': { code: 'AE', name: 'UAE' },
+      'ARE': { code: 'AE', name: 'UAE' },
+      'UAE': { code: 'AE', name: 'UAE' },
+      'UNITED ARAB EMIRATES': { code: 'AE', name: 'UAE' },
+      'IL': { code: 'IL', name: 'Israel' },
+      'ISR': { code: 'IL', name: 'Israel' },
+      'ISRAEL': { code: 'IL', name: 'Israel' },
+      'RU': { code: 'RU', name: 'Russia' },
+      'RUS': { code: 'RU', name: 'Russia' },
+      'RUSSIA': { code: 'RU', name: 'Russia' },
+      'EG': { code: 'EG', name: 'Egypt' },
+      'EGY': { code: 'EG', name: 'Egypt' },
+      'EGYPT': { code: 'EG', name: 'Egypt' },
+      'GR': { code: 'GR', name: 'Greece' },
+      'GRC': { code: 'GR', name: 'Greece' },
+      'GREECE': { code: 'GR', name: 'Greece' },
+      'QA': { code: 'QA', name: 'Qatar' },
+      'QAT': { code: 'QA', name: 'Qatar' },
+      'QATAR': { code: 'QA', name: 'Qatar' },
+      'KW': { code: 'KW', name: 'Kuwait' },
+      'KWT': { code: 'KW', name: 'Kuwait' },
+      'KUWAIT': { code: 'KW', name: 'Kuwait' },
+      'RO': { code: 'RO', name: 'Romania' },
+      'ROU': { code: 'RO', name: 'Romania' },
+      'ROMANIA': { code: 'RO', name: 'Romania' },
+      'MA': { code: 'MA', name: 'Morocco' },
+      'MAR': { code: 'MA', name: 'Morocco' },
+      'MOROCCO': { code: 'MA', name: 'Morocco' },
+      'VIET NAM': { code: 'VN', name: 'Vietnam' },
+      'KOREA (SOUTH)': { code: 'KR', name: 'South Korea' },
+      'HONG KONG, SAR CHINA': { code: 'HK', name: 'Hong Kong' }
+    };
+
+    const clean = (val) => String(val || '').trim().toUpperCase();
+
+    // 1. Explicit country_code provided
+    if (survey.country_code) {
+      const codeKey = clean(survey.country_code);
+      if (COUNTRY_MAP[codeKey]) return { ...COUNTRY_MAP[codeKey] };
+      if (codeKey.length === 2 && codeKey !== 'GL') return { code: codeKey, name: survey.target_country || codeKey };
+    }
+
+    // 2. Target country or country provided
+    const targetCountryRaw = survey.target_country || survey.country || '';
+    if (targetCountryRaw) {
+      // Split if comma separated (e.g. "UK, FR, DE" -> check first)
+      const parts = targetCountryRaw.split(/[,/|]/).map(p => clean(p)).filter(Boolean);
+      for (const part of parts) {
+        if (COUNTRY_MAP[part]) return { ...COUNTRY_MAP[part] };
+      }
+    }
+
+    // 3. Inspect project name / title (e.g. "[Australia] 1867967", "GI8762 [JP]", "B2C-NL", "KSA Tracker")
+    const pName = survey.project_name || '';
+    if (pName) {
+      // Check bracketed expression: e.g. [Australia], [UK], [United Kingdom], [ES], [JP]
+      const bracketMatch = pName.match(/\[([A-Za-z0-9\s_-]+)\]/);
+      if (bracketMatch) {
+        const inside = clean(bracketMatch[1]);
+        if (COUNTRY_MAP[inside]) return { ...COUNTRY_MAP[inside] };
+      }
+
+      // Check hyphenated/spaced tags: e.g. "B2C-NL", "B2B US", "B2C US", "WANS-NL"
+      const tagMatch = pName.match(/\b(?:B2B|B2C|WANS?)[-\s]+([A-Za-z]{2,3})\b/i);
+      if (tagMatch) {
+        const tag = clean(tagMatch[1]);
+        if (COUNTRY_MAP[tag]) return { ...COUNTRY_MAP[tag] };
+      }
+
+      // Check standalone country keywords in title
+      for (const [key, info] of Object.entries(COUNTRY_MAP)) {
+        if (key.length > 2) {
+          const regex = new RegExp(`\\b${key}\\b`, 'i');
+          if (regex.test(pName)) return { ...info };
+        }
+      }
+    }
+
+    // 4. Inspect raw_specs or project_content text (e.g. "Geography: United Kingdom", "Country: Spain")
+    const specsText = survey.raw_specs || survey.project_content || '';
+    if (specsText) {
+      const geoMatch = specsText.match(/(?:Geography|Country|Market|Location)\s*:\s*([^\r\n]+)/i);
+      if (geoMatch) {
+        const geoStr = geoMatch[1].trim();
+        const parts = geoStr.split(/[,/|;]/).map(p => clean(p)).filter(Boolean);
+        for (const part of parts) {
+          if (COUNTRY_MAP[part]) return { ...COUNTRY_MAP[part] };
+        }
+      }
+    }
+
+    // 5. Currency heuristics (for non-USD explicit foreign currencies)
+    const curr = clean(survey.currency);
+    const CURR_MAP = {
+      'GBP': { code: 'GB', name: 'United Kingdom' },
+      'AUD': { code: 'AU', name: 'Australia' },
+      'CAD': { code: 'CA', name: 'Canada' },
+      'BRL': { code: 'BR', name: 'Brazil' },
+      'MXN': { code: 'MX', name: 'Mexico' },
+      'INR': { code: 'IN', name: 'India' },
+      'JPY': { code: 'JP', name: 'Japan' },
+      'SEK': { code: 'SE', name: 'Sweden' },
+      'NOK': { code: 'NO', name: 'Norway' },
+      'DKK': { code: 'DK', name: 'Denmark' },
+      'PLN': { code: 'PL', name: 'Poland' },
+      'CHF': { code: 'CH', name: 'Switzerland' },
+      'NZD': { code: 'NZ', name: 'New Zealand' },
+      'SGD': { code: 'SG', name: 'Singapore' },
+      'HKD': { code: 'HK', name: 'Hong Kong' },
+      'ZAR': { code: 'ZA', name: 'South Africa' },
+      'TRY': { code: 'TR', name: 'Turkey' }
+    };
+    if (CURR_MAP[curr]) {
+      return { ...CURR_MAP[curr] };
+    }
+
+    // Default fallback
+    return { code: 'US', name: 'United States' };
   }
 }
 

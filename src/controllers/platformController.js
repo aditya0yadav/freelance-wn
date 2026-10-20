@@ -265,24 +265,58 @@ class PlatformController {
         const teamPayout = rawCoins * ((100 - teamCommissionRatio) / 100) * ((100 - authRateVal) / 100);
         const memberPayout = teamPayout * memberRate;
 
-        let targetCountry = item.project_code || 'US';
+        let projectCode = item.project_code || '';
+        let targetCountry = '';
+        let countryCode = '';
+
         if (item.project_content) {
           try {
             const parsed = JSON.parse(item.project_content);
-            if (parsed?.base_requirements?.target_country) {
-              targetCountry = parsed.base_requirements.target_country;
-            } else if (parsed?.base_requirements?.country) {
-              targetCountry = parsed.base_requirements.country;
+            if (parsed?.base_requirements) {
+              targetCountry = parsed.base_requirements.target_country || parsed.base_requirements.country || '';
+              countryCode = parsed.base_requirements.country_code || '';
             }
           } catch {}
         }
+
+        // If countryCode is still missing or EMAIL_SURVEY, inspect project_code
+        if (!countryCode || countryCode === 'EMAIL_SURVEY') {
+          if (projectCode && projectCode !== 'EMAIL_SURVEY') {
+            if (projectCode.length === 2) {
+              countryCode = projectCode.toUpperCase();
+            } else {
+              // Handle patterns like "English-GB|54", "En-US|4", "pt-BR"
+              const localeMatch = projectCode.match(/[-_]([A-Za-z]{2})(?:\||\b|$)/);
+              if (localeMatch) {
+                countryCode = localeMatch[1].toUpperCase();
+              } else if (!targetCountry) {
+                targetCountry = projectCode.split('|')[0].trim();
+              }
+            }
+          }
+        }
+
+        // Inspect project_name for bracketed countries e.g. "[Australia] 1867967", "[United Kingdom]"
+        if (!countryCode || countryCode === 'EMAIL_SURVEY') {
+          const bracketMatch = (item.project_name || '').match(/\[([A-Za-z0-9\s_-]+)\]/);
+          if (bracketMatch) {
+            const inside = bracketMatch[1].trim();
+            if (inside.length === 2) countryCode = inside.toUpperCase();
+            else if (!targetCountry) targetCountry = inside;
+          }
+        }
+
+        const finalCountryCode = (countryCode && countryCode !== 'EMAIL_SURVEY')
+          ? countryCode
+          : (projectCode && projectCode !== 'EMAIL_SURVEY' && projectCode.length === 2 ? projectCode.toUpperCase() : '');
 
         const result = {
           project_pno: item.project_pno,
           project_id: item.project_id,
           project_name: item.project_name,
-          project_code: item.project_code,
-          target_country: targetCountry,
+          project_code: finalCountryCode || item.project_code,
+          country_code: finalCountryCode,
+          target_country: targetCountry || finalCountryCode || 'United States',
           project_cpi: Number(memberPayout.toFixed(2)),
           project_cpi_usd: Number((memberPayout / (item.currency?.currency_coins || 100.00)).toFixed(4)), // sanitized USD CPI post coin and splits conversion
           currency_coins: item.currency?.currency_coins || 100.00,

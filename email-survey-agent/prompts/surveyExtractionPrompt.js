@@ -19,7 +19,8 @@ Your task is to analyze an incoming email and determine if it contains an online
    - "project_quota": Total sample needed (n=) or required completes as an integer. Default 100 if unspecified.
    - "project_loi": Length of interview in minutes as an integer. Default 15 if unspecified.
    - "project_ir": Incidence rate percentage (0-100) as an integer. Default 50 if unspecified.
-   - "target_country": EXACT country name or ISO code (e.g. "United States", "US", "UK", "Germany", "Canada", etc.). Check table columns under "Country", "Geography", or "Market". NEVER return "Global" unless the email explicitly states "Global" or "Worldwide".
+   - "target_country": EXACT target country name (e.g. "United States", "United Kingdom", "Spain", "Brazil", "Canada", "Australia", "Germany", "France", "Japan", "China", "India", "Mexico", etc.). Inspect tables, "Geography:", "Country:", "Market:", or subject lines. NEVER return "Global" unless the email explicitly states "Global" or "Worldwide".
+   - "country_code": Standard 2-letter uppercase ISO country code (e.g. "US", "GB", "ES", "BR", "CA", "AU", "DE", "FR", "JP", "CN", "IN", "MX", "IT").
    - "project_click_url": The direct survey entry link, live link, or test link found in the email table or body.
    
    ### KEY DEMOGRAPHIC & VERBATIM SPECS REQUIREMENTS:
@@ -62,6 +63,7 @@ You MUST respond ONLY with a valid JSON object matching this schema. Do NOT incl
   "project_loi": 15,
   "project_ir": 50,
   "target_country": "United States",
+  "country_code": "US",
   "project_click_url": "string",
   "age_range": "18-65",
   "occupation": "string",

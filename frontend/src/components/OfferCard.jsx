@@ -47,6 +47,7 @@ const CURRENCY_META = {
 const ISO_COUNTRY_META = {
   US: { country: 'United States' },
   GB: { country: 'United Kingdom' },
+  UK: { country: 'United Kingdom' },
   CN: { country: 'China' },
   JP: { country: 'Japan' },
   AU: { country: 'Australia' },
@@ -91,20 +92,229 @@ const ISO_COUNTRY_META = {
   AT: { country: 'Austria' },
   PK: { country: 'Pakistan' },
   BD: { country: 'Bangladesh' },
+  EG: { country: 'Egypt' },
+  GR: { country: 'Greece' },
+  QA: { country: 'Qatar' },
+  KW: { country: 'Kuwait' },
+  RO: { country: 'Romania' },
+  MA: { country: 'Morocco' },
+};
+
+const COUNTRY_NAME_TO_CODE = {
+  'UNITED STATES': 'US',
+  'USA': 'US',
+  'AMERICA': 'US',
+  'UNITED KINGDOM': 'UK',
+  'GREAT BRITAIN': 'UK',
+  'ENGLAND': 'UK',
+  'UK': 'UK',
+  'GB': 'UK',
+  'SPAIN': 'ES',
+  'ESPANA': 'ES',
+  'ES': 'ES',
+  'BRAZIL': 'BR',
+  'BRASIL': 'BR',
+  'BR': 'BR',
+  'CANADA': 'CA',
+  'CA': 'CA',
+  'AUSTRALIA': 'AU',
+  'AU': 'AU',
+  'GERMANY': 'DE',
+  'DEUTSCHLAND': 'DE',
+  'DE': 'DE',
+  'FRANCE': 'FR',
+  'FR': 'FR',
+  'ITALY': 'IT',
+  'ITALIA': 'IT',
+  'IT': 'IT',
+  'JAPAN': 'JP',
+  'JP': 'JP',
+  'CHINA': 'CN',
+  'CN': 'CN',
+  'INDIA': 'IN',
+  'IN': 'IN',
+  'MEXICO': 'MX',
+  'MX': 'MX',
+  'NETHERLANDS': 'NL',
+  'HOLLAND': 'NL',
+  'NL': 'NL',
+  'SWEDEN': 'SE',
+  'SE': 'SE',
+  'NORWAY': 'NO',
+  'NO': 'NO',
+  'DENMARK': 'DK',
+  'DK': 'DK',
+  'FINLAND': 'FI',
+  'FI': 'FI',
+  'POLAND': 'PL',
+  'PL': 'PL',
+  'SWITZERLAND': 'CH',
+  'CH': 'CH',
+  'AUSTRIA': 'AT',
+  'AT': 'AT',
+  'BELGIUM': 'BE',
+  'BE': 'BE',
+  'PORTUGAL': 'PT',
+  'PT': 'PT',
+  'IRELAND': 'IE',
+  'IE': 'IE',
+  'NEW ZEALAND': 'NZ',
+  'NZ': 'NZ',
+  'SINGAPORE': 'SG',
+  'SG': 'SG',
+  'HONG KONG': 'HK',
+  'HONG KONG, SAR CHINA': 'HK',
+  'HK': 'HK',
+  'SOUTH KOREA': 'KR',
+  'KOREA (SOUTH)': 'KR',
+  'KOREA': 'KR',
+  'KR': 'KR',
+  'TAIWAN': 'TW',
+  'TW': 'TW',
+  'THAILAND': 'TH',
+  'TH': 'TH',
+  'MALAYSIA': 'MY',
+  'MY': 'MY',
+  'INDONESIA': 'ID',
+  'ID': 'ID',
+  'PHILIPPINES': 'PH',
+  'PH': 'PH',
+  'VIETNAM': 'VN',
+  'VIET NAM': 'VN',
+  'VN': 'VN',
+  'SOUTH AFRICA': 'ZA',
+  'ZA': 'ZA',
+  'ARGENTINA': 'AR',
+  'AR': 'AR',
+  'CHILE': 'CL',
+  'CL': 'CL',
+  'COLOMBIA': 'CO',
+  'CO': 'CO',
+  'PERU': 'PE',
+  'PE': 'PE',
+  'TURKEY': 'TR',
+  'TURKIYE': 'TR',
+  'TR': 'TR',
+  'SAUDI ARABIA': 'SA',
+  'KSA': 'SA',
+  'SA': 'SA',
+  'UAE': 'AE',
+  'UNITED ARAB EMIRATES': 'AE',
+  'AE': 'AE',
+  'ISRAEL': 'IL',
+  'IL': 'IL',
+  'RUSSIA': 'RU',
+  'RU': 'RU',
+  'EGYPT': 'EG',
+  'EG': 'EG',
+  'GREECE': 'GR',
+  'GR': 'GR',
+  'QATAR': 'QA',
+  'QA': 'QA',
+  'KUWAIT': 'KW',
+  'KW': 'KW',
+  'ROMANIA': 'RO',
+  'RO': 'RO',
+  'MOROCCO': 'MA',
+  'MA': 'MA'
 };
 
 function getGeoInfo(offer) {
-  // 1. Try project_code as ISO country code (GoWebSurveys)
-  const code = (offer.project_code || '').trim().toUpperCase().split('|')[0];
-  if (code && code.length === 2 && ISO_COUNTRY_META[code]) {
-    return { ...ISO_COUNTRY_META[code], code };
+  const clean = (val) => String(val || '').trim().toUpperCase();
+
+  // 1. Direct country_code if set by backend or GoWebSurveys
+  if (offer.country_code && offer.country_code !== 'EMAIL_SURVEY') {
+    const cc = clean(offer.country_code);
+    const mapped = COUNTRY_NAME_TO_CODE[cc] || cc;
+    if (ISO_COUNTRY_META[mapped]) {
+      return { country: ISO_COUNTRY_META[mapped].country, code: mapped === 'GB' ? 'UK' : mapped };
+    }
   }
-  // 2. Fallback to currency code
-  const cc = (offer.currency_code || 'USD').toUpperCase();
-  if (CURRENCY_META[cc]) {
-    return { ...CURRENCY_META[cc], code: cc };
+
+  // 2. Check project_code (handles "US", "ES", "BR", "English-GB|54", "Australia")
+  const rawCode = (offer.project_code || '').trim();
+  if (rawCode && rawCode !== 'EMAIL_SURVEY') {
+    const code = rawCode.toUpperCase().split('|')[0].trim();
+    if (COUNTRY_NAME_TO_CODE[code]) {
+      const codeKey = COUNTRY_NAME_TO_CODE[code];
+      const name = ISO_COUNTRY_META[codeKey]?.country || codeKey;
+      return { country: name, code: codeKey === 'GB' ? 'UK' : codeKey };
+    }
+    const localeMatch = rawCode.match(/[-_]([A-Za-z]{2})(?:\||\b|$)/);
+    if (localeMatch) {
+      const c = localeMatch[1].toUpperCase();
+      if (COUNTRY_NAME_TO_CODE[c]) {
+        const codeKey = COUNTRY_NAME_TO_CODE[c];
+        const name = ISO_COUNTRY_META[codeKey]?.country || codeKey;
+        return { country: name, code: codeKey === 'GB' ? 'UK' : codeKey };
+      }
+    }
+    const pCodeUpper = rawCode.toUpperCase();
+    if (COUNTRY_NAME_TO_CODE[pCodeUpper]) {
+      const codeKey = COUNTRY_NAME_TO_CODE[pCodeUpper];
+      const name = ISO_COUNTRY_META[codeKey]?.country || codeKey;
+      return { country: name, code: codeKey === 'GB' ? 'UK' : codeKey };
+    }
   }
-  return { country: 'Global', code: cc };
+
+  // 3. Check target_country field (e.g. "United Kingdom", "Spain", "Brazil", "JP")
+  const targetCountry = (offer.target_country || '').trim();
+  if (targetCountry && targetCountry !== 'Global') {
+    const parts = targetCountry.split(/[,/|]/).map(p => clean(p)).filter(Boolean);
+    for (const part of parts) {
+      if (COUNTRY_NAME_TO_CODE[part]) {
+        const codeKey = COUNTRY_NAME_TO_CODE[part];
+        const name = ISO_COUNTRY_META[codeKey]?.country || targetCountry;
+        return { country: name, code: codeKey === 'GB' ? 'UK' : codeKey };
+      }
+    }
+  }
+
+  // 4. Check project_name for bracketed countries: "[Australia] 1867967", "[United Kingdom]", "[Spain]"
+  const pName = offer.project_name || '';
+  if (pName) {
+    const bracketMatch = pName.match(/\[([A-Za-z0-9\s_-]+)\]/);
+    if (bracketMatch) {
+      const inside = clean(bracketMatch[1]);
+      if (COUNTRY_NAME_TO_CODE[inside]) {
+        const codeKey = COUNTRY_NAME_TO_CODE[inside];
+        const name = ISO_COUNTRY_META[codeKey]?.country || bracketMatch[1];
+        return { country: name, code: codeKey === 'GB' ? 'UK' : codeKey };
+      }
+    }
+    // Check tags in project_name: "B2C-NL", "WANS-NL", "KSA"
+    const tagMatch = pName.match(/\b(?:B2B|B2C|WANS?)[-\s]+([A-Za-z]{2,3})\b/i);
+    if (tagMatch) {
+      const tag = clean(tagMatch[1]);
+      if (COUNTRY_NAME_TO_CODE[tag]) {
+        const codeKey = COUNTRY_NAME_TO_CODE[tag];
+        const name = ISO_COUNTRY_META[codeKey]?.country || tag;
+        return { country: name, code: codeKey === 'GB' ? 'UK' : codeKey };
+      }
+    }
+    // Check standalone country names in title
+    for (const [key, codeKey] of Object.entries(COUNTRY_NAME_TO_CODE)) {
+      if (key.length > 2) {
+        const regex = new RegExp(`\\b${key}\\b`, 'i');
+        if (regex.test(pName)) {
+          const name = ISO_COUNTRY_META[codeKey]?.country || key;
+          return { country: name, code: codeKey === 'GB' ? 'UK' : codeKey };
+        }
+      }
+    }
+  }
+
+  // 5. Explicit foreign currencies (GBP, EUR, AUD, CAD, BRL, MXN, INR, JPY)
+  const cc = (offer.currency_code || '').toUpperCase();
+  if (cc && cc !== 'USD') {
+    if (CURRENCY_META[cc]) {
+      const codeKey = cc === 'GBP' ? 'UK' : (COUNTRY_NAME_TO_CODE[cc] || cc.slice(0, 2));
+      return { country: CURRENCY_META[cc].country, code: codeKey };
+    }
+  }
+
+  // 6. Default fallback
+  return { country: 'United States', code: 'US' };
 }
 
 export default function OfferCard({ offer, onStart, onSpecs, onCopyLink, onFingerprint, showUSD = false }) {
@@ -122,15 +332,10 @@ export default function OfferCard({ offer, onStart, onSpecs, onCopyLink, onFinge
   const geo = getGeoInfo(offer);
 
   const getAbbr = (code) => {
-    if (!code) return 'GL';
+    if (!code) return 'US';
+    if (code === 'GB' || code === 'GBP') return 'UK';
     if (code === 'USD') return 'US';
     if (code === 'EUR') return 'EU';
-    if (code === 'GBP') return 'GB';
-    if (code === 'CNY') return 'CN';
-    if (code === 'JPY') return 'JP';
-    if (code === 'AUD') return 'AU';
-    if (code === 'CAD') return 'CA';
-    if (code === 'INR') return 'IN';
     return code.substring(0, 2).toUpperCase();
   };
 
