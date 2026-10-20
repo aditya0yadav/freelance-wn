@@ -306,11 +306,11 @@ class ImapService {
 
             const startSeq = Math.max(1, total - countPerFolder + 1);
             const seqRange = `${startSeq}:*`;
-            console.log(`[IMAP] Folder [${mb.name}]: fetching last ${countPerFolder} emails (${seqRange}, total: ${total})...`);
-
+            const cutoffDate = this.getCutoffDate();
             const batch = [];
             for await (const message of client.fetch(seqRange, { envelope: true, source: true, uid: true })) {
               const parsed = await simpleParser(message.source);
+              if (parsed.date && parsed.date < cutoffDate) continue;
               const messageId = parsed.messageId || `msg_${mb.name}_${message.uid}_${Date.now()}`;
               const from = parsed.from ? parsed.from.text : '';
               const subject = parsed.subject || '(No Subject)';

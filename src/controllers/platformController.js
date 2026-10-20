@@ -172,6 +172,17 @@ class PlatformController {
         is_disable: 0
       };
 
+      // Only display projects active or created within the last 1 month (30 days) to present
+      const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      whereClause.AND = [
+        {
+          OR: [
+            { create_time: { gte: oneMonthAgo } },
+            { update_time: { gte: oneMonthAgo } }
+          ]
+        }
+      ];
+
       if (platformId) {
         if (!effectiveAuthIds.includes(platformId) || !allowedPlatformIds.includes(platformId)) {
           return res.status(403).json({ code: 403, msg: 'Unauthorized platform' });
@@ -185,12 +196,14 @@ class PlatformController {
       // Deep search query matching multiple fields if search term is provided
       if (search && search.trim()) {
         const query = search.trim();
-        whereClause.OR = [
-          { project_name: { contains: query } },
-          { project_pno: { contains: query } },
-          { project_code: { contains: query } },
-          { platform: { platform_name: { contains: query } } }
-        ];
+        whereClause.AND.push({
+          OR: [
+            { project_name: { contains: query } },
+            { project_pno: { contains: query } },
+            { project_code: { contains: query } },
+            { platform: { platform_name: { contains: query } } }
+          ]
+        });
       }
 
       if (code) whereClause.project_code = { contains: code };
@@ -1300,11 +1313,16 @@ class PlatformController {
       });
       const effectiveAuthIds = Array.from(new Set([...authIds, ...customPlatforms.map(c => c.platform_id)]));
 
-      // Fetch top 25 recent project creations or updates (including paused surveys so members receive pause alerts)
+      // Fetch recent project creations or updates from the last 1 month (including paused surveys)
+      const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const projects = await prisma.project.findMany({
         where: {
           platform_id: { in: effectiveAuthIds },
-          delete_time: null
+          delete_time: null,
+          OR: [
+            { update_time: { gte: oneMonthAgo } },
+            { create_time: { gte: oneMonthAgo } }
+          ]
         },
         include: {
           platform: true,
