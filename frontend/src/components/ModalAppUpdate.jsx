@@ -4,7 +4,6 @@ import {
   X,
   Sparkles,
   Download,
-  ExternalLink,
   CheckCircle2,
   Calendar,
   Layers,
@@ -72,7 +71,6 @@ export default function ModalAppUpdate({
       downloadOptions: 'Download & Install Update',
       windowsApp: 'Windows App (.zip)',
       webBundle: 'Web Server Bundle (.zip)',
-      viewGitHub: 'View on GitHub Releases',
       copyLink: 'Copy Link',
       copied: 'Copied!',
       checkAgain: 'Check Again',
@@ -90,7 +88,6 @@ export default function ModalAppUpdate({
       downloadOptions: '下载更新安装包',
       windowsApp: 'Windows 客户端 (.zip)',
       webBundle: 'Web 部署包 (wanhong-web.zip)',
-      viewGitHub: '前往 GitHub 发布页面',
       copyLink: '复制链接',
       copied: '已复制!',
       checkAgain: '重新检查',
@@ -203,11 +200,11 @@ export default function ModalAppUpdate({
 
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
-                    className="btn-update-primary"
-                    onClick={() => openLink(release.releaseUrl || 'https://github.com/aditya0yadav/freelance-wn/releases/latest')}
+                    className="btn-primary-sm"
+                    onClick={onClose}
+                    style={{ minWidth: '90px', justifyContent: 'center' }}
                   >
-                    <ExternalLink size={14} />
-                    <span>{t.viewGitHub}</span>
+                    {t.close}
                   </button>
                 </div>
               </div>
