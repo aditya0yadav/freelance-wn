@@ -90,6 +90,7 @@ export default function App() {
   const [offersLoading, setOffersLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState('default');
+  const [countryFilter, setCountryFilter] = useState('all');
   const [offersPage, setOffersPage] = useState(1);
   const [offersPages, setOffersPages] = useState(1);
   const [offersTotal, setOffersTotal] = useState(0);
@@ -331,6 +332,7 @@ export default function App() {
     setOffers([]);
     setSearchQuery('');
     setSortOption('default');
+    setCountryFilter('all');
     // Refresh balance too
     api('/api/member/platform/profile').then(profRes => {
       if (profRes.code === 200) {
@@ -339,10 +341,10 @@ export default function App() {
       }
     }).catch(() => {});
     navigate(`/platform/${p.platform_id}`);
-    loadOffers(p.platform_id, 1, '');
+    loadOffers(p.platform_id, 1, '', false, 'all');
   };
 
-  const loadOffers = async (platformId, page = 1, search = '', silent = false) => {
+  const loadOffers = async (platformId, page = 1, search = '', silent = false, country = countryFilter) => {
     if (!silent) {
       setOffersLoading(true);
       setOffers([]);
@@ -358,6 +360,9 @@ export default function App() {
       });
       if (search && search.trim()) {
         q.append('search', search.trim());
+      }
+      if (country && country !== 'all') {
+        q.append('country', country);
       }
       const res = await api(`/api/member/platform/offers?${q.toString()}`);
       if (res.code === 200 && res.data) {
@@ -383,11 +388,11 @@ export default function App() {
     if (!token || !selectedPlatform) return;
 
     const interval = setInterval(() => {
-      loadOffers(selectedPlatform.platform_id, offersPage, searchQuery, true);
+      loadOffers(selectedPlatform.platform_id, offersPage, searchQuery, true, countryFilter);
     }, 8000);
 
     return () => clearInterval(interval);
-  }, [selectedPlatform, offersPage, searchQuery, sortOption, token]);
+  }, [selectedPlatform, offersPage, searchQuery, sortOption, countryFilter, token]);
 
   const refreshInventory = async (platformId) => {
     if (refreshLoading) return;
@@ -400,7 +405,7 @@ export default function App() {
         api('/api/member/platform/profile').then(profRes => {
           if (profRes.code === 200) setMemberCoins(profRes.data.coins || 0);
         }).catch(() => {});
-        await loadOffers(platformId, 1, searchQuery);
+        await loadOffers(platformId, 1, searchQuery, false, countryFilter);
       } else {
         showToast(res.msg || 'Refresh failed', true);
       }
@@ -411,19 +416,40 @@ export default function App() {
     }
   };
 
-  // Debounce backend offers search when typing query or changing sort option
+  // Debounce backend offers search when typing query or changing sort or country option
   useEffect(() => {
     if (selectedPlatform) {
       const delayFn = setTimeout(() => {
-        loadOffers(selectedPlatform.platform_id, 1, searchQuery);
+        loadOffers(selectedPlatform.platform_id, 1, searchQuery, false, countryFilter);
       }, 400);
       return () => clearTimeout(delayFn);
     }
-  }, [searchQuery, sortOption]);
+  }, [searchQuery, sortOption, countryFilter]);
 
   // ── Offers processing ─────────────────────────────────────────────────────
   const processedOffers = useMemo(() => {
     let result = [...offers];
+
+    // Country filter
+    if (countryFilter && countryFilter !== 'all') {
+      const target = countryFilter.toLowerCase();
+      result = result.filter(item => {
+        const c1 = (item.target_country || '').toLowerCase();
+        const c2 = (item.project_code || '').toLowerCase();
+        const c3 = (item.currency_code || '').toLowerCase();
+        const c4 = (item.project_name || '').toLowerCase();
+        return c1.includes(target) || c2 === target || c4.includes(target) ||
+          (target === 'us' && (c1.includes('united states') || c2 === 'us' || c3 === 'usd')) ||
+          (target === 'uk' && (c1.includes('united kingdom') || c2 === 'gb' || c2 === 'uk' || c3 === 'gbp')) ||
+          (target === 'ca' && (c1.includes('canada') || c2 === 'ca' || c3 === 'cad')) ||
+          (target === 'au' && (c1.includes('australia') || c2 === 'au' || c3 === 'aud')) ||
+          (target === 'de' && (c1.includes('germany') || c2 === 'de' || c3 === 'eur')) ||
+          (target === 'fr' && (c1.includes('france') || c2 === 'fr' || c3 === 'eur')) ||
+          (target === 'jp' && (c1.includes('japan') || c2 === 'jp' || c3 === 'jpy')) ||
+          (target === 'cn' && (c1.includes('china') || c2 === 'cn' || c3 === 'cny'));
+      });
+    }
+
     if (sortOption === 'cpi-desc') result.sort((a, b) => b.project_cpi - a.project_cpi);
     else if (sortOption === 'cpi-asc') result.sort((a, b) => a.project_cpi - b.project_cpi);
     else if (sortOption === 'loi-asc') result.sort((a, b) => (a.project_loi || 999) - (b.project_loi || 999));
@@ -432,7 +458,7 @@ export default function App() {
       result.sort((a, b) => (b.project_id || 0) - (a.project_id || 0));
     }
     return result;
-  }, [offers, sortOption]);
+  }, [offers, sortOption, countryFilter]);
 
   // ── Wall copy ─────────────────────────────────────────────────────────────
   const handleCopyWall = async (platformId, e) => {
@@ -573,6 +599,8 @@ export default function App() {
               setSearchQuery={setSearchQuery}
               sortOption={sortOption}
               setSortOption={setSortOption}
+              countryFilter={countryFilter}
+              setCountryFilter={setCountryFilter}
               processedOffers={processedOffers}
               offersLoading={offersLoading}
               handleStartSurvey={handleStartSurvey}

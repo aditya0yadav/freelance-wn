@@ -206,6 +206,24 @@ class PlatformController {
         });
       }
 
+      // Country filter support
+      const countryQuery = req.query.country || '';
+      if (countryQuery && countryQuery !== 'all') {
+        const cTerm = countryQuery.trim();
+        const orConditions = [
+          { project_code: { contains: cTerm } },
+          { project_name: { contains: cTerm } },
+          { project_content: { contains: cTerm } }
+        ];
+        if (cTerm.toLowerCase() === 'us') {
+          orConditions.push({ project_content: { contains: 'United States' } });
+        } else if (cTerm.toLowerCase() === 'uk') {
+          orConditions.push({ project_code: { contains: 'GB' } });
+          orConditions.push({ project_content: { contains: 'United Kingdom' } });
+        }
+        whereClause.AND.push({ OR: orConditions });
+      }
+
       if (code) whereClause.project_code = { contains: code };
       if (projectPno) whereClause.project_pno = { contains: projectPno };
       if (projectName) whereClause.project_name = { contains: projectName };
@@ -247,11 +265,24 @@ class PlatformController {
         const teamPayout = rawCoins * ((100 - teamCommissionRatio) / 100) * ((100 - authRateVal) / 100);
         const memberPayout = teamPayout * memberRate;
 
+        let targetCountry = item.project_code || 'US';
+        if (item.project_content) {
+          try {
+            const parsed = JSON.parse(item.project_content);
+            if (parsed?.base_requirements?.target_country) {
+              targetCountry = parsed.base_requirements.target_country;
+            } else if (parsed?.base_requirements?.country) {
+              targetCountry = parsed.base_requirements.country;
+            }
+          } catch {}
+        }
+
         const result = {
           project_pno: item.project_pno,
           project_id: item.project_id,
           project_name: item.project_name,
           project_code: item.project_code,
+          target_country: targetCountry,
           project_cpi: Number(memberPayout.toFixed(2)),
           project_cpi_usd: Number((memberPayout / (item.currency?.currency_coins || 100.00)).toFixed(4)), // sanitized USD CPI post coin and splits conversion
           currency_coins: item.currency?.currency_coins || 100.00,

@@ -13,6 +13,8 @@ export default function OffersView({
   setSearchQuery,
   sortOption,
   setSortOption,
+  countryFilter = 'all',
+  setCountryFilter,
   processedOffers,
   offersLoading,
   handleStartSurvey,
@@ -139,16 +141,43 @@ export default function OffersView({
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
             <input
               type="text"
-              placeholder="Search surveys globally..."
+              placeholder={language === 'zh' ? '搜索项目、编号、国家...' : 'Search surveys globally...'}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
+
+          {/* Country Filter */}
+          {setCountryFilter && (
+            <div className="country-filter-wrap" style={{ display: 'flex', alignItems: 'center' }}>
+              <select
+                className="sort-select"
+                value={countryFilter || 'all'}
+                onChange={e => setCountryFilter(e.target.value)}
+                style={{ minWidth: '135px' }}
+                title={language === 'zh' ? '按国家/地区筛选' : 'Filter by Country/Region'}
+              >
+                <option value="all">🌐 {language === 'zh' ? '所有国家/地区' : 'All Countries'}</option>
+                <option value="US">🇺🇸 {language === 'zh' ? '美国 (US)' : 'United States (US)'}</option>
+                <option value="UK">🇬🇧 {language === 'zh' ? '英国 (UK)' : 'United Kingdom (UK)'}</option>
+                <option value="CA">🇨🇦 {language === 'zh' ? '加拿大 (CA)' : 'Canada (CA)'}</option>
+                <option value="AU">🇦🇺 {language === 'zh' ? '澳大利亚 (AU)' : 'Australia (AU)'}</option>
+                <option value="DE">🇩🇪 {language === 'zh' ? '德国 (DE)' : 'Germany (DE)'}</option>
+                <option value="FR">🇫🇷 {language === 'zh' ? '法国 (FR)' : 'France (FR)'}</option>
+                <option value="JP">🇯🇵 {language === 'zh' ? '日本 (JP)' : 'Japan (JP)'}</option>
+                <option value="CN">🇨🇳 {language === 'zh' ? '中国 (CN)' : 'China (CN)'}</option>
+                <option value="IN">🇮🇳 {language === 'zh' ? '印度 (IN)' : 'India (IN)'}</option>
+                <option value="BR">🇧🇷 {language === 'zh' ? '巴西 (BR)' : 'Brazil (BR)'}</option>
+                <option value="MX">🇲🇽 {language === 'zh' ? '墨西哥 (MX)' : 'Mexico (MX)'}</option>
+              </select>
+            </div>
+          )}
+
           <select className="sort-select" value={sortOption} onChange={e => setSortOption(e.target.value)}>
-            <option value="default">Newest First</option>
-            <option value="cpi-desc">Highest Payout</option>
-            <option value="cpi-asc">Lowest Payout</option>
-            <option value="loi-asc">Quickest</option>
+            <option value="default">{language === 'zh' ? '最新创建' : 'Newest First'}</option>
+            <option value="cpi-desc">{language === 'zh' ? '最高单价' : 'Highest Payout'}</option>
+            <option value="cpi-asc">{language === 'zh' ? '最低单价' : 'Lowest Payout'}</option>
+            <option value="loi-asc">{language === 'zh' ? '最短耗时' : 'Quickest'}</option>
           </select>
           {/* Coins / USD Toggle — prominent position */}
           {setShowUSD && (
