@@ -20,7 +20,6 @@
   "releaseUrl": "https://github.com/aditya0yadav/freelance-wn/releases/latest",
   "downloadUrls": {
     "windows": "https://github.com/aditya0yadav/freelance-wn/releases/latest/download/Wanhong-Survey-Windows.zip",
-    "mac": "https://github.com/aditya0yadav/freelance-wn/releases/latest/download/Wanhong-Survey-Mac.zip",
     "web": "https://github.com/aditya0yadav/freelance-wn/releases/latest/download/wanhong-web.zip"
   }
 }

@@ -9,7 +9,6 @@ import {
   Calendar,
   Layers,
   Monitor,
-  Apple,
   Globe,
   Copy,
   Check
@@ -42,7 +41,6 @@ export default function ModalAppUpdate({
 
   const downloadUrls = release.downloadUrls || {
     windows: release.releaseUrl || 'https://github.com/aditya0yadav/freelance-wn/releases/latest',
-    mac: release.releaseUrl || 'https://github.com/aditya0yadav/freelance-wn/releases/latest',
     web: release.releaseUrl || 'https://github.com/aditya0yadav/freelance-wn/releases/latest'
   };
 
@@ -73,7 +71,6 @@ export default function ModalAppUpdate({
       whatsNew: "What's New in This Release",
       downloadOptions: 'Download & Install Update',
       windowsApp: 'Windows App (.zip)',
-      macApp: 'Mac App (.dmg)',
       webBundle: 'Web Server Bundle (.zip)',
       viewGitHub: 'View on GitHub Releases',
       copyLink: 'Copy Link',
@@ -92,7 +89,6 @@ export default function ModalAppUpdate({
       whatsNew: '本次更新内容',
       downloadOptions: '下载更新安装包',
       windowsApp: 'Windows 客户端 (.zip)',
-      macApp: 'Mac 客户端 (.dmg)',
       webBundle: 'Web 部署包 (wanhong-web.zip)',
       viewGitHub: '前往 GitHub 发布页面',
       copyLink: '复制链接',
@@ -179,17 +175,6 @@ export default function ModalAppUpdate({
                     <div className="dl-btn-text">
                       <strong>Windows</strong>
                       <span>{t.windowsApp}</span>
-                    </div>
-                  </button>
-
-                  <button
-                    className="update-dl-btn dl-mac"
-                    onClick={() => openLink(downloadUrls.mac || release.releaseUrl)}
-                  >
-                    <Apple size={18} />
-                    <div className="dl-btn-text">
-                      <strong>macOS</strong>
-                      <span>{t.macApp}</span>
                     </div>
                   </button>
 
