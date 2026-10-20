@@ -274,7 +274,9 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
                         </div>
                         <div className="pill-content" style={{ display: 'flex', flexDirection: 'column' }}>
                           <span style={{ fontSize: '10.5px', textTransform: 'uppercase', fontWeight: 600, color: 'var(--t3, #64748b)', letterSpacing: '0.04em' }}>{t.targetCountry}</span>
-                          <strong style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t1, #0f172a)' }}>{baseReq.country || timelineData.target_country || 'Global'}</strong>
+                          <strong style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t1, #0f172a)' }}>
+                            {baseReq.target_country || baseReq.country || timelineData.target_country || modalData.project?.target_country || modalSurvey?.project_code || 'United States'}
+                          </strong>
                         </div>
                       </div>
 
@@ -285,7 +287,7 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
                         </div>
                         <div className="pill-content" style={{ display: 'flex', flexDirection: 'column' }}>
                           <span style={{ fontSize: '10.5px', textTransform: 'uppercase', fontWeight: 600, color: 'var(--t3, #64748b)', letterSpacing: '0.04em' }}>{t.ageRange}</span>
-                          <strong style={{ fontSize: '13px', fontWeight: 700, color: '#10b981' }}>{baseReq.age_range || 'All ages'}</strong>
+                          <strong style={{ fontSize: '13px', fontWeight: 700, color: '#10b981' }}>{baseReq.age_range || '18-65'}</strong>
                         </div>
                       </div>
 
@@ -296,7 +298,7 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
                         </div>
                         <div className="pill-content" style={{ display: 'flex', flexDirection: 'column' }}>
                           <span style={{ fontSize: '10.5px', textTransform: 'uppercase', fontWeight: 600, color: 'var(--t3, #64748b)', letterSpacing: '0.04em' }}>{t.occupation}</span>
-                          <strong style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t1, #0f172a)' }}>{baseReq.occupation || 'Open / General'}</strong>
+                          <strong style={{ fontSize: '13px', fontWeight: 600, color: 'var(--t1, #0f172a)' }}>{baseReq.occupation || 'General Audience'}</strong>
                         </div>
                       </div>
 
@@ -312,9 +314,14 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
                       </div>
                     </div>
 
-                    {baseReq.description && (
-                      <div className="base-description-box" style={{ marginTop: '12px', padding: '10px 14px', background: 'var(--bg-3, #f8fafc)', border: '1px dashed var(--border, #cbd5e1)', borderRadius: '8px', fontSize: '12.5px', color: 'var(--t2, #475569)', lineHeight: 1.5 }}>
-                        {baseReq.description}
+                    {(baseReq.raw_specs || baseReq.description || baseReq.summary) && (
+                      <div className="base-specs-container" style={{ marginTop: '12px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--t3, #64748b)', marginBottom: '5px', letterSpacing: '0.04em' }}>
+                          {language === 'zh' ? '📋 项目初始完整规格与要求 (立项锁定)' : '📋 Initial Base Requirements & Specs (Locked)'}
+                        </div>
+                        <div className="base-description-box" style={{ padding: '12px 14px', background: 'var(--bg-3, #f8fafc)', border: '1px solid var(--border, #cbd5e1)', borderRadius: '8px', fontSize: '12.5px', color: 'var(--t1, #1e293b)', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                          {baseReq.raw_specs || baseReq.description || baseReq.summary}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -469,7 +476,7 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
 
                                 {/* Update Note / Summary Content */}
                                 {noteContent && (
-                                  <div className="timeline-notes" style={{ marginTop: '8px', fontSize: '12.5px', color: 'var(--t2, #334155)', lineHeight: 1.5, background: 'var(--bg-3, #f8fafc)', padding: '10px 14px', borderRadius: '8px', borderLeft: isPaused ? '3px solid #ef4444' : isClosed ? '3px solid #64748b' : '3px solid #10b981' }}>
+                                  <div className="timeline-notes" style={{ marginTop: '8px', fontSize: '12.5px', color: 'var(--t2, #334155)', lineHeight: 1.5, background: 'var(--bg-3, #f8fafc)', padding: '10px 14px', borderRadius: '8px', borderLeft: isPaused ? '3px solid #ef4444' : isClosed ? '3px solid #64748b' : '3px solid #10b981', whiteSpace: 'pre-wrap' }}>
                                     {noteContent}
                                   </div>
                                 )}

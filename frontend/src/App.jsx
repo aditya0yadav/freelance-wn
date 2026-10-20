@@ -618,6 +618,7 @@ export default function App() {
                 setStatsNickname={setStatsNickname}
                 setStatsPage={setStatsPage}
                 showUSD={showUSD}
+                onOpenSpecs={handleOpenModal}
               />
 
               <TickerBar conversions={conversions} />

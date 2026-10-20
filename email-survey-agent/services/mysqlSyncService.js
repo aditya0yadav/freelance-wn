@@ -117,13 +117,45 @@ class MySQLSyncService {
         console.log(`[Sync] Linked survey to platform in ya_platform: "${platform.platform_name}" (ID: ${platform.platform_id})`);
       }
 
-      // 3. Check for existing project with this project_no under this platform
-      const existing = await prisma.project.findFirst({
+      // 3. Flexible check for existing project under this platform
+      const rawNo = String(survey.project_no || '').trim();
+      const digitsOnly = rawNo.replace(/\D/g, '');
+      const possibleNos = [rawNo];
+      if (digitsOnly && digitsOnly !== rawNo) {
+        possibleNos.push(digitsOnly);
+        possibleNos.push(`${cleanSign.toUpperCase()}${digitsOnly}`);
+        possibleNos.push(`WI${digitsOnly}`);
+        possibleNos.push(`GI${digitsOnly}`);
+        possibleNos.push(`PF${digitsOnly}`);
+      }
+
+      let existing = await prisma.project.findFirst({
         where: {
           platform_id: platform.platform_id,
-          project_no: String(survey.project_no)
+          OR: [
+            { project_no: { in: possibleNos } },
+            ...(digitsOnly ? [{ project_no: { contains: digitsOnly } }] : []),
+            { project_pno: { contains: rawNo } }
+          ],
+          delete_time: null
         }
       });
+
+      // If still not found by platform, check globally across email survey projects
+      if (!existing && (survey.action === 'pause' || survey.action === 'close' || survey.is_update)) {
+        existing = await prisma.project.findFirst({
+          where: {
+            OR: [
+              { project_no: { in: possibleNos } },
+              ...(digitsOnly ? [{ project_no: { contains: digitsOnly } }] : [])
+            ],
+            project_code: 'EMAIL_SURVEY',
+            delete_time: null
+          }
+        });
+      }
+
+      const emailDate = survey.date ? new Date(survey.date) : new Date();
 
       if (existing) {
         console.log(`[Sync] Updating existing project in ya_project: PNO ${existing.project_pno}`);
@@ -141,18 +173,23 @@ class MySQLSyncService {
 
         if (!timeline) {
           // Initialize timeline preserving initial content as base requirements
+          const legacyCountry = survey.target_country || 'United States';
           timeline = {
             is_timeline: true,
             base_requirements: {
-              created_at: existing.create_time || new Date().toISOString(),
-              target_country: survey.target_country || 'General',
+              created_at: existing.create_time || emailDate.toISOString(),
+              target_country: legacyCountry,
+              country: legacyCountry,
               age_range: survey.age_range || '18-65',
-              occupation: survey.occupation || 'General / All Industries',
+              occupation: survey.occupation || 'General Audience',
+              target_demographics: survey.target_demographics || survey.occupation || 'General Audience',
               initial_quota: existing.project_quota || 100,
               initial_cpi: existing.project_cpi || 1.0,
               initial_loi: existing.project_loi || 15,
               initial_ir: existing.project_ir || 50,
-              summary: existing.project_content || 'Initial live project dispatch specifications.'
+              summary: existing.project_content || 'Initial live project dispatch specifications.',
+              description: existing.project_content || 'Initial live project dispatch specifications.',
+              raw_specs: existing.project_content || ''
             },
             update_logs: []
           };
@@ -173,16 +210,19 @@ class MySQLSyncService {
           statusLabel = 'ACTIVE';
         }
 
-        // Add this email as a new chronological update log entry
+        // Capture newly received update content verbatim
+        const updateContent = survey.update_text || survey.action_reason || survey.project_content || `Project state updated to ${statusLabel}.`;
+
+        // Add this email as a new chronological update log entry (NEVER overwriting base_requirements)
         const updateEntry = {
-          date: survey.date || new Date().toISOString(),
-          subject: survey.project_name || 'Project Update Dispatch',
-          email_subject: survey.project_name || 'Project Update Dispatch',
+          date: emailDate.toISOString(),
+          subject: survey.project_name || existing.project_name || 'Project Update Dispatch',
+          email_subject: survey.project_name || existing.project_name || 'Project Update Dispatch',
           action: survey.action || 'update',
           status: statusLabel,
-          action_reason: survey.action_reason || '',
-          summary: survey.action_reason || survey.project_content || `Project state updated to ${statusLabel}.`,
-          notes: survey.action_reason || survey.project_content || `Project state updated to ${statusLabel}.`,
+          action_reason: survey.action_reason || updateContent,
+          summary: updateContent,
+          notes: updateContent,
           excluded_groups: Array.isArray(survey.excluded_groups) ? survey.excluded_groups : [],
           age_range: survey.age_range || null,
           occupation: survey.occupation || null,
@@ -201,7 +241,7 @@ class MySQLSyncService {
           data: {
             is_disable: newIsDisable,
             project_content: JSON.stringify(timeline),
-            update_time: new Date(),
+            update_time: emailDate,
             ...(Number(survey.project_cpi) > 0 ? { project_cpi: Number(survey.project_cpi) } : {}),
             ...(Number(survey.project_quota) > 0 ? { project_quota: Number(survey.project_quota) } : {}),
             ...(survey.project_click_url ? { project_click_url: survey.project_click_url } : {})
@@ -213,30 +253,55 @@ class MySQLSyncService {
       }
 
       // 4. Generate unique Project PNO
-      const projectPno = `M_${platform.platform_id}_${survey.project_no}_${Date.now().toString().slice(-6)}`;
+      const projectPno = `M_${platform.platform_id}_${rawNo}_${Date.now().toString().slice(-6)}`;
 
-      // 5. Build Initial Base Requirements with Chronological Timeline
+      // 5. Determine if incoming initial email is a pause or closure notice
+      const isPauseOrClose = survey.action === 'pause' || survey.status === 'paused' || survey.action === 'close' || survey.status === 'closed';
+      if (isPauseOrClose) {
+        console.log(`[Sync] Received pause/hold for unlaunched study "${rawNo}". Recording as paused survey (is_disable: 1) without opening live traffic.`);
+      }
+
+      const rawSpecsText = survey.raw_specs || survey.project_content || '';
+      const countryVal = survey.target_country && survey.target_country !== 'Global' ? survey.target_country : 'United States';
+
+      // 6. Build Initial Base Requirements with Chronological Timeline
       const initialTimeline = {
         is_timeline: true,
         base_requirements: {
-          created_at: new Date().toISOString(),
-          target_country: survey.target_country || 'General',
+          created_at: emailDate.toISOString(),
+          target_country: countryVal,
+          country: countryVal,
           age_range: survey.age_range || '18-65',
-          occupation: survey.occupation || 'General / All Industries',
+          occupation: survey.occupation || 'General Audience',
+          target_demographics: survey.target_demographics || survey.occupation || 'General Audience',
           initial_quota: Number(survey.project_quota) || 100,
           initial_cpi: Number(survey.project_cpi) || 1.0,
           initial_loi: Number(survey.project_loi) || 15,
           initial_ir: Number(survey.project_ir) || 50,
-          summary: survey.project_content || 'Initial live project dispatch specifications.'
+          summary: rawSpecsText || 'Initial live project dispatch specifications.',
+          description: rawSpecsText || 'Initial live project dispatch specifications.',
+          raw_specs: rawSpecsText
         },
-        update_logs: []
+        update_logs: isPauseOrClose ? [{
+          date: emailDate.toISOString(),
+          subject: survey.project_name || 'Project Suspended',
+          email_subject: survey.project_name || 'Project Suspended',
+          action: 'pause',
+          status: 'PAUSED',
+          action_reason: survey.action_reason || 'Client suspended project',
+          summary: survey.update_text || survey.action_reason || 'Project placed on hold upon notification.',
+          notes: survey.update_text || survey.action_reason || 'Project placed on hold upon notification.',
+          excluded_groups: [],
+          quota: Number(survey.project_quota) || null,
+          cpi: Number(survey.project_cpi) || null
+        }] : []
       };
 
-      // 6. Insert into ya_project
+      // 7. Insert into ya_project with actual email timestamp and correct is_disable state
       const project = await prisma.project.create({
         data: {
           project_pno: projectPno,
-          project_no: String(survey.project_no),
+          project_no: rawNo,
           platform_id: platform.platform_id,
           project_name: survey.project_name || 'Email Survey Offer',
           project_code: 'EMAIL_SURVEY',
@@ -247,13 +312,14 @@ class MySQLSyncService {
           project_ir: Number(survey.project_ir) || 50,
           project_click_url: survey.project_click_url || '',
           project_content: JSON.stringify(initialTimeline),
-          is_disable: 0,
+          is_disable: isPauseOrClose ? 1 : 0,
           is_api: 0,
-          create_time: new Date()
+          create_time: emailDate,
+          update_time: emailDate
         }
       });
 
-      console.log(`[Sync] Successfully saved to ya_project: ${project.project_name} [${project.project_pno}]`);
+      console.log(`[Sync] Successfully saved to ya_project: ${project.project_name} [${project.project_pno}] (is_disable: ${project.is_disable})`);
       return project.project_id;
     } catch (err) {
       console.error('[Sync] Failed to sync survey to MySQL ya_project:', err.message);

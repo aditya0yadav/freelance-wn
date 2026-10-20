@@ -72,7 +72,8 @@ export default function Topbar({
   setStatsStatus,
   setStatsNickname,
   setStatsPage,
-  showUSD
+  showUSD,
+  onOpenSpecs
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -403,7 +404,20 @@ export default function Topbar({
                         className="notif-item"
                         onClick={() => {
                           setNotifOpen(false);
-                          navigate(`/platform/${item.platform_id}`);
+                          if (onOpenSpecs) {
+                            onOpenSpecs({
+                              project_pno: item.project_pno,
+                              project_name: item.project_name,
+                              platform_id: item.platform_id,
+                              platform_name: item.platform_name,
+                              project_quota: item.project_quota,
+                              project_cpi: item.project_cpi,
+                              project_loi: item.project_loi,
+                              project_ir: item.project_ir
+                            });
+                          } else {
+                            navigate(`/platform/${item.platform_id}`);
+                          }
                         }}
                       >
                         <div className="notif-item-top">
@@ -572,7 +586,20 @@ export default function Topbar({
         <div
           className="live-toast-banner"
           onClick={() => {
-            navigate(`/platform/${liveToast.platform_id}`);
+            if (onOpenSpecs) {
+              onOpenSpecs({
+                project_pno: liveToast.project_pno,
+                project_name: liveToast.project_name,
+                platform_id: liveToast.platform_id,
+                platform_name: liveToast.platform_name,
+                project_quota: liveToast.project_quota,
+                project_cpi: liveToast.project_cpi,
+                project_loi: liveToast.project_loi,
+                project_ir: liveToast.project_ir
+              });
+            } else {
+              navigate(`/platform/${liveToast.platform_id}`);
+            }
             setLiveToast(null);
           }}
           style={{

@@ -159,8 +159,14 @@ class ImapService {
         const csvPath = csvService.appendSurvey(surveyRecord);
         console.log(`[Storage] Appended to local CSV: ${csvPath}`);
 
-        // 5. Auto-sync to main MySQL ya_project & ya_platform
-        if (process.env.ENABLE_MYSQL_SYNC === 'true') {
+        // 5. Auto-sync to main MySQL ya_project & ya_platform (Disabled for Group T per manual review workflow)
+        const isGroupT = (folderName || '').trim().toUpperCase() === 'T' ||
+          (folderName || '').trim().toLowerCase() === 'group t' ||
+          (extracted.platform_name || '').trim().toUpperCase() === 'T';
+
+        if (isGroupT) {
+          console.log(`[Group T] Folder "${folderName}" belongs to Group T (manual review & acceptance required). Automatic sync to ya_project disabled.`);
+        } else if (process.env.ENABLE_MYSQL_SYNC === 'true') {
           const mysqlProjectId = await mysqlSyncService.syncSurvey(surveyRecord);
           if (mysqlProjectId) {
             SQLiteManager.markSyncedToMysql(surveyDbId, mysqlProjectId);
@@ -237,6 +243,7 @@ class ImapService {
           try {
             // Fetch unseen messages from the last 1 month (30 days)
             const searchQuery = { unseen: true, since: cutoffDate };
+            const batch = [];
             for await (const message of client.fetch(searchQuery, { envelope: true, source: true, uid: true })) {
               const parsed = await simpleParser(message.source);
               const messageId = parsed.messageId || `msg_${mb.name}_${message.uid}_${Date.now()}`;
@@ -244,7 +251,7 @@ class ImapService {
               const subject = parsed.subject || '(No Subject)';
               const date = parsed.date ? parsed.date.toISOString() : new Date().toISOString();
 
-              await this.processEmail({
+              batch.push({
                 messageId,
                 uid: String(message.uid),
                 from,
@@ -254,6 +261,13 @@ class ImapService {
                 html: parsed.html,
                 folderName: mb.name
               });
+            }
+
+            // Sort messages chronologically ascending (oldest -> newest) so initial project creation runs before subsequent updates/pause
+            batch.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+            for (const item of batch) {
+              await this.processEmail(item);
             }
           } finally {
             lock.release();
@@ -294,6 +308,7 @@ class ImapService {
             const seqRange = `${startSeq}:*`;
             console.log(`[IMAP] Folder [${mb.name}]: fetching last ${countPerFolder} emails (${seqRange}, total: ${total})...`);
 
+            const batch = [];
             for await (const message of client.fetch(seqRange, { envelope: true, source: true, uid: true })) {
               const parsed = await simpleParser(message.source);
               const messageId = parsed.messageId || `msg_${mb.name}_${message.uid}_${Date.now()}`;
@@ -301,7 +316,7 @@ class ImapService {
               const subject = parsed.subject || '(No Subject)';
               const date = parsed.date ? parsed.date.toISOString() : new Date().toISOString();
 
-              await this.processEmail({
+              batch.push({
                 messageId,
                 uid: String(message.uid),
                 from,
@@ -311,6 +326,13 @@ class ImapService {
                 html: parsed.html,
                 folderName: mb.name
               });
+            }
+
+            // Sort chronologically ascending (oldest -> newest)
+            batch.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+            for (const item of batch) {
+              await this.processEmail(item);
             }
           } finally {
             lock.release();
@@ -365,6 +387,7 @@ class ImapService {
 
             console.log(`[Reprocess] Folder [${mb.name}]: fetching messages (total: ${total}, since: ${cutoffDate.toISOString().slice(0, 10)})...`);
 
+            const batch = [];
             for await (const message of client.fetch(fetchQuery, { envelope: true, source: true, uid: true })) {
               const parsed = await simpleParser(message.source);
               const messageId = parsed.messageId || `msg_${mb.name}_${message.uid}_${Date.now()}`;
@@ -372,7 +395,7 @@ class ImapService {
               const subject = parsed.subject || '(No Subject)';
               const date = parsed.date ? parsed.date.toISOString() : new Date().toISOString();
 
-              await this.processEmail({
+              batch.push({
                 messageId,
                 uid: String(message.uid),
                 from,
@@ -382,6 +405,13 @@ class ImapService {
                 html: parsed.html,
                 folderName: mb.name
               });
+            }
+
+            // Sort chronologically ascending (oldest -> newest)
+            batch.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+            for (const item of batch) {
+              await this.processEmail(item);
             }
           } finally {
             lock.release();

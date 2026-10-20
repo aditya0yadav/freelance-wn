@@ -1300,12 +1300,11 @@ class PlatformController {
       });
       const effectiveAuthIds = Array.from(new Set([...authIds, ...customPlatforms.map(c => c.platform_id)]));
 
-      // Fetch top 25 recent project creations or updates
+      // Fetch top 25 recent project creations or updates (including paused surveys so members receive pause alerts)
       const projects = await prisma.project.findMany({
         where: {
           platform_id: { in: effectiveAuthIds },
-          delete_time: null,
-          is_disable: 0
+          delete_time: null
         },
         include: {
           platform: true,
@@ -1315,7 +1314,7 @@ class PlatformController {
           { update_time: 'desc' },
           { create_time: 'desc' }
         ],
-        take: 20
+        take: 25
       });
 
       const memberRate = (100 - (member?.rate || 0.00)) / 100;
