@@ -11,6 +11,7 @@
     "reset": "node index.js --reset",
     "mark-unseen": "node index.js --mark-unseen",
     "test:mock": "node test/mockEmailTest.js",
+    "test:lifecycle": "node test/testEmailThreadLifecycle.js",
     "status": "node index.js --status"
   },
   "dependencies": {
