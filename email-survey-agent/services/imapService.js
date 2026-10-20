@@ -84,12 +84,25 @@ class ImapService {
     }
   }
 
+  getCutoffDate() {
+    const days = parseInt(process.env.MAX_EMAIL_AGE_DAYS, 10) || 30;
+    return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  }
+
   /**
    * Process a single email payload through the pipeline
    */
   async processEmail({ messageId, uid, from, subject, date, text, html, folderName = 'INBOX' }) {
     if (SQLiteManager.isEmailProcessed(messageId)) {
       console.log(`[Deduplicate] Email ${messageId} already processed. Skipping.`);
+      return;
+    }
+
+    // Restrict processing to the last 1 month (30 days)
+    const emailDate = date ? new Date(date) : new Date();
+    const cutoffDate = this.getCutoffDate();
+    if (emailDate < cutoffDate) {
+      console.log(`[Filter] Email ${messageId} is older than 1 month (${emailDate.toISOString().slice(0, 10)} < ${cutoffDate.toISOString().slice(0, 10)}). Skipping.`);
       return;
     }
 
@@ -215,14 +228,16 @@ class ImapService {
     try {
       await client.connect();
       const targetMailboxes = await this.getTargetMailboxes(client);
-      console.log(`[IMAP] Connected to Zoho. Scanning ${targetMailboxes.length} company folders: ${targetMailboxes.map(m => m.name).join(', ')}...`);
+      const cutoffDate = this.getCutoffDate();
+      console.log(`[IMAP] Connected to Zoho. Scanning ${targetMailboxes.length} company folders (since ${cutoffDate.toISOString().slice(0, 10)}): ${targetMailboxes.map(m => m.name).join(', ')}...`);
 
       for (const mb of targetMailboxes) {
         try {
           const lock = await client.getMailboxLock(mb.path);
           try {
-            // Fetch unseen messages
-            for await (const message of client.fetch({ unseen: true }, { envelope: true, source: true, uid: true })) {
+            // Fetch unseen messages from the last 1 month (30 days)
+            const searchQuery = { unseen: true, since: cutoffDate };
+            for await (const message of client.fetch(searchQuery, { envelope: true, source: true, uid: true })) {
               const parsed = await simpleParser(message.source);
               const messageId = parsed.messageId || `msg_${mb.name}_${message.uid}_${Date.now()}`;
               const from = parsed.from ? parsed.from.text : '';
@@ -341,15 +356,16 @@ class ImapService {
             const total = status.messages || 0;
             if (total === 0) continue;
 
-            let seqRange = '1:*';
+            const cutoffDate = this.getCutoffDate();
+            let fetchQuery = { since: cutoffDate };
             if (countPerFolder !== 'all' && Number(countPerFolder) > 0) {
               const startSeq = Math.max(1, total - Number(countPerFolder) + 1);
-              seqRange = `${startSeq}:*`;
+              fetchQuery = `${startSeq}:*`;
             }
 
-            console.log(`[Reprocess] Folder [${mb.name}]: fetching messages in chronological order (${seqRange}, total: ${total})...`);
+            console.log(`[Reprocess] Folder [${mb.name}]: fetching messages (total: ${total}, since: ${cutoffDate.toISOString().slice(0, 10)})...`);
 
-            for await (const message of client.fetch(seqRange, { envelope: true, source: true, uid: true })) {
+            for await (const message of client.fetch(fetchQuery, { envelope: true, source: true, uid: true })) {
               const parsed = await simpleParser(message.source);
               const messageId = parsed.messageId || `msg_${mb.name}_${message.uid}_${Date.now()}`;
               const from = parsed.from ? parsed.from.text : '';

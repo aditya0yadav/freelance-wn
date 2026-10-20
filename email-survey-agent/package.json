@@ -12,6 +12,7 @@
     "mark-unseen": "node index.js --mark-unseen",
     "test:mock": "node test/mockEmailTest.js",
     "test:lifecycle": "node test/testEmailThreadLifecycle.js",
+    "test:multi": "node test/testMultiProjectRealLife.js",
     "status": "node index.js --status"
   },
   "dependencies": {
