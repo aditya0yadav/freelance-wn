@@ -262,6 +262,14 @@ class MySQLSyncService {
           updateData.project_code = countryInfo.code;
         }
 
+        // Clean project title if existing title contained price
+        if (existing.project_name) {
+          const cleanedName = MySQLSyncService.cleanProjectTitle(existing.project_name);
+          if (cleanedName && cleanedName !== existing.project_name) {
+            updateData.project_name = cleanedName;
+          }
+        }
+
         // Update existing project in ya_project without altering base specifications
         await prisma.project.update({
           where: { project_id: existing.project_id },
@@ -324,7 +332,7 @@ class MySQLSyncService {
           project_pno: projectPno,
           project_no: rawNo,
           platform_id: platform.platform_id,
-          project_name: survey.project_name || 'Email Survey Offer',
+          project_name: MySQLSyncService.cleanProjectTitle(survey.project_name || 'Email Survey Offer'),
           project_code: countryInfo.code || 'US',
           project_cpi: Number(survey.project_cpi) || 0.0,
           project_currency: currencyId,
@@ -346,6 +354,27 @@ class MySQLSyncService {
       console.error('[Sync] Failed to sync survey to MySQL ya_project:', err.message);
       return null;
     }
+  }
+
+  /**
+   * Sanitizes automated project titles to remove price/dollar mentions (e.g. "- $8.00", "$2.50", "WAN $7")
+   */
+  static cleanProjectTitle(title) {
+    if (!title) return '';
+    let cleaned = String(title);
+
+    // Remove price segments: e.g. "- $8.00", "- $2.50", "-$8", " $7", "$2.50 & $8.00", "CPI: $4.50"
+    cleaned = cleaned.replace(/[-\s]*(?:CPI\s*[:=\s]*)?\$[0-9]+(?:\.[0-9]+)?(?:\s*(?:&|and|,)\s*\$[0-9]+(?:\.[0-9]+)?)?(?:\s*(?:USD|EUR|GBP|AUD|CAD))?/gi, ' ');
+    cleaned = cleaned.replace(/[-\s]*[0-9]+(?:\.[0-9]+)?\s*(?:USD|EUR|GBP)\b/gi, ' ');
+
+    // Clean up dangling delimiters like "|| ||", "|| -", "- ||", extra spaces
+    cleaned = cleaned.replace(/\s*\|\|\s*\|\|\s*/g, ' || ');
+    cleaned = cleaned.replace(/\s*-\s*\|\|\s*/g, ' || ');
+    cleaned = cleaned.replace(/\s*\|\|\s*-\s*/g, ' || ');
+    cleaned = cleaned.replace(/\s{2,}/g, ' ');
+    cleaned = cleaned.replace(/^\s*[-|]+\s*/, '');
+    cleaned = cleaned.replace(/\s*[-|]+\s*$/, '');
+    return cleaned.trim() || title;
   }
 
   /**
@@ -551,6 +580,18 @@ class MySQLSyncService {
       if (bracketMatch) {
         const inside = clean(bracketMatch[1]);
         if (COUNTRY_MAP[inside]) return { ...COUNTRY_MAP[inside] };
+      }
+
+      // Check pipe segments e.g. "|| B2C - QA", "|| B2B - USA", "|| Qatar"
+      const segments = pName.split(/\|\||\|/).map(s => s.trim());
+      for (const seg of segments) {
+        const segTagMatch = seg.match(/\b(?:B2B|B2C|WANS?)[-\s]+([A-Za-z]{2,3})\b/i);
+        if (segTagMatch) {
+          const tag = clean(segTagMatch[1]);
+          if (COUNTRY_MAP[tag]) return { ...COUNTRY_MAP[tag] };
+        }
+        const cleanSeg = clean(seg);
+        if (COUNTRY_MAP[cleanSeg]) return { ...COUNTRY_MAP[cleanSeg] };
       }
 
       // Check hyphenated/spaced tags: e.g. "B2C-NL", "B2B US", "B2C US", "WANS-NL"

@@ -38,6 +38,23 @@ class PlatformController {
   }
 
   /**
+   * Sanitizes automated project titles to remove price/dollar mentions (e.g. "- $8.00", "$2.50", "WAN $7")
+   */
+  static cleanProjectTitle(title) {
+    if (!title) return '';
+    let cleaned = String(title);
+    cleaned = cleaned.replace(/[-\s]*(?:CPI\s*[:=\s]*)?\$[0-9]+(?:\.[0-9]+)?(?:\s*(?:&|and|,)\s*\$[0-9]+(?:\.[0-9]+)?)?(?:\s*(?:USD|EUR|GBP|AUD|CAD))?/gi, ' ');
+    cleaned = cleaned.replace(/[-\s]*[0-9]+(?:\.[0-9]+)?\s*(?:USD|EUR|GBP)\b/gi, ' ');
+    cleaned = cleaned.replace(/\s*\|\|\s*\|\|\s*/g, ' || ');
+    cleaned = cleaned.replace(/\s*-\s*\|\|\s*/g, ' || ');
+    cleaned = cleaned.replace(/\s*\|\|\s*-\s*/g, ' || ');
+    cleaned = cleaned.replace(/\s{2,}/g, ' ');
+    cleaned = cleaned.replace(/^\s*[-|]+\s*/, '');
+    cleaned = cleaned.replace(/\s*[-|]+\s*$/, '');
+    return cleaned.trim() || title;
+  }
+
+  /**
    * GET /api/member/platform/list
    */
   static async list(req, res) {
@@ -296,13 +313,24 @@ class PlatformController {
           }
         }
 
-        // Inspect project_name for bracketed countries e.g. "[Australia] 1867967", "[United Kingdom]"
-        if (!countryCode || countryCode === 'EMAIL_SURVEY') {
-          const bracketMatch = (item.project_name || '').match(/\[([A-Za-z0-9\s_-]+)\]/);
+        // Inspect project_name for explicit tags (e.g. "B2C - QA", "B2B - USA", "[Australia]")
+        const pName = item.project_name || '';
+        if (pName) {
+          const bracketMatch = pName.match(/\[([A-Za-z0-9\s_-]+)\]/);
           if (bracketMatch) {
             const inside = bracketMatch[1].trim();
             if (inside.length === 2) countryCode = inside.toUpperCase();
             else if (!targetCountry) targetCountry = inside;
+          }
+          const segments = pName.split(/\|\||\|/).map(s => s.trim());
+          for (const seg of segments) {
+            const segTagMatch = seg.match(/\b(?:B2B|B2C|WANS?)[-\s]+([A-Za-z]{2,3})\b/i);
+            if (segTagMatch) {
+              const tag = segTagMatch[1].trim().toUpperCase();
+              if (tag === 'USA') countryCode = 'US';
+              else if (tag.length === 2) countryCode = tag;
+              break;
+            }
           }
         }
 
@@ -313,7 +341,7 @@ class PlatformController {
         const result = {
           project_pno: item.project_pno,
           project_id: item.project_id,
-          project_name: item.project_name,
+          project_name: PlatformController.cleanProjectTitle(item.project_name || 'Survey Campaign'),
           project_code: finalCountryCode || item.project_code,
           country_code: finalCountryCode,
           target_country: targetCountry || finalCountryCode || 'United States',

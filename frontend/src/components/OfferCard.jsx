@@ -219,10 +219,72 @@ const COUNTRY_NAME_TO_CODE = {
   'MA': 'MA'
 };
 
+export function cleanProjectTitle(title) {
+  if (!title) return '';
+  let cleaned = String(title);
+
+  // Remove price segments: e.g. "- $8.00", "- $2.50", "-$8", " $7", "$2.50 & $8.00", "CPI: $4.50"
+  cleaned = cleaned.replace(/[-\s]*(?:CPI\s*[:=\s]*)?\$[0-9]+(?:\.[0-9]+)?(?:\s*(?:&|and|,)\s*\$[0-9]+(?:\.[0-9]+)?)?(?:\s*(?:USD|EUR|GBP|AUD|CAD))?/gi, ' ');
+  cleaned = cleaned.replace(/[-\s]*[0-9]+(?:\.[0-9]+)?\s*(?:USD|EUR|GBP)\b/gi, ' ');
+
+  // Clean up dangling delimiters like "|| ||", "|| -", "- ||", extra spaces
+  cleaned = cleaned.replace(/\s*\|\|\s*\|\|\s*/g, ' || ');
+  cleaned = cleaned.replace(/\s*-\s*\|\|\s*/g, ' || ');
+  cleaned = cleaned.replace(/\s*\|\|\s*-\s*/g, ' || ');
+  cleaned = cleaned.replace(/\s{2,}/g, ' ');
+  cleaned = cleaned.replace(/^\s*[-|]+\s*/, '');
+  cleaned = cleaned.replace(/\s*[-|]+\s*$/, '');
+  return cleaned.trim() || title;
+}
+
 function getGeoInfo(offer) {
   const clean = (val) => String(val || '').trim().toUpperCase();
 
-  // 1. Direct country_code if set by backend or GoWebSurveys
+  // Helper: check title for explicit tags or country names e.g. "B2C - QA", "B2B - USA", "[Australia]"
+  const getCountryFromTitle = (title) => {
+    if (!title) return null;
+    const bracketMatch = title.match(/\[([A-Za-z0-9\s_-]+)\]/);
+    if (bracketMatch) {
+      const inside = clean(bracketMatch[1]);
+      if (COUNTRY_NAME_TO_CODE[inside]) {
+        const codeKey = COUNTRY_NAME_TO_CODE[inside];
+        return { country: ISO_COUNTRY_META[codeKey]?.country || bracketMatch[1], code: codeKey === 'GB' ? 'UK' : codeKey };
+      }
+    }
+    const segments = title.split(/\|\||\|/).map(s => s.trim());
+    for (const seg of segments) {
+      const segTagMatch = seg.match(/\b(?:B2B|B2C|WANS?)[-\s]+([A-Za-z]{2,3})\b/i);
+      if (segTagMatch) {
+        const tag = clean(segTagMatch[1]);
+        if (COUNTRY_NAME_TO_CODE[tag]) {
+          const codeKey = COUNTRY_NAME_TO_CODE[tag];
+          return { country: ISO_COUNTRY_META[codeKey]?.country || tag, code: codeKey === 'GB' ? 'UK' : codeKey };
+        }
+      }
+      const cleanSeg = clean(seg);
+      if (COUNTRY_NAME_TO_CODE[cleanSeg]) {
+        const codeKey = COUNTRY_NAME_TO_CODE[cleanSeg];
+        return { country: ISO_COUNTRY_META[codeKey]?.country || cleanSeg, code: codeKey === 'GB' ? 'UK' : codeKey };
+      }
+    }
+    for (const [key, codeKey] of Object.entries(COUNTRY_NAME_TO_CODE)) {
+      if (key.length > 2) {
+        const regex = new RegExp(`\\b${key}\\b`, 'i');
+        if (regex.test(title)) {
+          return { country: ISO_COUNTRY_META[codeKey]?.country || key, code: codeKey === 'GB' ? 'UK' : codeKey };
+        }
+      }
+    }
+    return null;
+  };
+
+  // 1. Direct explicit title tags take priority if title specifies e.g. "B2C - QA", "[Australia]"
+  const titleGeo = getCountryFromTitle(offer.project_name);
+  if (titleGeo) {
+    return titleGeo;
+  }
+
+  // 2. Direct country_code if set by backend or GoWebSurveys
   if (offer.country_code && offer.country_code !== 'EMAIL_SURVEY') {
     const cc = clean(offer.country_code);
     const mapped = COUNTRY_NAME_TO_CODE[cc] || cc;
@@ -231,7 +293,7 @@ function getGeoInfo(offer) {
     }
   }
 
-  // 2. Check project_code (handles "US", "ES", "BR", "English-GB|54", "Australia")
+  // 3. Check project_code (handles "US", "ES", "BR", "English-GB|54", "Australia")
   const rawCode = (offer.project_code || '').trim();
   if (rawCode && rawCode !== 'EMAIL_SURVEY') {
     const code = rawCode.toUpperCase().split('|')[0].trim();
@@ -257,7 +319,7 @@ function getGeoInfo(offer) {
     }
   }
 
-  // 3. Check target_country field (e.g. "United Kingdom", "Spain", "Brazil", "JP")
+  // 4. Check target_country field (e.g. "United Kingdom", "Spain", "Brazil", "JP")
   const targetCountry = (offer.target_country || '').trim();
   if (targetCountry && targetCountry !== 'Global') {
     const parts = targetCountry.split(/[,/|]/).map(p => clean(p)).filter(Boolean);
@@ -266,40 +328,6 @@ function getGeoInfo(offer) {
         const codeKey = COUNTRY_NAME_TO_CODE[part];
         const name = ISO_COUNTRY_META[codeKey]?.country || targetCountry;
         return { country: name, code: codeKey === 'GB' ? 'UK' : codeKey };
-      }
-    }
-  }
-
-  // 4. Check project_name for bracketed countries: "[Australia] 1867967", "[United Kingdom]", "[Spain]"
-  const pName = offer.project_name || '';
-  if (pName) {
-    const bracketMatch = pName.match(/\[([A-Za-z0-9\s_-]+)\]/);
-    if (bracketMatch) {
-      const inside = clean(bracketMatch[1]);
-      if (COUNTRY_NAME_TO_CODE[inside]) {
-        const codeKey = COUNTRY_NAME_TO_CODE[inside];
-        const name = ISO_COUNTRY_META[codeKey]?.country || bracketMatch[1];
-        return { country: name, code: codeKey === 'GB' ? 'UK' : codeKey };
-      }
-    }
-    // Check tags in project_name: "B2C-NL", "WANS-NL", "KSA"
-    const tagMatch = pName.match(/\b(?:B2B|B2C|WANS?)[-\s]+([A-Za-z]{2,3})\b/i);
-    if (tagMatch) {
-      const tag = clean(tagMatch[1]);
-      if (COUNTRY_NAME_TO_CODE[tag]) {
-        const codeKey = COUNTRY_NAME_TO_CODE[tag];
-        const name = ISO_COUNTRY_META[codeKey]?.country || tag;
-        return { country: name, code: codeKey === 'GB' ? 'UK' : codeKey };
-      }
-    }
-    // Check standalone country names in title
-    for (const [key, codeKey] of Object.entries(COUNTRY_NAME_TO_CODE)) {
-      if (key.length > 2) {
-        const regex = new RegExp(`\\b${key}\\b`, 'i');
-        if (regex.test(pName)) {
-          const name = ISO_COUNTRY_META[codeKey]?.country || key;
-          return { country: name, code: codeKey === 'GB' ? 'UK' : codeKey };
-        }
       }
     }
   }
@@ -368,7 +396,7 @@ export default function OfferCard({ offer, onStart, onSpecs, onCopyLink, onFinge
     <div className="offer-row">
       <div className="offer-row-info">
         <div className="offer-row-name" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span>{offer.project_name || 'Survey Campaign'}</span>
+          <span>{cleanProjectTitle(offer.project_name) || 'Survey Campaign'}</span>
           {isRecent && (
             <span style={{
               background: 'rgba(16, 185, 129, 0.12)',
