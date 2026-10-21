@@ -431,7 +431,7 @@ class PlatformController {
         return {
           project_pno: item.project_pno,
           platform_id: item.platform_id,
-          project_name: item.project_name,
+          project_name: PlatformController.cleanProjectTitle(item.project_name || 'Survey Campaign'),
           project_cpi: Number(memberPayout.toFixed(2)),
           project_id: item.project_id,
           project_currency: item.project_currency
@@ -484,7 +484,7 @@ class PlatformController {
                 project: {
                   project_id: project.project_id,
                   project_pno: project.project_pno,
-                  project_name: project.project_name,
+                  project_name: PlatformController.cleanProjectTitle(project.project_name || 'Survey Campaign'),
                   project_quota: project.project_quota,
                   project_complete: project.project_complete,
                   project_cpi: project.project_cpi,
@@ -1493,19 +1493,20 @@ class PlatformController {
           } catch {}
         }
 
+        const cleanTitle = PlatformController.cleanProjectTitle(p.project_name || 'Survey Campaign');
         let messageText = isNew 
-          ? `New project "${p.project_name}" available on ${p.platform?.platform_name || 'Platform'}`
-          : `Project "${p.project_name}" on ${p.platform?.platform_name || 'Platform'} updated`;
+          ? `New project "${cleanTitle}" available on ${p.platform?.platform_name || 'Platform'}`
+          : `Project "${cleanTitle}" on ${p.platform?.platform_name || 'Platform'} updated`;
 
         if (changeSummary) {
-          messageText = `${p.platform?.platform_name || 'Email'}: ${changeSummary} (${p.project_name})`;
+          messageText = `${p.platform?.platform_name || 'Email'}: ${changeSummary} (${cleanTitle})`;
         }
 
         return {
           id: p.project_id,
           project_pno: p.project_pno,
           project_no: p.project_no,
-          project_name: p.project_name,
+          project_name: cleanTitle,
           platform_id: p.platform_id,
           platform_name: p.platform?.platform_name || 'General',
           platform_color: p.platform?.platform_color || '#3b82f6',
