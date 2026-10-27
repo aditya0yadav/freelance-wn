@@ -306,6 +306,27 @@ class OllamaService {
       resolvedPlatform = folderName;
     }
 
+    // Extract CPI from email body with regex as a reliable fallback/override
+    let detectedCpi = null;
+    const cpiMatch = cleanedBody.match(/(?:CPI[^\$]*|[\s\w])\$\s*([0-9]+(?:\.[0-9]+)?)/i);
+    if (cpiMatch) {
+      const val = parseFloat(cpiMatch[1]);
+      if (val > 0 && val <= 100) {
+        detectedCpi = val;
+      }
+    }
+
+    let finalCpi = null;
+    if (parsed.project_cpi !== null && parsed.project_cpi !== undefined && !isNaN(Number(parsed.project_cpi)) && Number(parsed.project_cpi) > 0) {
+      finalCpi = Number(parsed.project_cpi);
+      // If AI returned 1.0 but regex found a specific different rate, prefer regex
+      if (finalCpi === 1.0 && detectedCpi && detectedCpi !== 1.0) {
+        finalCpi = detectedCpi;
+      }
+    } else if (detectedCpi) {
+      finalCpi = detectedCpi;
+    }
+
     // Sanitize fields
     return {
       is_survey_invitation: Boolean(parsed.is_survey_invitation),
@@ -314,7 +335,7 @@ class OllamaService {
       project_name: String(parsed.project_name || subject || 'Survey Opportunity'),
       platform_name: resolvedPlatform || 'General',
       folder_name: folderName || 'INBOX',
-      project_cpi: Number(parseFloat(parsed.project_cpi) || 1.0),
+      project_cpi: finalCpi,
       currency: String(parsed.currency || 'USD').toUpperCase(),
       project_quota: Number(parseInt(parsed.project_quota, 10) || 100),
       project_loi: Number(parseInt(parsed.project_loi, 10) || 15),

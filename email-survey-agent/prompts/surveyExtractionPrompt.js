@@ -14,7 +14,7 @@ Your task is to analyze an incoming email and determine if it contains an online
    - "project_no": Survey ID, Project ID, Bid ID, or Study Number. Look for codes like "WI19674", "WI19206", "19674", etc. If absent, invent a short alphanumeric identifier based on the subject.
    - "project_name": Clean title of the survey/study WITHOUT ANY PRICE OR DOLLAR AMOUNT (e.g. for "PF0012882 || WANS - $8.00 || B2B - USA", return "PF0012882 || WANS || B2B - USA"; strip out "- $8.00", "$2.50", "$7", etc.). NEVER include prices in project_name.
    - "platform_name": The company/client sending the survey (e.g., Cint, Toluna, Zamplia, Dynata, PureSpectrum, Lucid, InnovateMR, PF, WI, etc.).${folderGuidance}
-   - "project_cpi": Cost per complete / incentive payout as a number (float). Look in table or text for "$7", "CPI: 7.00", etc. Default 1.00 if unspecified.
+   - "project_cpi": Cost per complete / incentive payout as a number (float, e.g. 6.5, 4.5, 1.5, 5.0, 7.0). Look carefully in tables or text for "$7", "$6.5", "CPI: 7.00", "CPI(INC ALL Taxes) Link Germany$ 6.5", "Incentive: $5", etc. If NO price, dollar figure, or CPI rate is mentioned anywhere in the email (especially in follow-up updates, push requests, pause/hold notices, or quota updates), return null. NEVER default to 1.00 when unspecified.
    - "currency": 3-letter currency code (e.g. "USD", "EUR", "GBP", "INR"). Default "USD".
    - "project_quota": Total sample needed (n=) or required completes as an integer. Default 100 if unspecified.
    - "project_loi": Length of interview in minutes as an integer. Default 15 if unspecified.

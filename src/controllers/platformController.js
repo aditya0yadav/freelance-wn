@@ -55,6 +55,34 @@ class PlatformController {
   }
 
   /**
+   * Helper to resolve the effective CPI, recovering actual rate if overwritten or defaulted to 1.0
+   */
+  static getEffectiveCpi(item) {
+    if (!item) return 0;
+    let cpi = Number(item.project_cpi) || 0;
+    if (cpi === 1.0 || cpi <= 0) {
+      if (item.project_content) {
+        try {
+          const parsed = typeof item.project_content === 'string' ? JSON.parse(item.project_content) : item.project_content;
+          if (parsed?.base_requirements?.initial_cpi && Number(parsed.base_requirements.initial_cpi) > 0) {
+            return Number(parsed.base_requirements.initial_cpi);
+          }
+        } catch {}
+
+        const text = typeof item.project_content === 'string' ? item.project_content : JSON.stringify(item.project_content);
+        const match = text.match(/(?:CPI[^\$]*|[\s\w])\$\s*([0-9]+(?:\.[0-9]+)?)/i);
+        if (match) {
+          const parsedVal = parseFloat(match[1]);
+          if (parsedVal > 0 && parsedVal <= 100) {
+            return parsedVal;
+          }
+        }
+      }
+    }
+    return cpi;
+  }
+
+  /**
    * GET /api/member/platform/list
    */
   static async list(req, res) {
@@ -113,7 +141,8 @@ class PlatformController {
         // Calculate max member payout
         let maxCoins = 0;
         for (const item of activeProjects) {
-          const rawCoins = item.project_cpi * (item.currency?.currency_coins || 100.00);
+          const effectiveCpi = PlatformController.getEffectiveCpi(item);
+          const rawCoins = effectiveCpi * (item.currency?.currency_coins || 100.00);
           const teamPayout = rawCoins * ((100 - teamCommissionRatio) / 100) * ((100 - authRateVal) / 100);
           const memberPayout = teamPayout * memberRate;
           if (memberPayout > maxCoins) {
@@ -275,7 +304,8 @@ class PlatformController {
         const platformAuth = platformAuths.find(auth => auth.platform_id === item.platform_id);
         const authRateVal = platformAuth ? platformAuth.auth_rate : 0;
 
-        const rawCoins = item.project_cpi * (item.currency?.currency_coins || 100.00);
+        const effectiveCpi = PlatformController.getEffectiveCpi(item);
+        const rawCoins = effectiveCpi * (item.currency?.currency_coins || 100.00);
         const memberRate = (100 - (member.rate || 0.00)) / 100;
         const teamCommissionRatio = team ? team.commission_ratio : 0.00;
 
@@ -423,7 +453,8 @@ class PlatformController {
         const platformAuth = platformAuths.find(auth => auth.platform_id === item.platform_id);
         const authRateVal = platformAuth ? platformAuth.auth_rate : 0;
 
-        const rawCoins = item.project_cpi * (item.currency?.currency_coins || 100.00);
+        const effectiveCpi = PlatformController.getEffectiveCpi(item);
+        const rawCoins = effectiveCpi * (item.currency?.currency_coins || 100.00);
         const memberRate = (100 - member.rate) / 100;
 
         const memberPayout = rawCoins * memberRate;
@@ -487,7 +518,7 @@ class PlatformController {
                   project_name: PlatformController.cleanProjectTitle(project.project_name || 'Survey Campaign'),
                   project_quota: project.project_quota,
                   project_complete: project.project_complete,
-                  project_cpi: project.project_cpi,
+                  project_cpi: PlatformController.getEffectiveCpi(project),
                   project_loi: project.project_loi,
                   project_ir: project.project_ir,
                   platform_name: platform.platform_name,
@@ -1434,7 +1465,8 @@ class PlatformController {
       const list = projects.map(p => {
         const platformAuth = platformAuths.find(auth => auth.platform_id === p.platform_id);
         const authRateVal = platformAuth ? platformAuth.auth_rate : 0;
-        const rawCoins = p.project_cpi * (p.currency?.currency_coins || 100.00);
+        const effectiveCpi = PlatformController.getEffectiveCpi(p);
+        const rawCoins = effectiveCpi * (p.currency?.currency_coins || 100.00);
         const teamPayout = rawCoins * ((100 - teamCommissionRatio) / 100) * ((100 - authRateVal) / 100);
         const memberPayout = Math.round(teamPayout * memberRate);
 

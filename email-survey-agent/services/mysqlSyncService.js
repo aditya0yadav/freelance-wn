@@ -213,6 +213,9 @@ class MySQLSyncService {
         // Capture newly received update content verbatim
         const updateContent = survey.update_text || survey.action_reason || survey.project_content || `Project state updated to ${statusLabel}.`;
 
+        const incomingCpi = survey.project_cpi !== null && survey.project_cpi !== undefined ? Number(survey.project_cpi) : null;
+        const updateCpi = (incomingCpi && incomingCpi > 0 && incomingCpi !== 1.0) ? incomingCpi : null;
+
         // Add this email as a new chronological update log entry (NEVER overwriting base_requirements)
         const updateEntry = {
           date: emailDate.toISOString(),
@@ -228,8 +231,8 @@ class MySQLSyncService {
           occupation: survey.occupation || null,
           quota: Number(survey.project_quota) || null,
           updated_quota: Number(survey.project_quota) || null,
-          cpi: Number(survey.project_cpi) || null,
-          updated_cpi: Number(survey.project_cpi) || null
+          cpi: updateCpi,
+          updated_cpi: updateCpi
         };
 
         timeline.update_logs = timeline.update_logs || [];
@@ -248,11 +251,28 @@ class MySQLSyncService {
           }
         }
 
+        // Determine whether CPI should be updated:
+        // NEVER overwrite an existing CPI with 1.0 or null if it was just an update email without a specified price.
+        let newCpi = null;
+        if (incomingCpi && incomingCpi > 0) {
+          // If existing CPI is missing/0 or 1.0, update to new CPI
+          if (!existing.project_cpi || existing.project_cpi <= 0 || (existing.project_cpi === 1.0 && incomingCpi !== 1.0)) {
+            newCpi = incomingCpi;
+          } else if (incomingCpi !== 1.0 && incomingCpi !== existing.project_cpi) {
+            // Survey explicitly has a real different CPI (e.g. rate revision)
+            newCpi = incomingCpi;
+          }
+        }
+        // If existing project currently has 1.0 or 0, but its base_requirements had a real CPI, recover it!
+        if ((!newCpi && (existing.project_cpi === 1.0 || existing.project_cpi <= 0)) && timeline?.base_requirements?.initial_cpi > 0 && timeline.base_requirements.initial_cpi !== 1.0) {
+          newCpi = Number(timeline.base_requirements.initial_cpi);
+        }
+
         const updateData = {
           is_disable: newIsDisable,
           project_content: JSON.stringify(timeline),
           update_time: emailDate,
-          ...(Number(survey.project_cpi) > 0 ? { project_cpi: Number(survey.project_cpi) } : {}),
+          ...(newCpi !== null ? { project_cpi: newCpi } : {}),
           ...(Number(survey.project_quota) > 0 ? { project_quota: Number(survey.project_quota) } : {}),
           ...(survey.project_click_url ? { project_click_url: survey.project_click_url } : {})
         };
@@ -292,6 +312,22 @@ class MySQLSyncService {
       const rawSpecsText = survey.raw_specs || survey.project_content || '';
       const countryInfo = MySQLSyncService.resolveCountryInfo(survey);
 
+      // Check if raw specs has a dollar amount or CPI if survey.project_cpi is null or 1.0
+      let resolvedInitialCpi = (survey.project_cpi !== null && survey.project_cpi !== undefined && Number(survey.project_cpi) > 0)
+        ? Number(survey.project_cpi)
+        : null;
+
+      if (!resolvedInitialCpi || resolvedInitialCpi === 1.0) {
+        const cpiMatch = rawSpecsText.match(/(?:CPI[^\$]*|[\s\w])\$\s*([0-9]+(?:\.[0-9]+)?)/i);
+        if (cpiMatch) {
+          const parsedVal = parseFloat(cpiMatch[1]);
+          if (parsedVal > 0 && parsedVal <= 100) {
+            resolvedInitialCpi = parsedVal;
+          }
+        }
+      }
+      if (!resolvedInitialCpi) resolvedInitialCpi = 1.0;
+
       // 6. Build Initial Base Requirements with Chronological Timeline
       const initialTimeline = {
         is_timeline: true,
@@ -304,7 +340,7 @@ class MySQLSyncService {
           occupation: survey.occupation || 'General Audience',
           target_demographics: survey.target_demographics || survey.occupation || 'General Audience',
           initial_quota: Number(survey.project_quota) || 100,
-          initial_cpi: Number(survey.project_cpi) || 1.0,
+          initial_cpi: resolvedInitialCpi,
           initial_loi: Number(survey.project_loi) || 15,
           initial_ir: Number(survey.project_ir) || 50,
           summary: rawSpecsText || 'Initial live project dispatch specifications.',
@@ -322,7 +358,7 @@ class MySQLSyncService {
           notes: survey.update_text || survey.action_reason || 'Project placed on hold upon notification.',
           excluded_groups: [],
           quota: Number(survey.project_quota) || null,
-          cpi: Number(survey.project_cpi) || null
+          cpi: resolvedInitialCpi !== 1.0 ? resolvedInitialCpi : null
         }] : []
       };
 
@@ -334,7 +370,7 @@ class MySQLSyncService {
           platform_id: platform.platform_id,
           project_name: MySQLSyncService.cleanProjectTitle(survey.project_name || 'Email Survey Offer'),
           project_code: countryInfo.code || 'US',
-          project_cpi: Number(survey.project_cpi) || 0.0,
+          project_cpi: resolvedInitialCpi,
           project_currency: currencyId,
           project_quota: Number(survey.project_quota) || 100,
           project_loi: Number(survey.project_loi) || 15,
