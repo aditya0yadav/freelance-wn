@@ -476,79 +476,174 @@ class PlatformController {
   }
 
   /**
+   * Sanitizes specifications text by removing client prices, rates, and dispatch CPI mentions
+   */
+  static sanitizeSpecsText(text) {
+    if (!text) return '';
+    let str = String(text);
+    // Remove partner dispatch link / CPI headers (e.g. "Country CPI(INC ALL Taxes) Link Germany$ 6.5https...")
+    str = str.replace(/Country\s+CPI[^\n\r]*Link[^\n\r]*/gi, '');
+    // Remove CPI / price mentions: e.g. "CPI: $6.5", "CPI 7.00", "Rate: $5", "Incentive: $4.5"
+    str = str.replace(/(?:CPI\s*(?:\(INC[^\)]*\))?|Incentive|Rate|Price|Payout)\s*[:=]?\s*\$?\s*[0-9]+(?:\.[0-9]+)?(?:\s*(?:USD|cpi|\/complete|per complete))?/gi, '');
+    // Remove standalone dollar amounts: e.g. "$6.50", "$ 4.5", "$7"
+    str = str.replace(/\$\s*[0-9]+(?:\.[0-9]+)?(?:\s*(?:USD|EUR|GBP))?/gi, '');
+    // Remove [Tag: Email Survey] tag
+    str = str.replace(/\[Tag:\s*Email Survey\]\s*/gi, '');
+    // Clean redundant empty lines
+    str = str.replace(/\n{3,}/g, '\n\n');
+    return str.trim();
+  }
+
+  /**
    * GET /api/member/platform/quota
    */
   static async quota(req, res) {
     try {
-      const projectPno = req.query.project_pno;
-      if (!projectPno) return res.status(400).json({ code: 400, msg: 'Missing project_pno' });
+      const projectPno = (req.query.project_pno || '').trim();
+      const projectId = req.query.project_id ? Number(req.query.project_id) : null;
+      if (!projectPno && !projectId) return res.status(400).json({ code: 400, msg: 'Missing project_pno or project_id' });
 
-      const project = await prisma.project.findUnique({
-        where: { project_pno: projectPno }
-      });
+      let project = null;
+      if (projectPno) {
+        project = await prisma.project.findFirst({
+          where: { project_pno: projectPno, delete_time: null },
+          include: { platform: true, currency: true }
+        });
+      }
+      if (!project && projectId) {
+        project = await prisma.project.findUnique({
+          where: { project_id: projectId },
+          include: { platform: true, currency: true }
+        });
+      }
       if (!project || project.delete_time !== null) {
         return res.status(404).json({ code: 404, msg: 'Project not found' });
       }
 
-      const platform = await prisma.platform.findUnique({
+      const platform = project.platform || await prisma.platform.findUnique({
         where: { platform_id: project.platform_id }
       });
       if (!platform) {
         return res.status(404).json({ code: 404, msg: 'Platform not found' });
       }
 
-      // If content is already rendered HTML or chronological timeline and it's not a live endpoint or is cached
-      if (project.project_content && platform.platform_sign !== 'Gowebsurveys' && platform.platform_sign !== 'Zamplia') {
-        if (project.project_content.startsWith('http://') || project.project_content.startsWith('https://')) {
-          return res.json({ code: 200, msg: 'success', data: { type: 'link', content: project.project_content } });
-        }
-
-        try {
-          const parsed = JSON.parse(project.project_content);
-          if (parsed && (parsed.is_timeline || parsed.base_requirements)) {
-            return res.json({
-              code: 200,
-              msg: 'success',
-              data: {
-                type: 'timeline',
-                timeline: parsed,
-                project: {
-                  project_id: project.project_id,
-                  project_pno: project.project_pno,
-                  project_name: PlatformController.cleanProjectTitle(project.project_name || 'Survey Campaign'),
-                  project_quota: project.project_quota,
-                  project_complete: project.project_complete,
-                  project_cpi: PlatformController.getEffectiveCpi(project),
-                  project_loi: project.project_loi,
-                  project_ir: project.project_ir,
-                  platform_name: platform.platform_name,
-                  platform_color: platform.platform_color
-                }
-              }
-            });
-          }
-        } catch {
-          // Plain text fallback
-        }
-
-        return res.json({ code: 200, msg: 'success', data: { type: 'content', content: project.project_content, project } });
+      // If content is a direct survey link URL
+      if (project.project_content && (project.project_content.startsWith('http://') || project.project_content.startsWith('https://'))) {
+        return res.json({ code: 200, msg: 'success', data: { type: 'link', content: project.project_content } });
       }
 
-      // Fetch live quota
-      const checkResult = await SurveyIntegrationService.checkQuota(project, platform);
-
-      // Save content cache in DB if content is rendered (API projects only)
-      if (checkResult.type === 'content' && checkResult.content && project.is_api === 1) {
-        await prisma.project.update({
-          where: { project_id: project.project_id },
-          data: {
-            project_content: checkResult.content,
-            project_quota: checkResult.project?.project_quota ?? project.project_quota
+      // 1. Try to parse existing structured timeline from project_content
+      let timeline = null;
+      if (project.project_content) {
+        try {
+          const parsed = typeof project.project_content === 'string' ? JSON.parse(project.project_content) : project.project_content;
+          if (parsed && (parsed.is_timeline || parsed.base_requirements)) {
+            timeline = parsed;
           }
+        } catch {}
+      }
+
+      // 2. If not already a timeline, synthesize full timeline from specs / content / platform
+      if (!timeline) {
+        let rawText = project.project_content ? String(project.project_content).replace(/<[^>]+>/g, '').trim() : '';
+
+        // If content is empty or generic, check live API if available
+        if (!rawText && (platform.platform_sign === 'TMDPanel' || platform.platform_sign === 'Gowebsurveys' || platform.platform_sign === 'Zamplia')) {
+          try {
+            const liveResult = await SurveyIntegrationService.checkQuota(project, platform);
+            if (liveResult && liveResult.content && typeof liveResult.content === 'string') {
+              rawText = liveResult.content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, '').trim();
+            }
+          } catch {}
+        }
+
+        let targetCountry = project.project_code || 'United States';
+        const cMatch = rawText.match(/(?:Country|Market|Target|Geography)\s*[:=-]?\s*([^.\n,]+)/i);
+        if (cMatch) targetCountry = cMatch[1].replace(/[()]/g, '').trim();
+
+        let ageRange = '18 - 65';
+        const aMatch = rawText.match(/(?:age|ages|between)\s*(\d{1,2}\s*[-–to]\s*\d{1,2})/i) || rawText.match(/(\d{1,2}\s*[-–]\s*\d{1,2})\s*years?/i);
+        if (aMatch) ageRange = aMatch[1].trim();
+
+        let occupation = 'General Audience';
+        const oMatch = rawText.match(/(?:Industry|Audience|Occupation|Target)\s*:\s*([^.\n]+)/i);
+        if (oMatch) {
+          occupation = oMatch[1].replace(/[()]/g, '').trim();
+        } else {
+          const kwMatch = rawText.match(/(?:Decision-Makers|ITDMs|BDMs|Managers|Executives|Owners|Doctors|Healthcare|Patients|Consumers|Engineers)[^.\n]*/i);
+          if (kwMatch) occupation = kwMatch[0].trim();
+        }
+
+        const cleanedSpecs = PlatformController.sanitizeSpecsText(rawText);
+
+        timeline = {
+          is_timeline: true,
+          target_country: targetCountry,
+          base_requirements: {
+            target_country: targetCountry,
+            country: targetCountry,
+            age_range: ageRange,
+            occupation: occupation,
+            target_demographics: occupation || 'General Population',
+            initial_quota: project.project_quota || 100,
+            summary: cleanedSpecs || 'Live project dispatch specifications.',
+            description: cleanedSpecs || 'Live project dispatch specifications.',
+            raw_specs: cleanedSpecs || ''
+          },
+          update_logs: []
+        };
+      }
+
+      // 3. Strictly sanitize timeline: remove ALL CPI and price mentions
+      if (timeline.base_requirements) {
+        delete timeline.base_requirements.initial_cpi;
+        delete timeline.base_requirements.cpi;
+        delete timeline.base_requirements.updated_cpi;
+        if (timeline.base_requirements.raw_specs) {
+          timeline.base_requirements.raw_specs = PlatformController.sanitizeSpecsText(timeline.base_requirements.raw_specs);
+        }
+        if (timeline.base_requirements.description) {
+          timeline.base_requirements.description = PlatformController.sanitizeSpecsText(timeline.base_requirements.description);
+        }
+        if (timeline.base_requirements.summary) {
+          timeline.base_requirements.summary = PlatformController.sanitizeSpecsText(timeline.base_requirements.summary);
+        }
+      }
+
+      if (Array.isArray(timeline.update_logs)) {
+        timeline.update_logs = timeline.update_logs.map(log => {
+          const cleanedLog = { ...log };
+          delete cleanedLog.cpi;
+          delete cleanedLog.updated_cpi;
+          if (cleanedLog.summary) cleanedLog.summary = PlatformController.sanitizeSpecsText(cleanedLog.summary);
+          if (cleanedLog.notes) cleanedLog.notes = PlatformController.sanitizeSpecsText(cleanedLog.notes);
+          if (cleanedLog.action_reason) cleanedLog.action_reason = PlatformController.sanitizeSpecsText(cleanedLog.action_reason);
+          if (cleanedLog.subject) cleanedLog.subject = PlatformController.cleanProjectTitle(cleanedLog.subject);
+          if (cleanedLog.email_subject) cleanedLog.email_subject = PlatformController.cleanProjectTitle(cleanedLog.email_subject);
+          return cleanedLog;
         });
       }
 
-      return res.json({ code: 200, msg: 'success', data: checkResult });
+      return res.json({
+        code: 200,
+        msg: 'success',
+        data: {
+          type: 'timeline',
+          timeline: timeline,
+          project: {
+            project_id: project.project_id,
+            project_pno: project.project_pno,
+            project_name: PlatformController.cleanProjectTitle(project.project_name || 'Survey Campaign'),
+            project_quota: project.project_quota,
+            project_complete: project.project_complete,
+            project_loi: project.project_loi,
+            project_ir: project.project_ir,
+            platform_name: platform.platform_name,
+            platform_color: platform.platform_color,
+            target_country: timeline.target_country || timeline.base_requirements?.target_country || project.project_code || 'United States'
+          }
+        }
+      });
     } catch (err) {
       return res.status(500).json({ code: 500, msg: err.message });
     }

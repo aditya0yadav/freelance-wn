@@ -155,8 +155,6 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
           excluded_groups: exclusions,
           quota: modalData.project?.project_quota || null,
           updated_quota: modalData.project?.project_quota || null,
-          cpi: modalData.project?.project_cpi || null,
-          updated_cpi: modalData.project?.project_cpi || null,
           status: modalData.project?.is_disable === 1 ? 'PAUSED' : 'ACTIVE'
         });
       }
@@ -170,7 +168,6 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
           occupation: occupation,
           target_demographics: 'Target Demographic Audience',
           initial_quota: modalData.project?.project_quota || modalSurvey?.project_quota || 100,
-          initial_cpi: modalData.project?.project_cpi || modalSurvey?.project_cpi || 1.0,
           description: cleanedNote || 'Live project dispatch specifications.'
         },
         update_logs: fallbackLogs
@@ -319,7 +316,7 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
                         <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--t3, #64748b)', marginBottom: '5px', letterSpacing: '0.04em' }}>
                           {language === 'zh' ? '📋 项目初始完整规格与要求 (立项锁定)' : '📋 Initial Base Requirements & Specs (Locked)'}
                         </div>
-                        <div className="base-description-box" style={{ padding: '12px 14px', background: 'var(--bg-3, #f8fafc)', border: '1px solid var(--border, #cbd5e1)', borderRadius: '8px', fontSize: '12.5px', color: 'var(--t1, #1e293b)', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                        <div className="base-description-box" style={{ padding: '12px 14px', background: 'var(--bg-3, #f8fafc)', border: '1px solid var(--border, #cbd5e1)', borderRadius: '8px', fontSize: '12.5px', color: 'var(--t1, #1e293b)', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontFamily: 'inherit', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                           {baseReq.raw_specs || baseReq.description || baseReq.summary}
                         </div>
                       </div>
@@ -424,13 +421,6 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
                                         Quota: {quotaVal}
                                       </span>
                                     )}
-
-                                    {/* CPI Badge */}
-                                    {cpiVal !== null && (
-                                      <span className="badge-cpi-change" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#059669', fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px' }}>
-                                        CPI: ${cpiVal}
-                                      </span>
-                                    )}
                                   </div>
                                 </div>
 
@@ -476,7 +466,7 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
 
                                 {/* Update Note / Summary Content */}
                                 {noteContent && (
-                                  <div className="timeline-notes" style={{ marginTop: '8px', fontSize: '12.5px', color: 'var(--t2, #334155)', lineHeight: 1.5, background: 'var(--bg-3, #f8fafc)', padding: '10px 14px', borderRadius: '8px', borderLeft: isPaused ? '3px solid #ef4444' : isClosed ? '3px solid #64748b' : '3px solid #10b981', whiteSpace: 'pre-wrap' }}>
+                                  <div className="timeline-notes" style={{ marginTop: '8px', fontSize: '12.5px', color: 'var(--t2, #334155)', lineHeight: 1.5, background: 'var(--bg-3, #f8fafc)', padding: '10px 14px', borderRadius: '8px', borderLeft: isPaused ? '3px solid #ef4444' : isClosed ? '3px solid #64748b' : '3px solid #10b981', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                                     {noteContent}
                                   </div>
                                 )}
