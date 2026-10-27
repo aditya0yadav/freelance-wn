@@ -495,6 +495,109 @@ class PlatformController {
   }
 
   /**
+   * Universal HTML generator for desktop and legacy clients that render via type: 'content'
+   */
+  static renderSpecsHtml(timeline, project, platform) {
+    const baseReq = timeline?.base_requirements || {};
+    const updateLogs = Array.isArray(timeline?.update_logs) ? timeline.update_logs : [];
+
+    const totalQuota = (project.project_quota > 0 ? project.project_quota : (baseReq.initial_quota || 'N/A'));
+    const completes = project.project_complete || 0;
+    const remaining = totalQuota !== 'N/A' && Number(totalQuota) > 0 ? Math.max(0, Number(totalQuota) - completes) : 'N/A';
+
+    const country = baseReq.target_country || baseReq.country || project.target_country || project.project_code || 'Global';
+    const ageRange = baseReq.age_range || '18 - 65';
+    const occupation = baseReq.occupation || baseReq.target_demographics || 'General Audience';
+
+    const rawSpecs = baseReq.raw_specs || baseReq.description || baseReq.summary || 'Live survey specifications.';
+    const cleanSpecs = PlatformController.sanitizeSpecsText(rawSpecs);
+
+    let html = `
+<div style="font-family: inherit; color: var(--t1, #0f172a); line-height: 1.5;">
+  <!-- Quota Metrics Bar -->
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;">
+    <div style="background: var(--bg-3, #f1f5f9); border: 1px solid var(--border, #e2e8f0); border-radius: 8px; padding: 10px; text-align: center;">
+      <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--t3, #64748b); display: block; margin-bottom: 2px;">Total Quota</span>
+      <strong style="font-size: 18px; font-weight: 700; color: var(--t1, #0f172a);">${totalQuota}</strong>
+    </div>
+    <div style="background: var(--bg-3, #f1f5f9); border: 1px solid var(--border, #e2e8f0); border-radius: 8px; padding: 10px; text-align: center;">
+      <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--t3, #64748b); display: block; margin-bottom: 2px;">Completes</span>
+      <strong style="font-size: 18px; font-weight: 700; color: #10b981;">${completes}</strong>
+    </div>
+    <div style="background: var(--bg-3, #f1f5f9); border: 1px solid var(--border, #e2e8f0); border-radius: 8px; padding: 10px; text-align: center;">
+      <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--t3, #64748b); display: block; margin-bottom: 2px;">Remaining</span>
+      <strong style="font-size: 18px; font-weight: 700; color: #3b82f6;">${remaining}</strong>
+    </div>
+  </div>
+
+  <!-- Demographics Constraints -->
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;">
+    <div style="background: var(--surface, #ffffff); border: 1px solid var(--border, #e2e8f0); border-radius: 8px; padding: 10px;">
+      <span style="font-size: 10.5px; text-transform: uppercase; font-weight: 600; color: var(--t3, #64748b); display: block;">Country / Region</span>
+      <strong style="font-size: 13px; color: var(--t1, #0f172a); word-break: break-word;">${country}</strong>
+    </div>
+    <div style="background: var(--surface, #ffffff); border: 1px solid var(--border, #e2e8f0); border-radius: 8px; padding: 10px;">
+      <span style="font-size: 10.5px; text-transform: uppercase; font-weight: 600; color: var(--t3, #64748b); display: block;">Age Range</span>
+      <strong style="font-size: 13px; color: var(--t1, #0f172a); word-break: break-word;">${ageRange}</strong>
+    </div>
+    <div style="background: var(--surface, #ffffff); border: 1px solid var(--border, #e2e8f0); border-radius: 8px; padding: 10px;">
+      <span style="font-size: 10.5px; text-transform: uppercase; font-weight: 600; color: var(--t3, #64748b); display: block;">Target Audience</span>
+      <strong style="font-size: 13px; color: var(--t1, #0f172a); word-break: break-word;">${occupation}</strong>
+    </div>
+  </div>
+
+  <!-- Locked Base Specs -->
+  <div style="margin-bottom: 14px;">
+    <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--t3, #64748b); margin-bottom: 6px; letter-spacing: 0.04em;">
+      📋 Initial Base Requirements & Specs (Locked)
+    </div>
+    <div style="padding: 12px 14px; background: var(--bg-3, #f8fafc); border: 1px solid var(--border, #cbd5e1); border-radius: 8px; font-size: 12.5px; color: var(--t1, #1e293b); line-height: 1.6; white-space: pre-wrap; word-break: break-word;">${cleanSpecs}</div>
+  </div>
+`;
+
+    if (updateLogs.length > 0) {
+      html += `
+  <!-- Chronological Updates -->
+  <div style="margin-top: 14px;">
+    <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--t3, #64748b); margin-bottom: 8px; letter-spacing: 0.04em;">
+      ⏱️ Chronological Update Log (${updateLogs.length})
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+`;
+      for (const log of updateLogs) {
+        const isPaused = log.status === 'PAUSED';
+        const isClosed = log.status === 'CLOSED';
+        const borderColor = isPaused ? '#ef4444' : isClosed ? '#64748b' : '#10b981';
+        const statusBadge = isPaused
+          ? '<span style="background: #fee2e2; color: #b91c1c; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px;">⏸️ Paused</span>'
+          : isClosed
+          ? '<span style="background: #f1f5f9; color: #64748b; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px;">🛑 Closed</span>'
+          : '<span style="background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px;">▶️ Active</span>';
+
+        const dateStr = log.date ? new Date(log.date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : (log.date_str || 'Update');
+        const note = PlatformController.sanitizeSpecsText(log.notes || log.summary || log.action_reason || '');
+
+        html += `
+      <div style="background: var(--surface, #ffffff); border: 1px solid var(--border, #e2e8f0); border-radius: 8px; padding: 10px 12px; border-left: 3px solid ${borderColor};">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <span style="font-size: 11.5px; font-weight: 600; color: var(--t2, #64748b);">${dateStr}</span>
+          ${statusBadge}
+        </div>
+        ${note ? `<div style="font-size: 12px; color: var(--t1, #334155); line-height: 1.5; white-space: pre-wrap; word-break: break-word;">${note}</div>` : ''}
+      </div>
+`;
+      }
+      html += `
+    </div>
+  </div>
+`;
+    }
+
+    html += `</div>`;
+    return html.trim();
+  }
+
+  /**
    * GET /api/member/platform/quota
    */
   static async quota(req, res) {
@@ -505,10 +608,25 @@ class PlatformController {
 
       let project = null;
       if (projectPno) {
+        // 1. Try exact project_pno match
         project = await prisma.project.findFirst({
-          where: { project_pno: projectPno, delete_time: null },
+          where: { project_pno: projectPno },
           include: { platform: true, currency: true }
         });
+
+        // 2. Fallback: search by partial PNO or project_no
+        if (!project) {
+          project = await prisma.project.findFirst({
+            where: {
+              OR: [
+                { project_pno: { contains: projectPno } },
+                { project_no: projectPno },
+                { project_name: { contains: projectPno } }
+              ]
+            },
+            include: { platform: true, currency: true }
+          });
+        }
       }
       if (!project && projectId) {
         project = await prisma.project.findUnique({
@@ -516,7 +634,7 @@ class PlatformController {
           include: { platform: true, currency: true }
         });
       }
-      if (!project || project.delete_time !== null) {
+      if (!project) {
         return res.status(404).json({ code: 404, msg: 'Project not found' });
       }
 
@@ -624,24 +742,30 @@ class PlatformController {
         });
       }
 
+      const projectMeta = {
+        project_id: project.project_id,
+        project_pno: project.project_pno,
+        project_name: PlatformController.cleanProjectTitle(project.project_name || 'Survey Campaign'),
+        project_quota: project.project_quota,
+        project_complete: project.project_complete,
+        project_loi: project.project_loi,
+        project_ir: project.project_ir,
+        platform_name: platform.platform_name,
+        platform_color: platform.platform_color,
+        target_country: timeline.target_country || timeline.base_requirements?.target_country || project.project_code || 'United States'
+      };
+
+      // Generate HTML content for desktop app and legacy clients
+      const htmlContent = PlatformController.renderSpecsHtml(timeline, projectMeta, platform);
+
       return res.json({
         code: 200,
         msg: 'success',
         data: {
-          type: 'timeline',
+          type: 'content',
+          content: htmlContent,
           timeline: timeline,
-          project: {
-            project_id: project.project_id,
-            project_pno: project.project_pno,
-            project_name: PlatformController.cleanProjectTitle(project.project_name || 'Survey Campaign'),
-            project_quota: project.project_quota,
-            project_complete: project.project_complete,
-            project_loi: project.project_loi,
-            project_ir: project.project_ir,
-            platform_name: platform.platform_name,
-            platform_color: platform.platform_color,
-            target_country: timeline.target_country || timeline.base_requirements?.target_country || project.project_code || 'United States'
-          }
+          project: projectMeta
         }
       });
     } catch (err) {

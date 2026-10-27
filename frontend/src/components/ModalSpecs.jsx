@@ -83,7 +83,7 @@ export default function ModalSpecs({ modalOpen, setModalOpen, modalSurvey, modal
 
   // Check if modalData has structured chronological timeline
   let timelineData = null;
-  if (modalData?.type === 'timeline' && modalData.timeline) {
+  if ((modalData?.type === 'timeline' || modalData?.timeline) && modalData.timeline) {
     timelineData = modalData.timeline;
   } else if (modalData?.type === 'content' && typeof modalData.content === 'string') {
     try {
